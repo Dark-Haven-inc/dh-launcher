@@ -1,8 +1,10 @@
 using System.Text.Json;
 using DarkHaven.ContentDb;
 using DarkHaven.Launcher;
+using DarkHaven.Launcher.Accounts;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
+using DarkHaven.Launcher.Data;
 using DarkHaven.Launcher.Engine;
 using DarkHaven.Launcher.Models;
 using DarkHaven.Launcher.Update;
@@ -39,11 +41,23 @@ try
         case "connect":
             await Update(positional.ElementAtOrDefault(1), launch: true);
             break;
+        case "login":
+            await Login(positional.ElementAtOrDefault(1));
+            break;
+        case "accounts":
+            await ShowAccounts();
+            break;
+        case "logout":
+            await Logout(positional.ElementAtOrDefault(1));
+            break;
         default:
             Log.Information("Dark Haven Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
             Log.Information("  probe <ss14://addr> [--hub] [--via-hub]   fetch a server's /info");
             Log.Information("  update <ss14://addr>                      download that server's content + engine");
-            Log.Information("  connect <ss14://addr>                     update, then launch the client (guest)");
+            Log.Information("  connect <ss14://addr> [--guest]           update, then launch the client");
+            Log.Information("  login <username> [--password X | env DH_PASSWORD] [--tfa X]");
+            Log.Information("  accounts                                  list + refresh stored accounts");
+            Log.Information("  logout <username>");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -122,13 +136,94 @@ async Task Update(string? target, bool launch)
 
     if (!launch) return;
 
+    GameAccount? gameAccount = null;
+    if (!flags.Contains("--guest"))
+    {
+        var accounts = AccountManagerFromDisk();
+        accounts.Load();
+        var active = accounts.Active ?? accounts.Accounts.FirstOrDefault();
+        if (active is null)
+        {
+            if (resolved.Info.Auth.Mode == AuthMode.Required)
+            {
+                Log.Error("Server requires auth but no account is logged in. Run: dhlauncher login <username>");
+                return;
+            }
+            Log.Warning("No account — connecting as guest");
+        }
+        else
+        {
+            gameAccount = await accounts.ToGameAccountAsync(active);
+            if (gameAccount is null)
+            {
+                Log.Error("Account {User} token expired — run: dhlauncher login {User}", active.Username, active.Username);
+                if (resolved.Info.Auth.Mode == AuthMode.Required) return;
+            }
+            else
+            {
+                Log.Information("Connecting as {User}", gameAccount.Username);
+            }
+        }
+    }
+
     var loader = LocateLoader();
     Log.Information("Launching client via {Loader}", loader);
     var game = new GameLauncher(loader, LocateSigningKey(), engines, LauncherPaths.ContentDbPath);
-    var proc = game.Start(resolved, manifest, account: null, compatMode: flags.Contains("--compat"), redirectOutput: false);
+    var proc = game.Start(resolved, manifest, gameAccount, compatMode: flags.Contains("--compat"), redirectOutput: false);
     Log.Information("Client PID {Pid} — waiting for exit", proc.Id);
     await proc.WaitForExitAsync();
     Log.Information("Client exited with code {Code}", proc.ExitCode);
+}
+
+AccountManager AccountManagerFromDisk()
+{
+    var settings = new SettingsDatabase(LauncherPaths.SettingsDbPath);
+    return new AccountManager(settings, new AuthApi(http));
+}
+
+async Task Login(string? username)
+{
+    if (username is null) { Log.Error("usage: login <username>"); return; }
+    var password = GetFlagValue("--password") ?? Environment.GetEnvironmentVariable("DH_PASSWORD");
+    if (string.IsNullOrEmpty(password)) { Log.Error("no password (--password or DH_PASSWORD)"); return; }
+
+    LauncherPaths.EnsureDirectories();
+    var accounts = AccountManagerFromDisk();
+    accounts.Load();
+
+    var result = await accounts.LoginAsync(username, password, GetFlagValue("--tfa"));
+    if (result.IsSuccess)
+        Log.Information("Logged in as {User}", result.Login!.Username);
+    else
+        Log.Error("Login failed ({Code}): {Errors}", result.DenyCode, string.Join("; ", result.Errors));
+}
+
+async Task ShowAccounts()
+{
+    var accounts = AccountManagerFromDisk();
+    accounts.Load();
+    await accounts.RefreshAllAsync();
+    if (accounts.Accounts.Count == 0) { Log.Information("(no accounts)"); return; }
+    foreach (var a in accounts.Accounts)
+        Log.Information("  {Active} {User}  {Id}  [{Status}] expires {Expires:u}",
+            accounts.Active?.UserId == a.UserId ? "*" : " ", a.Username, a.UserId, a.Status, a.Stored.Expires);
+}
+
+async Task Logout(string? username)
+{
+    if (username is null) { Log.Error("usage: logout <username>"); return; }
+    var accounts = AccountManagerFromDisk();
+    accounts.Load();
+    var acc = accounts.Accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+    if (acc is null) { Log.Error("no such account"); return; }
+    await accounts.LogoutAsync(acc);
+    Log.Information("Logged out {User}", username);
+}
+
+string? GetFlagValue(string name)
+{
+    var idx = Array.IndexOf(args, name);
+    return idx >= 0 && idx + 1 < args.Length ? args[idx + 1] : null;
 }
 
 static string LocateSigningKey()
