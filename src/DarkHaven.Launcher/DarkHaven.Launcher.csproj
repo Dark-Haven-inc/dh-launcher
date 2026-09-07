@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>DarkHaven.Launcher</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="ZstdSharp.Port" />
+    <PackageReference Include="SauceControl.Blake2Fast" />
+    <PackageReference Include="NSec.Cryptography" />
+    <PackageReference Include="Serilog" />
+  </ItemGroup>
+
+</Project>

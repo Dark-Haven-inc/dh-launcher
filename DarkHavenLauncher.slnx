@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DarkHaven.Cli/DarkHaven.Cli.csproj" />
+    <Project Path="src/DarkHaven.Launcher/DarkHaven.Launcher.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DarkHaven.Launcher.Tests/DarkHaven.Launcher.Tests.csproj" />
+  </Folder>
+</Solution>

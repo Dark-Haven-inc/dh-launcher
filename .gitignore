@@ -1,0 +1,24 @@
+## .NET
+bin/
+obj/
+*.user
+artifacts/
+[Dd]ebug/
+[Rr]elease/
+.vs/
+*.binlog
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## Launcher runtime data / test scratch
+/scratch/
+*.db
+*.db-shm
+*.db-wal
+!tests/**/fixtures/*.db
+
+## OS
+.DS_Store
+Thumbs.db
