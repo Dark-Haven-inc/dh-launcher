@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Exe (not WinExe) during development so console output is visible.
+         Switch to WinExe in phase 6 packaging. -->
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DarkHaven.Loader</RootNamespace>
+    <AssemblyName>DarkHaven.Loader</AssemblyName>
+    <!-- The engine needs real ICU cultures (system font manager, localization). -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- Keep this project's dependency surface tiny: it loads the engine into the default
+         AssemblyLoadContext and must not drag conflicting assembly versions in with it. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Robust.LoaderApi\Robust.LoaderApi\Robust.LoaderApi.csproj" />
+    <ProjectReference Include="..\DarkHaven.ContentDb\DarkHaven.ContentDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NSec.Cryptography" />
+  </ItemGroup>
+
+</Project>

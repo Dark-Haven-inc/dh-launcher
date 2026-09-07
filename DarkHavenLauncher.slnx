@@ -1,7 +1,12 @@
 <Solution>
+  <Folder Name="/Robust.LoaderApi/">
+    <Project Path="Robust.LoaderApi/Robust.LoaderApi/Robust.LoaderApi.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/DarkHaven.Cli/DarkHaven.Cli.csproj" />
+    <Project Path="src/DarkHaven.ContentDb/DarkHaven.ContentDb.csproj" />
     <Project Path="src/DarkHaven.Launcher/DarkHaven.Launcher.csproj" />
+    <Project Path="src/DarkHaven.Loader/DarkHaven.Loader.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DarkHaven.Launcher.Tests/DarkHaven.Launcher.Tests.csproj" />

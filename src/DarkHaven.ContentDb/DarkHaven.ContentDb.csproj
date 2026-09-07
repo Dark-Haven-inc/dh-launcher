@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>DarkHaven.ContentDb</RootNamespace>
+    <!-- Shared by the loader (which keeps a deliberately tiny dependency surface) and the
+         launcher library. Keep this project's own dependencies minimal for the same reason. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Robust.LoaderApi\Robust.LoaderApi\Robust.LoaderApi.csproj" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="ZstdSharp.Port" />
+  </ItemGroup>
+
+</Project>
