@@ -19,6 +19,10 @@ public static class LauncherPaths
     public static string SigningKeyPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "signing_key");
 
+    /// <summary>Bundled fallback list of Dark Haven regions.</summary>
+    public static string RegionsJsonPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "dh-regions.json");
+
     public static void EnsureDirectories()
     {
         Directory.CreateDirectory(DataDir);

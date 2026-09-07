@@ -7,6 +7,7 @@ using DarkHaven.Launcher.Content;
 using DarkHaven.Launcher.Data;
 using DarkHaven.Launcher.Engine;
 using DarkHaven.Launcher.Models;
+using DarkHaven.Launcher.Servers;
 using DarkHaven.Launcher.Update;
 using Serilog;
 using Serilog.Events;
@@ -50,6 +51,12 @@ try
         case "logout":
             await Logout(positional.ElementAtOrDefault(1));
             break;
+        case "servers":
+            await ShowServers();
+            break;
+        case "regions":
+            await ShowRegions();
+            break;
         default:
             Log.Information("Dark Haven Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
             Log.Information("  probe <ss14://addr> [--hub] [--via-hub]   fetch a server's /info");
@@ -58,6 +65,8 @@ try
             Log.Information("  login <username> [--password X | env DH_PASSWORD] [--tfa X]");
             Log.Information("  accounts                                  list + refresh stored accounts");
             Log.Information("  logout <username>");
+            Log.Information("  servers [--search X] [--rp low,med] [--lang en] [--no-empty]");
+            Log.Information("  regions                                   Dark Haven sector, live");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -224,6 +233,35 @@ string? GetFlagValue(string name)
 {
     var idx = Array.IndexOf(args, name);
     return idx >= 0 && idx + 1 < args.Length ? args[idx + 1] : null;
+}
+
+async Task ShowServers()
+{
+    var mgr = new ServerListManager(new HubApi(http));
+    await mgr.RefreshAsync();
+
+    var filter = new ServerFilter { Search = GetFlagValue("--search") ?? "", HideEmpty = flags.Contains("--no-empty") };
+    foreach (var v in (GetFlagValue("--lang") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        filter.Languages.Add(v);
+    foreach (var v in (GetFlagValue("--rp") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        filter.RolePlay.Add(v);
+
+    var shown = filter.Apply(mgr.Servers).ToList();
+    Log.Information("{Shown}/{Total} servers", shown.Count, mgr.Servers.Count);
+    foreach (var s in shown.Take(40))
+        Log.Information("  {P,4}p  {Name,-55}  {Addr}", s.Players, Trunc(s.DisplayName, 55), s.Address);
+
+    static string Trunc(string s, int n) => s.Length <= n ? s : s[..(n - 1)] + "…";
+}
+
+async Task ShowRegions()
+{
+    var regions = new DhRegions(http, LauncherPaths.RegionsJsonPath);
+    await regions.LoadAsync();
+    var entries = await regions.PollAsync();
+    Log.Information("Dark Haven Sector — {Count} region(s)", entries.Count);
+    foreach (var e in entries)
+        Log.Information("  [{State,-7}] {P,3}p  {Name}  ({Addr})", e.Reachability, e.Players, e.DisplayName, e.Address);
 }
 
 static string LocateSigningKey()
