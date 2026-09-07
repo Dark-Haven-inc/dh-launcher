@@ -5,11 +5,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DarkHaven.ContentDb\DarkHaven.ContentDb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="ZstdSharp.Port" />
     <PackageReference Include="SauceControl.Blake2Fast" />
     <PackageReference Include="NSec.Cryptography" />
     <PackageReference Include="Serilog" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets\signing_key" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
