@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DarkHaven.App.ViewModels"
+        xmlns:views="using:DarkHaven.App.Views"
+        x:Class="DarkHaven.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Dark Haven Launcher" Width="1040" Height="680"
+        MinWidth="820" MinHeight="520"
+        Background="{StaticResource DhBgBrush}">
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
+    </Window.DataTemplates>
+
+    <Panel>
+        <Grid ColumnDefinitions="220,*">
+            <!-- Sidebar -->
+            <Border Grid.Column="0" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
+                <DockPanel Margin="14">
+                    <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="6,4,6,18">
+                        <TextBlock Text="DARK HAVEN" FontSize="16" FontWeight="Bold"
+                                   Foreground="{StaticResource DhGoldBrush}" />
+                        <TextBlock Text="launcher" Classes="dim" />
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Bottom" Spacing="4">
+                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Account}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Account}}"
+                                Content="Account" />
+                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}"
+                                Content="Settings" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4" VerticalAlignment="Top">
+                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Regions}}"
+                                Content="Dark Haven Sector" />
+                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.AllServers}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.AllServers}}"
+                                Content="All Servers" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <ContentControl Grid.Column="1" Content="{Binding Current}" Margin="0" />
+        </Grid>
+
+        <!-- Connecting overlay -->
+        <Border IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Background="#CC0B0A08">
+            <ContentControl Content="{Binding Connecting}" />
+        </Border>
+    </Panel>
+</Window>

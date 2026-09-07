@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.ConnectingView"
+             x:DataType="vm:ConnectingViewModel">
+
+    <Border Classes="card" Width="440" Padding="28" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Spacing="16">
+            <TextBlock Text="{Binding Title}" Classes="h1" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Status}" Classes="dim" />
+
+            <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}"
+                         Minimum="0" Maximum="100" Height="4" Foreground="{StaticResource DhGoldBrush}"
+                         IsVisible="{Binding IsBusy}" />
+
+            <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource DhOfflineBrush}" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                <Button Classes="nav" Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+                <Button Classes="nav" Content="Close" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

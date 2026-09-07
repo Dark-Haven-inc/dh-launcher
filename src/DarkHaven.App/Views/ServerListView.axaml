@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.ServerListView"
+             x:DataType="vm:ServerListViewModel">
+
+    <DockPanel Margin="28,24">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+            <StackPanel>
+                <TextBlock Classes="h1" Text="All Servers" />
+                <TextBlock Classes="dim">
+                    <Run Text="{Binding Servers.Count}" /><Run Text=" of " /><Run Text="{Binding TotalCount}" /><Run Text=" from the public hub" />
+                </TextBlock>
+            </StackPanel>
+            <Button Grid.Column="1" Classes="nav" VerticalAlignment="Center"
+                    Command="{Binding RefreshCommand}" Content="↻ Refresh" />
+        </Grid>
+
+        <Grid DockPanel.Dock="Top" Margin="0,14,0,0" ColumnDefinitions="*,Auto,Auto">
+            <TextBox Grid.Column="0" Watermark="Search servers…" Text="{Binding Search}" />
+            <CheckBox Grid.Column="1" Margin="12,0,0,0" Content="Hide empty" IsChecked="{Binding HideEmpty}" />
+            <CheckBox Grid.Column="2" Margin="12,0,0,0" Content="Hide 18+" IsChecked="{Binding Hide18Plus}" />
+        </Grid>
+
+        <Grid DockPanel.Dock="Top" Margin="0,10,0,0" ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" Watermark="ss14://address to connect directly" Text="{Binding DirectAddress}" />
+            <Button Grid.Column="1" Classes="nav" Margin="8,0,0,0" Content="Connect" Command="{Binding ConnectDirectCommand}" />
+        </Grid>
+
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,10"
+                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhGoldBrush}" />
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhOfflineBrush}"
+                   IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,6" />
+
+        <ScrollViewer Margin="0,12,0,0">
+            <ItemsControl ItemsSource="{Binding Servers}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ServerRowViewModel">
+                        <Border Classes="card" Padding="14,10">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <ItemsControl ItemsSource="{Binding VisibleTags}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{StaticResource DhBgHoverBrush}" CornerRadius="4" Padding="6,1">
+                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
+                                           Margin="12,0" Foreground="{StaticResource DhGoldBrush}" />
+                                <Button Grid.Column="2" Classes="nav" Content="Play" Command="{Binding ConnectCommand}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

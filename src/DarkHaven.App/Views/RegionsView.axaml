@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.RegionsView"
+             x:DataType="vm:RegionsViewModel">
+
+    <DockPanel Margin="28,24">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+            <StackPanel>
+                <TextBlock Classes="h1" Text="Dark Haven Sector" />
+                <TextBlock Classes="dim" Text="Your regions. Travel between them through the gates in-game." />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="nav" VerticalAlignment="Center"
+                    Command="{Binding RefreshCommand}" Content="↻ Refresh" />
+        </Grid>
+
+        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,10,0,0"
+                   Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                   Foreground="{StaticResource DhOfflineBrush}" />
+
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,8"
+                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhGoldBrush}" />
+
+        <ScrollViewer Margin="0,12,0,0">
+            <ItemsControl ItemsSource="{Binding Regions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ServerRowViewModel">
+                        <Border Classes="card" Padding="18,16">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,14,0"
+                                         Fill="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
+                                    <TextBlock Classes="dim" Text="{Binding Blurb}" TextWrapping="Wrap" MaxWidth="560" />
+                                    <TextBlock Classes="dim" Text="{Binding RoundInfo}"
+                                               IsVisible="{Binding IsOnline}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="6">
+                                    <TextBlock Text="{Binding Population}" HorizontalAlignment="Right"
+                                               IsVisible="{Binding IsOnline}" Foreground="{StaticResource DhGoldBrush}" />
+                                    <TextBlock Classes="dim" Text="offline" HorizontalAlignment="Right"
+                                               IsVisible="{Binding IsOffline}" />
+                                    <Button Classes="primary" Content="Play" Command="{Binding ConnectCommand}"
+                                            IsEnabled="{Binding !IsOffline}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

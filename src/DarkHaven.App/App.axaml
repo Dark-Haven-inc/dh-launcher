@@ -1,0 +1,81 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="DarkHaven.App.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="DhBg">#12100E</Color>
+            <Color x:Key="DhBgElevated">#1D1A16</Color>
+            <Color x:Key="DhBgHover">#28241E</Color>
+            <Color x:Key="DhBorder">#3A342B</Color>
+            <Color x:Key="DhText">#EDE6D8</Color>
+            <Color x:Key="DhTextDim">#9A9184</Color>
+            <Color x:Key="DhGold">#C9A24B</Color>
+            <Color x:Key="DhGoldBright">#E4BE68</Color>
+            <Color x:Key="DhOnline">#7FB069</Color>
+            <Color x:Key="DhOffline">#8A5A5A</Color>
+
+            <SolidColorBrush x:Key="DhBgBrush" Color="{StaticResource DhBg}" />
+            <SolidColorBrush x:Key="DhBgElevatedBrush" Color="{StaticResource DhBgElevated}" />
+            <SolidColorBrush x:Key="DhBgHoverBrush" Color="{StaticResource DhBgHover}" />
+            <SolidColorBrush x:Key="DhBorderBrush" Color="{StaticResource DhBorder}" />
+            <SolidColorBrush x:Key="DhTextBrush" Color="{StaticResource DhText}" />
+            <SolidColorBrush x:Key="DhTextDimBrush" Color="{StaticResource DhTextDim}" />
+            <SolidColorBrush x:Key="DhGoldBrush" Color="{StaticResource DhGold}" />
+            <SolidColorBrush x:Key="DhOnlineBrush" Color="{StaticResource DhOnline}" />
+            <SolidColorBrush x:Key="DhOfflineBrush" Color="{StaticResource DhOffline}" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <Style Selector="Window">
+            <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.h1">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.dim">
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.nav">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Button.nav.active">
+            <Setter Property="Foreground" Value="{StaticResource DhGoldBrush}" />
+        </Style>
+        <Style Selector="Button.nav.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource DhGoldBrush}" />
+            <Setter Property="Foreground" Value="#1A1712" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+    </Application.Styles>
+</Application>

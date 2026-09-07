@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.AccountView"
+             x:DataType="vm:AccountViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="28,24" Spacing="18" MaxWidth="460" HorizontalAlignment="Left">
+            <TextBlock Classes="h1" Text="Account" />
+
+            <Border Classes="card" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Sign in with your Space Station 14 account" FontWeight="SemiBold" />
+                    <TextBox Watermark="Username or email" Text="{Binding Username}" />
+                    <TextBox Watermark="Password" PasswordChar="•" Text="{Binding Password}" />
+                    <TextBox Watermark="2FA code" Text="{Binding TfaCode}" IsVisible="{Binding NeedsTfa}" />
+                    <TextBlock Text="{Binding Error}" Foreground="{StaticResource DhOfflineBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Button Classes="primary" HorizontalAlignment="Left" Content="Sign in"
+                            Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Spacing="8" IsVisible="{Binding Accounts.Count}">
+                <TextBlock Text="Signed in" Classes="dim" />
+                <ItemsControl ItemsSource="{Binding Accounts}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccountRowViewModel">
+                            <Border Classes="card" Padding="14,10">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="★" Foreground="{StaticResource DhGoldBrush}"
+                                               IsVisible="{Binding IsActive}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding StatusText}" Classes="dim" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="nav" Content="Use"
+                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
+                                            CommandParameter="{Binding}" IsVisible="{Binding !IsActive}" />
+                                    <Button Grid.Column="3" Classes="nav" Content="Sign out"
+                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).LogoutCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
