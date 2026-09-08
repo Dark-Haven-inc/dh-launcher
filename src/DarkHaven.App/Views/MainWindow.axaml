@@ -14,6 +14,7 @@
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
         <DataTemplate DataType="vm:NewsViewModel"><views:PlaceholderView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:PlaceholderView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
         <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
         <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
     </Window.DataTemplates>

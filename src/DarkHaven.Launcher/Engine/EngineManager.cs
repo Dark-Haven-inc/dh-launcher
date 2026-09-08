@@ -17,10 +17,14 @@ namespace DarkHaven.Launcher.Engine;
 /// <c>&lt;version&gt;.zip.sig</c> sidecar (an Ed25519 hex signature, or <c>sha256:&lt;hex&gt;</c> for a bundled one).
 /// </summary>
 public sealed class EngineManager(
-    HttpClient http, string enginesDir, string modulesDir, EngineSignature signature, string? bundledEnginesDir = null)
+    HttpClient http, string enginesDir, string modulesDir, EngineSignature signature,
+    string? bundledEnginesDir = null, string? buildsManifestUrlOverride = null)
 {
     public const string BuildsManifestUrl = "https://robust-builds.cdn.spacestation14.com/manifest.json";
     public const string ModulesManifestUrl = "https://robust-builds.cdn.spacestation14.com/modules.json";
+
+    private readonly string _buildsManifestUrl =
+        string.IsNullOrWhiteSpace(buildsManifestUrlOverride) ? BuildsManifestUrl : buildsManifestUrlOverride;
     private static readonly TimeSpan ManifestCacheTime = TimeSpan.FromMinutes(15);
 
     private readonly SemaphoreSlim _manifestLock = new(1, 1);
@@ -207,7 +211,7 @@ public sealed class EngineManager(
 
             Log.Debug("Fetching engine build manifest");
             _buildManifest = await http.GetFromJsonAsync<Dictionary<string, RobustBuildEntry>>(
-                                 BuildsManifestUrl, LauncherJson.Options, cancel)
+                                 _buildsManifestUrl, LauncherJson.Options, cancel)
                              ?? throw new InvalidDataException("Engine build manifest returned null");
             _buildManifestFetched = DateTime.UtcNow;
             return _buildManifest;

@@ -7,24 +7,24 @@
     <DockPanel Margin="28,24">
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
             <StackPanel>
-                <TextBlock Classes="h1" Text="All Servers" />
+                <TextBlock Classes="h1" Text="Все серверы" />
                 <TextBlock Classes="dim">
-                    <Run Text="{Binding Servers.Count}" /><Run Text=" of " /><Run Text="{Binding TotalCount}" /><Run Text=" from the public hub" />
+                    <Run Text="{Binding Servers.Count}" /><Run Text=" из " /><Run Text="{Binding TotalCount}" /><Run Text=" из публичного хаба" />
                 </TextBlock>
             </StackPanel>
             <Button Grid.Column="1" Classes="nav" VerticalAlignment="Center"
-                    Command="{Binding RefreshCommand}" Content="↻ Refresh" />
+                    Command="{Binding RefreshCommand}" Content="↻ Обновить" />
         </Grid>
 
         <Grid DockPanel.Dock="Top" Margin="0,14,0,0" ColumnDefinitions="*,Auto,Auto">
-            <TextBox Grid.Column="0" Watermark="Search servers…" Text="{Binding Search}" />
-            <CheckBox Grid.Column="1" Margin="12,0,0,0" Content="Hide empty" IsChecked="{Binding HideEmpty}" />
-            <CheckBox Grid.Column="2" Margin="12,0,0,0" Content="Hide 18+" IsChecked="{Binding Hide18Plus}" />
+            <TextBox Grid.Column="0" Watermark="Поиск серверов…" Text="{Binding Search}" />
+            <CheckBox Grid.Column="1" Margin="12,0,0,0" Content="Скрыть пустые" IsChecked="{Binding HideEmpty}" />
+            <CheckBox Grid.Column="2" Margin="12,0,0,0" Content="Скрыть 18+" IsChecked="{Binding Hide18Plus}" />
         </Grid>
 
         <Grid DockPanel.Dock="Top" Margin="0,10,0,0" ColumnDefinitions="*,Auto">
-            <TextBox Grid.Column="0" Watermark="ss14://address to connect directly" Text="{Binding DirectAddress}" />
-            <Button Grid.Column="1" Classes="nav" Margin="8,0,0,0" Content="Connect" Command="{Binding ConnectDirectCommand}" />
+            <TextBox Grid.Column="0" Watermark="ss14://адрес — прямое подключение" Text="{Binding DirectAddress}" />
+            <Button Grid.Column="1" Classes="nav" Margin="8,0,0,0" Content="Подключиться" Command="{Binding ConnectDirectCommand}" />
         </Grid>
 
         <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,10"
@@ -58,7 +58,7 @@
                                 </StackPanel>
                                 <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
                                            Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
-                                <Button Grid.Column="2" Classes="nav" Content="Play" Command="{Binding ConnectCommand}" />
+                                <Button Grid.Column="2" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
                             </Grid>
                         </Border>
                     </DataTemplate>

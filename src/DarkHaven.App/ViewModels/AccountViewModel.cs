@@ -12,6 +12,12 @@ public partial class AccountRowViewModel(Account account, bool isActive) : ViewM
     public string Username => Account.Username;
     public bool IsActive { get; } = isActive;
     public string StatusText => Account.Status.ToString();
+    public string StatusHint => Account.Status switch
+    {
+        AccountStatus.Available => IsActive ? "вход выполнен" : "готов",
+        AccountStatus.Expired => "нужен пароль",
+        _ => "проверка…",
+    };
 }
 
 public partial class AccountViewModel : ViewModelBase
@@ -27,11 +33,22 @@ public partial class AccountViewModel : ViewModelBase
 
     public ObservableCollection<AccountRowViewModel> Accounts { get; } = [];
 
+    public string AuthServerLine => $"Сервер авторизации: {_services.Auth.BaseUrl}";
+
     public AccountViewModel(AppServices services)
     {
         _services = services;
         RefreshList();
         _ = RefreshTokensAsync();
+    }
+
+    [RelayCommand] private void OpenRegister() => OpenUrl("https://account.spacestation14.com/Identity/Account/Register");
+    [RelayCommand] private void OpenForgot() => OpenUrl("https://account.spacestation14.com/Identity/Account/ForgotPassword");
+
+    private static void OpenUrl(string url)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch { /* ignore */ }
     }
 
     [RelayCommand]

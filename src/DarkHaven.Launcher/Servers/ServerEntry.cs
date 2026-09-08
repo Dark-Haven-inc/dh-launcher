@@ -15,6 +15,8 @@ public sealed class ServerEntry(string address)
 
     public ServerReachability Reachability { get; set; } = ServerReachability.Unknown;
     public string? Name { get; set; }
+    /// <summary>The name the server reports in <c>/status</c> (kept even for regions, which display a codename).</summary>
+    public string? ServerName { get; set; }
     public int Players { get; set; }
     public int SoftMaxPlayers { get; set; }
     public string? Map { get; set; }
@@ -24,13 +26,23 @@ public sealed class ServerEntry(string address)
     /// <summary>Set for pinned Dark Haven regions; used for grouping + the sector view.</summary>
     public string? RegionBlurb { get; set; }
     public bool IsDarkHavenRegion => RegionBlurb is not null;
+    public IReadOnlyList<string> RegionNeighbours { get; set; } = [];
+    public double RegionX { get; set; } = 0.5;
+    public double RegionY { get; set; } = 0.5;
+    public bool RegionCentral { get; set; }
+
+    /// <summary>Round-trip time to the server's HTTP endpoint, ms — populated by a region poll.</summary>
+    public int? PingMs { get; set; }
 
     public string DisplayName => Name ?? Address;
 
     public void ApplyStatus(ServerStatus status, IReadOnlyList<string>? inferredTags = null)
     {
         Reachability = ServerReachability.Online;
-        Name = status.Name ?? Name;
+        // A DH region keeps its codename; a hub server takes the name it reports.
+        if (!IsDarkHavenRegion)
+            Name = status.Name ?? Name;
+        ServerName = status.Name;
         Players = Math.Max(0, status.Players);
         SoftMaxPlayers = Math.Max(0, status.SoftMaxPlayers);
         Map = status.Map;

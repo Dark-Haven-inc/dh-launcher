@@ -4,16 +4,22 @@ using Avalonia.Media;
 
 namespace DarkHaven.App.ViewModels;
 
-/// <summary>true → online (green) brush, false → offline (muted red) brush.</summary>
-public sealed class BoolBrush : IValueConverter
+/// <summary>Bool → one of two brushes.</summary>
+public sealed class BoolBrush(IBrush ifTrue, IBrush ifFalse) : IValueConverter
 {
-    public static readonly BoolBrush OnlineOffline = new();
+    public static readonly BoolBrush OnlineOffline =
+        new(new SolidColorBrush(Color.Parse("#4ADE80")), new SolidColorBrush(Color.Parse("#5A6B8A")));
 
-    private static readonly IBrush Online = new SolidColorBrush(Color.Parse("#7FB069"));
-    private static readonly IBrush Offline = new SolidColorBrush(Color.Parse("#8A5A5A"));
+    /// <summary>true (pending) → dim, false → normal text.</summary>
+    public static readonly BoolBrush DimText =
+        new(new SolidColorBrush(Color.Parse("#7C8DB0")), new SolidColorBrush(Color.Parse("#DCE6F5")));
+
+    /// <summary>true (selected) → accent, false → normal text.</summary>
+    public static readonly BoolBrush AccentText =
+        new(new SolidColorBrush(Color.Parse("#5AA0FF")), new SolidColorBrush(Color.Parse("#DCE6F5")));
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? Online : Offline;
+        => value is true ? ifTrue : ifFalse;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

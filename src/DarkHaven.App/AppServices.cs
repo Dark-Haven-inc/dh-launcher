@@ -39,13 +39,14 @@ public sealed class AppServices
         ContentDb = new ContentDatabase(LauncherPaths.ContentDbPath);
         ContentDb.Initialize();
 
-        Auth = new AuthApi(Http);
+        Auth = new AuthApi(Http, Settings.GetConfig("AuthUrl"));
         Accounts = new AccountManager(Settings, Auth);
         Accounts.Load();
 
         var signing = new EngineSignature(LauncherPaths.SigningKeyPath);
         var bundledEngines = Path.Combine(AppContext.BaseDirectory, "bundled-engines");
-        Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing, bundledEngines);
+        Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing,
+            bundledEngines, Settings.GetConfig("EngineBuildsUrl"));
 
         Hub = new HubApi(Http);
         ServerList = new ServerListManager(Hub);
@@ -54,7 +55,7 @@ public sealed class AppServices
         ServerInfo = new ServerInfoApi(Http);
         Content = new ContentUpdater(ContentDb, new ManifestDownloader(Http), Engines);
         Game = new GameLauncher(LocateLoader(), LauncherPaths.SigningKeyPath, Engines, LauncherPaths.ContentDbPath);
-        Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Game);
+        Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
     }
 
     private static string LocateLoader()

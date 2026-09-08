@@ -213,6 +213,7 @@ public sealed class ManifestDownloader(HttpClient http)
             insertedContentIds.Add(contentId);
 
             doneBytes += uncompressedLen;
+            progress?.Invoke(doneBytes, 0, "bytes");
             progress?.Invoke(i + 1, toDownload.Count, "files");
         }
 

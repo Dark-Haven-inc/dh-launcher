@@ -10,14 +10,16 @@ namespace DarkHaven.Launcher.Api;
 /// Client for the SS14 "Wizard's Den" authentication server. Base URL can be overridden with the
 /// <c>SS14_LAUNCHER_OVERRIDE_AUTH</c> env var (dev / private-auth testing).
 /// </summary>
-public sealed class AuthApi(HttpClient http)
+public sealed class AuthApi(HttpClient http, string? overrideBaseUrl = null)
 {
     public const string DefaultBaseUrl = "https://auth.spacestation14.com/";
 
-    public string BaseUrl { get; } =
-        Environment.GetEnvironmentVariable("SS14_LAUNCHER_OVERRIDE_AUTH") is { Length: > 0 } o
-            ? (o.EndsWith('/') ? o : o + "/")
-            : DefaultBaseUrl;
+    public string BaseUrl { get; } = Normalize(
+        Environment.GetEnvironmentVariable("SS14_LAUNCHER_OVERRIDE_AUTH") is { Length: > 0 } env
+            ? env
+            : overrideBaseUrl is { Length: > 0 } ? overrideBaseUrl : DefaultBaseUrl);
+
+    private static string Normalize(string url) => url.EndsWith('/') ? url : url + "/";
 
     public async Task<AuthResult> AuthenticateAsync(
         string? username, Guid? userId, string password, string? tfaCode = null, CancellationToken cancel = default)

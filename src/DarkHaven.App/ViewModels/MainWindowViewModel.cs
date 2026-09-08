@@ -4,7 +4,7 @@ using DarkHaven.Launcher.Servers;
 
 namespace DarkHaven.App.ViewModels;
 
-public enum NavPage { Home, Regions, Servers, News, Settings, Admin }
+public enum NavPage { Home, Regions, Servers, News, Settings, Admin, Account }
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -54,12 +54,13 @@ public partial class MainWindowViewModel : ViewModelBase
             NavPage.News => News,
             NavPage.Settings => Settings,
             NavPage.Admin => Admin,
+            NavPage.Account => Account,
             _ => Regions,
         };
     }
 
     [RelayCommand] private void Navigate(NavPage page) => Page = page;
-    [RelayCommand] private void OpenAccount() => Page = NavPage.Settings; // account panel lives under settings for now
+    [RelayCommand] private void OpenAccount() => Page = NavPage.Account;
     [RelayCommand] private void OpenDiscord() => OpenUrl("https://discord.gg/");
     [RelayCommand] private void OpenSite() => OpenUrl("https://spacestation14.com/");
 

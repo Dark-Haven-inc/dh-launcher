@@ -4,53 +4,116 @@
              x:Class="DarkHaven.App.Views.RegionsView"
              x:DataType="vm:RegionsViewModel">
 
-    <DockPanel Margin="28,24">
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,4">
-            <StackPanel>
-                <TextBlock Classes="h1" Text="Dark Haven Sector" />
-                <TextBlock Classes="dim" Text="Your regions. Travel between them through the gates in-game." />
-            </StackPanel>
-            <Button Grid.Column="1" Classes="nav" VerticalAlignment="Center"
-                    Command="{Binding RefreshCommand}" Content="↻ Refresh" />
-        </Grid>
+    <Grid Margin="28,22" ColumnDefinitions="*,16,360">
 
-        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,10,0,0"
-                   Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-                   Foreground="{StaticResource DhOfflineBrush}" />
+        <!-- Left: network map placeholder + region nodes -->
+        <Border Grid.Column="0" Classes="panel" CornerRadius="8">
+            <DockPanel Margin="18">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+                    <TextBlock Text="◈ КАРТА СЕТИ" Classes="caps" />
+                    <TextBlock Grid.Column="1" Classes="dim">
+                        <Run Text="ИГРОКОВ В СЕТИ" /><Run Text=" " /><Run Text="{Binding TotalPlayers}" />
+                    </TextBlock>
+                </Grid>
 
-        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,8"
-                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhAccentBrush}" />
+                <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,10"
+                             IsVisible="{Binding IsLoading}" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhDangerBrush}"
+                           TextWrapping="Wrap" Margin="0,8"
+                           IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
-        <ScrollViewer Margin="0,12,0,0">
-            <ItemsControl ItemsSource="{Binding Regions}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ServerRowViewModel">
-                        <Border Classes="card" Padding="18,16">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,14,0"
-                                         Fill="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
-                                <StackPanel Grid.Column="1" Spacing="3">
-                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
-                                    <TextBlock Classes="dim" Text="{Binding Blurb}" TextWrapping="Wrap" MaxWidth="560" />
-                                    <TextBlock Classes="dim" Text="{Binding RoundInfo}"
-                                               IsVisible="{Binding IsOnline}" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="6">
-                                    <TextBlock Text="{Binding Population}" HorizontalAlignment="Right"
-                                               IsVisible="{Binding IsOnline}" Foreground="{StaticResource DhAccentBrush}" />
-                                    <TextBlock Classes="dim" Text="offline" HorizontalAlignment="Right"
-                                               IsVisible="{Binding IsOffline}" />
-                                    <Button Classes="primary" Content="Play" Command="{Binding ConnectCommand}"
-                                            IsEnabled="{Binding !IsOffline}" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
-    </DockPanel>
+                <TextBlock DockPanel.Dock="Bottom" Classes="dim" TextAlignment="Center" Margin="0,12,0,0"
+                           Text="Интерактивная карта сектора появится позже — её делает глава разработки в лобби." />
+
+                <ScrollViewer Margin="0,14,0,0">
+                    <ItemsControl ItemsSource="{Binding Nodes}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                        Padding="16,12" CornerRadius="6" Command="{Binding SelectCommand}"
+                                        Background="{StaticResource DhBgElevatedBrush}"
+                                        BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Ellipse Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,12,0"
+                                                 Fill="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                        <StackPanel Grid.Column="1" Spacing="1">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" LetterSpacing="1"
+                                                       Foreground="{Binding IsSelected, Converter={x:Static vm:BoolBrush.AccentText}}" />
+                                            <TextBlock Text="{Binding Blurb}" Classes="dim" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding Population}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsOnline}" />
+                                        <TextBlock Grid.Column="2" Text="офлайн" Classes="dim" VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsOffline}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Right: selected region detail -->
+        <Border Grid.Column="2" Classes="panel" CornerRadius="8" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <DockPanel Margin="20">
+                <StackPanel DockPanel.Dock="Top" Spacing="2">
+                    <TextBlock Text="ВЫБРАННЫЙ РЕГИОН" Classes="caps" />
+                    <TextBlock Text="{Binding Selected.Name}" Classes="h1" />
+                    <TextBlock Text="{Binding Selected.Blurb}" Classes="dim" TextWrapping="Wrap" Margin="0,2,0,0" />
+                </StackPanel>
+
+                <Grid DockPanel.Dock="Top" Margin="0,16,0,0" ColumnDefinitions="*,8,*" RowDefinitions="Auto,8,Auto">
+                    <Border Grid.Row="0" Grid.Column="0" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Игроков" Classes="dim" /><TextBlock Text="{Binding Selected.Population}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="0" Grid.Column="2" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Отклик" Classes="dim" /><TextBlock Text="{Binding Selected.Ping}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="0" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Состояние" Classes="dim" />
+                            <TextBlock Text="{Binding Selected.StateText}" FontSize="16" FontWeight="Bold"
+                                       Foreground="{Binding Selected.IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="2" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Раунд" Classes="dim" /><TextBlock Text="{Binding Selected.RoundText}" FontSize="14" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                </Grid>
+
+                <Button DockPanel.Dock="Top" Classes="primary" Content="ИГРАТЬ" Margin="0,16,0,0"
+                        HorizontalAlignment="Stretch" Command="{Binding PlaySelectedCommand}"
+                        IsEnabled="{Binding !Selected.IsOffline}" />
+
+                <TextBlock DockPanel.Dock="Top" Text="СОСЕДНИЕ РЕГИОНЫ" Classes="caps" Margin="0,18,0,8" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,9"
+                                        Command="{Binding SelectCommand}" Background="{StaticResource DhBgElevatedBrush}"
+                                        BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1" CornerRadius="5">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Blurb}" Classes="dim" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsOnline}" />
+                                        <TextBlock Grid.Column="1" Text="офлайн" Classes="dim" VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsOffline}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
 </UserControl>

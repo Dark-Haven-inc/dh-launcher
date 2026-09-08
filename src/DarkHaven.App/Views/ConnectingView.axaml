@@ -4,22 +4,61 @@
              x:Class="DarkHaven.App.Views.ConnectingView"
              x:DataType="vm:ConnectingViewModel">
 
-    <Border Classes="card" Width="440" Padding="28" VerticalAlignment="Center" HorizontalAlignment="Center">
-        <StackPanel Spacing="16">
-            <TextBlock Text="{Binding Title}" Classes="h1" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding Status}" Classes="dim" />
-
-            <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding IsIndeterminate}"
-                         Minimum="0" Maximum="100" Height="4" Foreground="{StaticResource DhAccentBrush}"
-                         IsVisible="{Binding IsBusy}" />
-
-            <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource DhOfflineBrush}" TextWrapping="Wrap"
-                       IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                <Button Classes="nav" Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
-                <Button Classes="nav" Content="Close" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+    <Border Classes="card" Width="460" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="28,24,28,18" Spacing="3">
+                <TextBlock Text="{Binding Subtitle}" Classes="caps" />
+                <TextBlock Text="{Binding Title}" Classes="h1" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-        </StackPanel>
+
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgPanelBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Padding="28,14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Classes="mono dim" VerticalAlignment="Center" FontSize="10"
+                               Text="{Binding BuildTag}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="Отмена" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+                        <Button Classes="ghost" Content="Закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Margin="28,4,28,20" Spacing="14">
+                <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="14" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChecklistStepViewModel">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="24,*,Auto">
+                                    <!-- state glyph -->
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14"
+                                               Text="✓" Foreground="{StaticResource DhOnlineBrush}" IsVisible="{Binding IsDone}" />
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14"
+                                               Text="◐" Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsActive}" />
+                                    <Ellipse Grid.Column="0" Width="9" Height="9" HorizontalAlignment="Left" Margin="3,0,0,0"
+                                             Stroke="{StaticResource DhBorderBrightBrush}" StrokeThickness="1.5"
+                                             IsVisible="{Binding IsPending}" />
+
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center"
+                                               FontWeight="SemiBold"
+                                               Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="dim" VerticalAlignment="Center" />
+                                </Grid>
+                                <ProgressBar Value="{Binding Fraction}" Minimum="0" Maximum="100" Height="3"
+                                             Margin="24,0,0,0" IsVisible="{Binding ShowBar}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="{Binding SpeedEta}" Classes="mono dim" FontSize="11" Margin="24,0,0,0"
+                           IsVisible="{Binding SpeedEta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
+                           IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+        </DockPanel>
     </Border>
 </UserControl>
