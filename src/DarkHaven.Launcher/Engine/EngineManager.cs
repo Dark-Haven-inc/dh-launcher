@@ -49,11 +49,8 @@ public sealed class EngineManager(
         string requestedVersion, DownloadProgress? progress = null, CancellationToken cancel = default)
     {
         // A bundled engine wins over the CDN — it exists precisely because the CDN has no matching build.
-        if (LoadBundled().TryGetValue(requestedVersion, out var bundled))
-        {
-            InstallBundled(requestedVersion, bundled);
+        if (LoadBundled().TryGetValue(requestedVersion, out var bundled) && TryInstallBundled(requestedVersion, bundled))
             return requestedVersion;
-        }
 
         var (version, platform) = await ResolveAsync(requestedVersion, cancel);
 
@@ -82,11 +79,16 @@ public sealed class EngineManager(
         return version;
     }
 
-    private void InstallBundled(string version, BundledEngine bundled)
+    private bool TryInstallBundled(string version, BundledEngine bundled)
     {
         var src = Path.Combine(bundledEnginesDir!, bundled.File);
         if (!File.Exists(src))
-            throw new FileNotFoundException($"Bundled engine {version} missing: {src}");
+        {
+            // Manifest lists it but the zip isn't shipped (e.g. a dev build). Fall back to the CDN.
+            Log.Warning("Bundled engine {Version} declared in manifest but {File} is missing — falling back to the CDN",
+                version, bundled.File);
+            return false;
+        }
 
         var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(src)));
         if (!actual.Equals(bundled.Sha256, StringComparison.OrdinalIgnoreCase))
@@ -99,6 +101,7 @@ public sealed class EngineManager(
             File.WriteAllText(EngineSigPath(version), $"sha256:{bundled.Sha256}");
             Log.Information("Installed bundled engine {Version} ({Note})", version, bundled.Note);
         }
+        return true;
     }
 
     private Dictionary<string, BundledEngine> LoadBundled()

@@ -22,3 +22,6 @@ artifacts/
 ## OS
 .DS_Store
 Thumbs.db
+
+## Bundled engine zips are large and build-machine-specific — rebuild locally (see bundled-engines/README.md)
+src/DarkHaven.App/bundled-engines/*.zip
