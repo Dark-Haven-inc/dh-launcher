@@ -21,7 +21,8 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
         LaunchManifest launch,
         GameAccount? account,
         bool compatMode = false,
-        bool redirectOutput = false)
+        bool redirectOutput = false,
+        IEnumerable<string>? extraCvars = null)
     {
         var enginePath = engines.EnginePath(launch.EngineVersion);
         var engineSig = engines.EngineSignatureHex(launch.EngineVersion);
@@ -45,6 +46,9 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
         Arg(account?.Username ?? "JoeGenero");
         Cvar($"display.compat={compatMode.ToString().ToLowerInvariant()}");
         Cvar("launch.launcher=true");
+
+        foreach (var kv in extraCvars ?? [])
+            Cvar(kv);
 
         Arg("--launcher");
         Arg("--connect-address");

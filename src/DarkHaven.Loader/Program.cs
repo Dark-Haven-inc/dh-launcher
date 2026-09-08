@@ -51,37 +51,77 @@ internal sealed class Program
         }
 
         var enginePath = args[0];
-        var signature = Convert.FromHexString(args[1]);
+        var signatureArg = args[1];
         var publicKeyPath = args[2];
-
-        var publicKey = PublicKey.Import(
-            SignatureAlgorithm.Ed25519,
-            File.ReadAllBytes(publicKeyPath),
-            KeyBlobFormat.PkixPublicKeyText);
 
         var engineBytes = File.ReadAllBytes(enginePath);
 
-        if (!SignatureAlgorithm.Ed25519.Verify(publicKey, engineBytes, signature))
+        if (!VerifyEngine(engineBytes, signatureArg, publicKeyPath, out var reason))
         {
-#if RELEASE
-            Console.Error.WriteLine("Failed to verify engine signature!");
-            return 2;
-#else
             var disable = Environment.GetEnvironmentVariable("SS14_DISABLE_SIGNING");
-            if (!string.IsNullOrEmpty(disable) && bool.TryParse(disable, out var b) && b)
+            var allowDisable =
+#if RELEASE
+                false;
+#else
+                true;
+#endif
+            if (allowDisable && !string.IsNullOrEmpty(disable) && bool.TryParse(disable, out var b) && b)
             {
-                Console.Error.WriteLine("WARNING: engine signature invalid, continuing (SS14_DISABLE_SIGNING).");
+                Console.Error.WriteLine($"WARNING: engine verification failed ({reason}), continuing (SS14_DISABLE_SIGNING).");
             }
             else
             {
-                Console.Error.WriteLine("Failed to verify engine signature! (set SS14_DISABLE_SIGNING=true to bypass in dev)");
+                Console.Error.WriteLine($"Engine verification failed: {reason}");
                 return 2;
             }
-#endif
         }
 
         var program = new Program(enginePath, args[3..]);
         return program.Run() ? 0 : 3;
+    }
+
+    /// <summary>
+    /// Verifies the engine build. Two schemes:
+    /// <list type="bullet">
+    /// <item><c>sha256:&lt;hex&gt;</c> — a bundled engine the launcher vouches for by content hash.</item>
+    /// <item>otherwise — hex Ed25519 signature over the zip, checked against <paramref name="publicKeyPath"/>.</item>
+    /// </list>
+    /// </summary>
+    private static bool VerifyEngine(byte[] engineBytes, string signatureArg, string publicKeyPath, out string reason)
+    {
+        if (signatureArg.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+        {
+            var expected = signatureArg["sha256:".Length..];
+            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(engineBytes));
+            if (actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+            {
+                reason = "";
+                return true;
+            }
+            reason = $"bundled engine SHA-256 mismatch (expected {expected}, got {actual})";
+            return false;
+        }
+
+        try
+        {
+            var publicKey = PublicKey.Import(
+                SignatureAlgorithm.Ed25519,
+                File.ReadAllBytes(publicKeyPath),
+                KeyBlobFormat.PkixPublicKeyText);
+
+            if (SignatureAlgorithm.Ed25519.Verify(publicKey, engineBytes, Convert.FromHexString(signatureArg)))
+            {
+                reason = "";
+                return true;
+            }
+            reason = "Ed25519 signature does not match";
+            return false;
+        }
+        catch (Exception e)
+        {
+            reason = $"signature check errored: {e.Message}";
+            return false;
+        }
     }
 
     private bool Run()

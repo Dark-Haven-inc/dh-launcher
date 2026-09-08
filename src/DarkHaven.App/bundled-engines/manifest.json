@@ -1,0 +1,7 @@
+{
+  "275.1.0": {
+    "file": "275.1.0.zip",
+    "sha256": "A7C3C95B014E4232C5A7AC51924B7FB9C7CFF95C3400B859067CE88F29021801",
+    "note": "Dark Haven forked RobustToolbox (Dark-Haven-inc/RobustToolbox @ c333ccb5, the commit Dark-Haven-inc/dh-sector-frontier upstream/master points at). Not on any public robust-builds CDN."
+  }
+}

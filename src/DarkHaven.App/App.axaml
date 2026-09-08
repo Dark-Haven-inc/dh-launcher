@@ -5,26 +5,40 @@
 
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="DhBg">#12100E</Color>
-            <Color x:Key="DhBgElevated">#1D1A16</Color>
-            <Color x:Key="DhBgHover">#28241E</Color>
-            <Color x:Key="DhBorder">#3A342B</Color>
-            <Color x:Key="DhText">#EDE6D8</Color>
-            <Color x:Key="DhTextDim">#9A9184</Color>
-            <Color x:Key="DhGold">#C9A24B</Color>
-            <Color x:Key="DhGoldBright">#E4BE68</Color>
-            <Color x:Key="DhOnline">#7FB069</Color>
-            <Color x:Key="DhOffline">#8A5A5A</Color>
+            <!-- Deep blue-black sci-fi HUD palette -->
+            <Color x:Key="DhBg">#0A0F1C</Color>
+            <Color x:Key="DhBgElevated">#111A2E</Color>
+            <Color x:Key="DhBgPanel">#0E1626</Color>
+            <Color x:Key="DhBgHover">#1B2942</Color>
+            <Color x:Key="DhBorder">#24365A</Color>
+            <Color x:Key="DhBorderBright">#3C5C96</Color>
+            <Color x:Key="DhText">#DCE6F5</Color>
+            <Color x:Key="DhTextDim">#7C8DB0</Color>
+            <Color x:Key="DhAccent">#3B82F6</Color>
+            <Color x:Key="DhAccentBright">#5AA0FF</Color>
+            <Color x:Key="DhCyan">#7FD4FF</Color>
+            <Color x:Key="DhOnline">#4ADE80</Color>
+            <Color x:Key="DhWarn">#F0B454</Color>
+            <Color x:Key="DhDanger">#C6402E</Color>
+            <Color x:Key="DhOffline">#5A6B8A</Color>
 
             <SolidColorBrush x:Key="DhBgBrush" Color="{StaticResource DhBg}" />
             <SolidColorBrush x:Key="DhBgElevatedBrush" Color="{StaticResource DhBgElevated}" />
+            <SolidColorBrush x:Key="DhBgPanelBrush" Color="{StaticResource DhBgPanel}" />
             <SolidColorBrush x:Key="DhBgHoverBrush" Color="{StaticResource DhBgHover}" />
             <SolidColorBrush x:Key="DhBorderBrush" Color="{StaticResource DhBorder}" />
+            <SolidColorBrush x:Key="DhBorderBrightBrush" Color="{StaticResource DhBorderBright}" />
             <SolidColorBrush x:Key="DhTextBrush" Color="{StaticResource DhText}" />
             <SolidColorBrush x:Key="DhTextDimBrush" Color="{StaticResource DhTextDim}" />
-            <SolidColorBrush x:Key="DhGoldBrush" Color="{StaticResource DhGold}" />
+            <SolidColorBrush x:Key="DhAccentBrush" Color="{StaticResource DhAccent}" />
+            <SolidColorBrush x:Key="DhAccentBrightBrush" Color="{StaticResource DhAccentBright}" />
+            <SolidColorBrush x:Key="DhCyanBrush" Color="{StaticResource DhCyan}" />
             <SolidColorBrush x:Key="DhOnlineBrush" Color="{StaticResource DhOnline}" />
+            <SolidColorBrush x:Key="DhWarnBrush" Color="{StaticResource DhWarn}" />
+            <SolidColorBrush x:Key="DhDangerBrush" Color="{StaticResource DhDanger}" />
             <SolidColorBrush x:Key="DhOfflineBrush" Color="{StaticResource DhOffline}" />
+
+            <FontFamily x:Key="DhMono">Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 
@@ -38,44 +52,124 @@
             <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
         </Style>
         <Style Selector="TextBlock.h1">
-            <Setter Property="FontSize" Value="22" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.caps">
+            <Setter Property="FontSize" Value="11" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="LetterSpacing" Value="1.5" />
         </Style>
         <Style Selector="TextBlock.dim">
             <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
             <Setter Property="FontSize" Value="12" />
         </Style>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        </Style>
+
+        <!-- Bottom navigation tab -->
+        <Style Selector="Button.tab">
+            <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="22,9" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Button.tab.active">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style Selector="Button.tab.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
+
+        <!-- Top-bar pill button -->
+        <Style Selector="Button.pill">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <!-- alias kept for the not-yet-restyled views -->
         <Style Selector="Button.nav">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Padding" Value="14,10" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="12" />
         </Style>
         <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
             <Setter Property="TextBlock.Foreground" Value="{StaticResource DhTextBrush}" />
         </Style>
-        <Style Selector="Button.nav.active">
-            <Setter Property="Foreground" Value="{StaticResource DhGoldBrush}" />
-        </Style>
-        <Style Selector="Button.nav.active /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
-        </Style>
+
+        <!-- Big primary action -->
         <Style Selector="Button.primary">
-            <Setter Property="Background" Value="{StaticResource DhGoldBrush}" />
-            <Setter Property="Foreground" Value="#1A1712" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Padding" Value="16,8" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="20,11" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrightBrush}" />
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="{StaticResource DhDangerBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.card">
             <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+        <Style Selector="ProgressBar">
+            <Setter Property="Foreground" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
         </Style>
     </Application.Styles>
 </Application>

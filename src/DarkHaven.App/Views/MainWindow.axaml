@@ -4,56 +4,85 @@
         xmlns:views="using:DarkHaven.App.Views"
         x:Class="DarkHaven.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Dark Haven Launcher" Width="1040" Height="680"
-        MinWidth="820" MinHeight="520"
+        Title="Dark Haven Launcher" Width="1100" Height="720"
+        MinWidth="960" MinHeight="600"
         Background="{StaticResource DhBgBrush}">
 
     <Window.DataTemplates>
+        <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
         <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
-        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><views:PlaceholderView /></DataTemplate>
+        <DataTemplate DataType="vm:AdminViewModel"><views:PlaceholderView /></DataTemplate>
         <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
         <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
     </Window.DataTemplates>
 
     <Panel>
-        <Grid ColumnDefinitions="220,*">
-            <!-- Sidebar -->
-            <Border Grid.Column="0" Background="{StaticResource DhBgElevatedBrush}"
-                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
-                <DockPanel Margin="14">
-                    <StackPanel DockPanel.Dock="Top" Spacing="2" Margin="6,4,6,18">
-                        <TextBlock Text="DARK HAVEN" FontSize="16" FontWeight="Bold"
-                                   Foreground="{StaticResource DhGoldBrush}" />
-                        <TextBlock Text="launcher" Classes="dim" />
+        <DockPanel>
+            <!-- Top bar -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1" Height="58">
+                <Grid Margin="20,0" ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource DhAccentBrush}">
+                            <TextBlock Text="✦" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="White" FontSize="16" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="DARK HAVEN" FontWeight="Bold" FontSize="15" LetterSpacing="1"
+                                       Foreground="{StaticResource DhTextBrush}" />
+                            <TextBlock Text="СЕТЬ СТАНЦИЙ" Classes="caps" />
+                        </StackPanel>
                     </StackPanel>
 
-                    <StackPanel DockPanel.Dock="Bottom" Spacing="4">
-                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Account}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Account}}"
-                                Content="Account" />
-                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}"
-                                Content="Settings" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="ghost" Content="Discord" Command="{Binding OpenDiscordCommand}" />
+                        <Button Classes="ghost" Content="Сайт" Command="{Binding OpenSiteCommand}" />
+                        <Button Classes="ghost" Command="{Binding OpenAccountCommand}">
+                            <TextBlock>
+                                <Run Text="{Binding AccountName, FallbackValue='Гость'}" />
+                            </TextBlock>
+                        </Button>
                     </StackPanel>
-
-                    <StackPanel Spacing="4" VerticalAlignment="Top">
-                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Regions}}"
-                                Content="Dark Haven Sector" />
-                        <Button Classes="nav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.AllServers}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.AllServers}}"
-                                Content="All Servers" />
-                    </StackPanel>
-                </DockPanel>
+                </Grid>
             </Border>
 
-            <ContentControl Grid.Column="1" Content="{Binding Current}" Margin="0" />
-        </Grid>
+            <!-- Bottom tab bar -->
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Height="52">
+                <Grid Margin="20,0" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding VersionLine}" Classes="mono dim"
+                               VerticalAlignment="Center" FontSize="10" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Button Classes="tab" Content="ГЛАВНАЯ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Home}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}" />
+                        <Button Classes="tab" Content="РЕГИОНЫ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Regions}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Regions}}" />
+                        <Button Classes="tab" Content="СЕРВЕРЫ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Servers}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}" />
+                        <Button Classes="tab" Content="НОВОСТИ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.News}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}" />
+                        <Button Classes="tab" Content="НАСТРОЙКИ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Settings}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}" />
+                        <Button Classes="tab" Content="АДМИН" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Admin}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ContentControl Content="{Binding Current}" />
+        </DockPanel>
 
         <!-- Connecting overlay -->
         <Border IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}"
-                Background="#CC0B0A08">
+                Background="#D8060A12">
             <ContentControl Content="{Binding Connecting}" />
         </Border>
     </Panel>

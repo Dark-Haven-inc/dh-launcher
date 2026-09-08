@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:CompileBindings="False"
+             x:Class="DarkHaven.App.Views.PlaceholderView">
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="440">
+        <TextBlock Text="◇" FontSize="34" HorizontalAlignment="Center" Foreground="{StaticResource DhBorderBrightBrush}" />
+        <TextBlock Text="{Binding Message}" Classes="dim" TextWrapping="Wrap" TextAlignment="Center" />
+    </StackPanel>
+</UserControl>

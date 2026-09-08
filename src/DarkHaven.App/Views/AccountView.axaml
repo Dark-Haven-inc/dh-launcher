@@ -31,7 +31,7 @@
                         <DataTemplate x:DataType="vm:AccountRowViewModel">
                             <Border Classes="card" Padding="14,10">
                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                    <TextBlock Grid.Column="0" Text="★" Foreground="{StaticResource DhGoldBrush}"
+                                    <TextBlock Grid.Column="0" Text="★" Foreground="{StaticResource DhAccentBrush}"
                                                IsVisible="{Binding IsActive}" Margin="0,0,8,0" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />

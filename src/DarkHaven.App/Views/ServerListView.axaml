@@ -28,7 +28,7 @@
         </Grid>
 
         <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,10"
-                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhGoldBrush}" />
+                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhAccentBrush}" />
         <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhOfflineBrush}"
                    IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,6" />
 
@@ -57,7 +57,7 @@
                                     </ItemsControl>
                                 </StackPanel>
                                 <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
-                                           Margin="12,0" Foreground="{StaticResource DhGoldBrush}" />
+                                           Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
                                 <Button Grid.Column="2" Classes="nav" Content="Play" Command="{Binding ConnectCommand}" />
                             </Grid>
                         </Border>

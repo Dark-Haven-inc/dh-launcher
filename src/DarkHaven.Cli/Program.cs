@@ -126,7 +126,7 @@ async Task Update(string? target, bool launch)
 
     var contentDb = new ContentDatabase(LauncherPaths.ContentDbPath);
     var signing = new EngineSignature(LocateSigningKey());
-    var engines = new EngineManager(http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing);
+    var engines = new EngineManager(http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing, LocateBundledEngines());
     var downloader = new ManifestDownloader(http);
     var updater = new ContentUpdater(contentDb, downloader, engines);
 
@@ -178,7 +178,8 @@ async Task Update(string? target, bool launch)
     var loader = LocateLoader();
     Log.Information("Launching client via {Loader}", loader);
     var game = new GameLauncher(loader, LocateSigningKey(), engines, LauncherPaths.ContentDbPath);
-    var proc = game.Start(resolved, manifest, gameAccount, compatMode: flags.Contains("--compat"), redirectOutput: false);
+    var extraCvars = flags.Contains("--net-debug") ? new[] { "net.logging=true" } : null;
+    var proc = game.Start(resolved, manifest, gameAccount, compatMode: flags.Contains("--compat"), redirectOutput: false, extraCvars: extraCvars);
     Log.Information("Client PID {Pid} — waiting for exit", proc.Id);
     await proc.WaitForExitAsync();
     Log.Information("Client exited with code {Code}", proc.ExitCode);
@@ -271,6 +272,21 @@ static string LocateSigningKey()
         "src", "DarkHaven.Launcher", "Assets", "signing_key");
     if (File.Exists(repoKey)) return Path.GetFullPath(repoKey);
     throw new FileNotFoundException("signing_key not found; expected next to the launcher assets");
+}
+
+static string? LocateBundledEngines()
+{
+    var here = AppContext.BaseDirectory;
+    foreach (var candidate in new[]
+             {
+                 Path.Combine(here, "bundled-engines"),
+                 Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "..", "src", "DarkHaven.App", "bundled-engines")),
+             })
+    {
+        if (File.Exists(Path.Combine(candidate, "manifest.json")))
+            return candidate;
+    }
+    return null;
 }
 
 static string LocateLoader()

@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The forked Dark Haven engine, shipped with the launcher (see EngineManager). -->
+    <None Include="bundled-engines\**" CopyToOutputDirectory="PreserveNewest" LinkBase="bundled-engines" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />

@@ -19,7 +19,7 @@
                    Foreground="{StaticResource DhOfflineBrush}" />
 
         <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,8"
-                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhGoldBrush}" />
+                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhAccentBrush}" />
 
         <ScrollViewer Margin="0,12,0,0">
             <ItemsControl ItemsSource="{Binding Regions}">
@@ -40,7 +40,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="6">
                                     <TextBlock Text="{Binding Population}" HorizontalAlignment="Right"
-                                               IsVisible="{Binding IsOnline}" Foreground="{StaticResource DhGoldBrush}" />
+                                               IsVisible="{Binding IsOnline}" Foreground="{StaticResource DhAccentBrush}" />
                                     <TextBlock Classes="dim" Text="offline" HorizontalAlignment="Right"
                                                IsVisible="{Binding IsOffline}" />
                                     <Button Classes="primary" Content="Play" Command="{Binding ConnectCommand}"

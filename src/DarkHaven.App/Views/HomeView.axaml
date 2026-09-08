@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+
+    <StackPanel Margin="40,36" Spacing="24" MaxWidth="640" HorizontalAlignment="Left">
+        <StackPanel Spacing="4">
+            <TextBlock Text="{Binding Greeting}" Classes="h1" />
+            <TextBlock Text="Сеть станций Frontier 15" Classes="dim" />
+        </StackPanel>
+
+        <Border Classes="card" Padding="24">
+            <StackPanel Spacing="14">
+                <TextBlock Text="Куда играть" Classes="caps" />
+                <Button Classes="primary" HorizontalAlignment="Left" Content="ОТКРЫТЬ СЕКТОР DARK HAVEN"
+                        Command="{Binding OpenRegionsCommand}" />
+                <Button Classes="ghost" HorizontalAlignment="Left" Content="Все серверы SS14"
+                        Command="{Binding OpenServersCommand}" />
+            </StackPanel>
+        </Border>
+
+        <TextBlock Classes="dim" TextWrapping="Wrap"
+                   Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Dark Haven." />
+    </StackPanel>
+</UserControl>

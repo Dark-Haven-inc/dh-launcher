@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
+using System.Text.Json;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
 using Serilog;
@@ -8,11 +9,15 @@ using Serilog;
 namespace DarkHaven.Launcher.Engine;
 
 /// <summary>
-/// Downloads and caches RobustToolbox engine builds and modules from <c>robust-builds</c>.
+/// Provides RobustToolbox engine builds and modules. Normally downloads + Ed25519-verifies from the
+/// public <c>robust-builds</c> CDN. A version listed in the launcher's <c>bundled-engines/manifest.json</c>
+/// is taken from the shipped zip instead and verified by SHA-256 — this is how a private forked engine
+/// (Dark Haven's) reaches players, since it is on no public CDN.
 /// An engine is "installed" when <c>engines/&lt;version&gt;.zip</c> exists next to a
-/// <c>&lt;version&gt;.zip.sig</c> sidecar holding its signature.
+/// <c>&lt;version&gt;.zip.sig</c> sidecar (an Ed25519 hex signature, or <c>sha256:&lt;hex&gt;</c> for a bundled one).
 /// </summary>
-public sealed class EngineManager(HttpClient http, string enginesDir, string modulesDir, EngineSignature signature)
+public sealed class EngineManager(
+    HttpClient http, string enginesDir, string modulesDir, EngineSignature signature, string? bundledEnginesDir = null)
 {
     public const string BuildsManifestUrl = "https://robust-builds.cdn.spacestation14.com/manifest.json";
     public const string ModulesManifestUrl = "https://robust-builds.cdn.spacestation14.com/modules.json";
@@ -21,6 +26,7 @@ public sealed class EngineManager(HttpClient http, string enginesDir, string mod
     private readonly SemaphoreSlim _manifestLock = new(1, 1);
     private Dictionary<string, RobustBuildEntry>? _buildManifest;
     private DateTime _buildManifestFetched;
+    private Dictionary<string, BundledEngine>? _bundled;
 
     public string EnginePath(string version) => Path.Combine(enginesDir, $"{version}.zip");
     private string EngineSigPath(string version) => Path.Combine(enginesDir, $"{version}.zip.sig");
@@ -38,6 +44,13 @@ public sealed class EngineManager(HttpClient http, string enginesDir, string mod
     public async Task<string> EnsureEngineAsync(
         string requestedVersion, DownloadProgress? progress = null, CancellationToken cancel = default)
     {
+        // A bundled engine wins over the CDN — it exists precisely because the CDN has no matching build.
+        if (LoadBundled().TryGetValue(requestedVersion, out var bundled))
+        {
+            InstallBundled(requestedVersion, bundled);
+            return requestedVersion;
+        }
+
         var (version, platform) = await ResolveAsync(requestedVersion, cancel);
 
         if (IsEngineInstalled(version))
@@ -64,6 +77,51 @@ public sealed class EngineManager(HttpClient http, string enginesDir, string mod
         Log.Information("Engine {Version} installed", version);
         return version;
     }
+
+    private void InstallBundled(string version, BundledEngine bundled)
+    {
+        var src = Path.Combine(bundledEnginesDir!, bundled.File);
+        if (!File.Exists(src))
+            throw new FileNotFoundException($"Bundled engine {version} missing: {src}");
+
+        var actual = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(src)));
+        if (!actual.Equals(bundled.Sha256, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Bundled engine {version} SHA-256 mismatch (manifest {bundled.Sha256}, file {actual})");
+
+        Directory.CreateDirectory(enginesDir);
+        if (!IsEngineInstalled(version) || EngineSignatureHex(version) != $"sha256:{bundled.Sha256}")
+        {
+            File.Copy(src, EnginePath(version), overwrite: true);
+            File.WriteAllText(EngineSigPath(version), $"sha256:{bundled.Sha256}");
+            Log.Information("Installed bundled engine {Version} ({Note})", version, bundled.Note);
+        }
+    }
+
+    private Dictionary<string, BundledEngine> LoadBundled()
+    {
+        if (_bundled is not null)
+            return _bundled;
+
+        var manifestPath = bundledEnginesDir is null ? null : Path.Combine(bundledEnginesDir, "manifest.json");
+        if (manifestPath is null || !File.Exists(manifestPath))
+            return _bundled = new();
+
+        try
+        {
+            _bundled = JsonSerializer.Deserialize<Dictionary<string, BundledEngine>>(
+                File.ReadAllText(manifestPath), LauncherJson.Options) ?? new();
+            if (_bundled.Count > 0)
+                Log.Debug("Bundled engines: {Versions}", string.Join(", ", _bundled.Keys));
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to read bundled-engines manifest");
+            _bundled = new();
+        }
+        return _bundled;
+    }
+
+    private sealed record BundledEngine(string File, string Sha256, string? Note = null);
 
     /// <summary>Ensures an engine module (e.g. <c>Robust.Client.WebView</c>) is extracted to disk.</summary>
     public async Task EnsureModuleAsync(

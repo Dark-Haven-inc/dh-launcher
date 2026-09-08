@@ -44,7 +44,8 @@ public sealed class AppServices
         Accounts.Load();
 
         var signing = new EngineSignature(LauncherPaths.SigningKeyPath);
-        Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing);
+        var bundledEngines = Path.Combine(AppContext.BaseDirectory, "bundled-engines");
+        Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing, bundledEngines);
 
         Hub = new HubApi(Http);
         ServerList = new ServerListManager(Hub);
