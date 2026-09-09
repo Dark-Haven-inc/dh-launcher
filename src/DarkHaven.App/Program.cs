@@ -40,6 +40,14 @@ internal static class Program
 
         LaunchUri = args.FirstOrDefault(a => a.StartsWith("ss14://") || a.StartsWith("ss14s://"));
 
+        // Hand off to an already-running launcher (and exit) rather than opening a second window.
+        if (!IsDevBuild() && !SingleInstance.TryAcquire(LaunchUri))
+        {
+            Log.Information("Another launcher instance is running — forwarded and exiting");
+            Log.CloseAndFlush();
+            return 0;
+        }
+
         try
         {
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

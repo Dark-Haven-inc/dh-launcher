@@ -9,12 +9,16 @@ namespace DarkHaven.App.ViewModels;
 public partial class ServerListViewModel(AppServices services, Action<ServerEntry> connect) : ViewModelBase
 {
     private readonly ServerFilter _filter = new();
+    private HashSet<string> _favorites = new(StringComparer.OrdinalIgnoreCase);
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _error;
     [ObservableProperty] private string _search = "";
     [ObservableProperty] private bool _hideEmpty;
+    [ObservableProperty] private bool _hideFull;
     [ObservableProperty] private bool _hide18Plus;
+    [ObservableProperty] private bool _favoritesOnly;
+    [ObservableProperty] private bool _sortByName;
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
 
@@ -22,7 +26,14 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
 
     partial void OnSearchChanged(string value) { _filter.Search = value; ApplyFilter(); }
     partial void OnHideEmptyChanged(bool value) { _filter.HideEmpty = value; ApplyFilter(); }
+    partial void OnHideFullChanged(bool value) { _filter.HideFull = value; ApplyFilter(); }
     partial void OnHide18PlusChanged(bool value) { _filter.Hide18Plus = value; ApplyFilter(); }
+    partial void OnFavoritesOnlyChanged(bool value) => ApplyFilter();
+    partial void OnSortByNameChanged(bool value)
+    {
+        _filter.Sort = value ? ServerSort.Name : ServerSort.Players;
+        ApplyFilter();
+    }
 
     [RelayCommand]
     public async Task RefreshAsync()
@@ -32,6 +43,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         Error = null;
         try
         {
+            LoadFavorites();
             await services.ServerList.RefreshAsync();
             TotalCount = services.ServerList.Servers.Count;
             ApplyFilter();
@@ -39,7 +51,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         catch (Exception e)
         {
             Log.Warning(e, "Failed to refresh server list");
-            Error = "Could not reach the hub.";
+            Error = "Не удалось связаться с хабом.";
         }
         finally
         {
@@ -55,10 +67,20 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
             connect(new ServerEntry(addr));
     }
 
+    private void LoadFavorites()
+    {
+        try { _favorites = services.Settings.GetFavorites().Select(f => f.Address).ToHashSet(StringComparer.OrdinalIgnoreCase); }
+        catch { _favorites = new(StringComparer.OrdinalIgnoreCase); }
+    }
+
     private void ApplyFilter()
     {
+        var rows = _filter.Apply(services.ServerList.Servers);
+        if (FavoritesOnly)
+            rows = rows.Where(s => _favorites.Contains(s.Address));
+
         Servers.Clear();
-        foreach (var e in _filter.Apply(services.ServerList.Servers))
+        foreach (var e in rows)
             Servers.Add(new ServerRowViewModel(services, e, connect));
     }
 }

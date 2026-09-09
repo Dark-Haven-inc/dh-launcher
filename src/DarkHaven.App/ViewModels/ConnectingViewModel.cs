@@ -77,6 +77,7 @@ public partial class ConnectingViewModel : ViewModelBase
 
             _services.Discord.SetInGame(_server.DisplayName, _server.IsDarkHavenRegion);
             _services.SetGameSession(_server.Address);
+            App.SetGameRunning(true);
             _ = WatchProcessAsync(proc);
         }
         catch (OperationCanceledException)
@@ -151,11 +152,12 @@ public partial class ConnectingViewModel : ViewModelBase
             }
         });
 
-        _ = exited.ContinueWith(_ =>
+        _ = exited.ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
             _services.Discord.SetIdle();
             _services.SetGameSession(null);
-        }, TaskScheduler.Default);
+            App.SetGameRunning(false);
+        }), TaskScheduler.Default);
     }
 
     [RelayCommand]
