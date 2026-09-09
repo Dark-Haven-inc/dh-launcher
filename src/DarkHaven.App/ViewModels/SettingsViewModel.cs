@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher;
@@ -59,6 +60,31 @@ public partial class SettingsViewModel : ViewModelBase
     {
         LauncherPaths.EnsureDirectories();
         Process.Start(new ProcessStartInfo(LauncherPaths.DataDir) { UseShellExecute = true });
+    }
+
+    [RelayCommand]
+    private async Task CollectLogsAsync()
+    {
+        try
+        {
+            var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            var target = Path.Combine(desktop, $"dh-launcher-logs-{DateTime.Now:yyyyMMdd-HHmm}.zip");
+
+            await Task.Run(() =>
+            {
+                using var zip = ZipFile.Open(target, ZipArchiveMode.Create);
+                if (Directory.Exists(LauncherPaths.LogsDir))
+                    foreach (var f in Directory.GetFiles(LauncherPaths.LogsDir, "*.log"))
+                        zip.CreateEntryFromFile(f, Path.GetFileName(f));
+            });
+
+            Status = $"Логи собраны: {target}";
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{target}\"") { UseShellExecute = true });
+        }
+        catch (Exception e)
+        {
+            Status = "Не удалось собрать логи: " + e.Message;
+        }
     }
 
     [RelayCommand]

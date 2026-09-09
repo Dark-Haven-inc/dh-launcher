@@ -40,8 +40,12 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ServerRowViewModel">
                         <Border Classes="card" Padding="14,10">
-                            <Grid ColumnDefinitions="*,Auto,Auto">
-                                <StackPanel Grid.Column="0" Spacing="2">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                <Button Grid.Column="0" Classes="ghost" BorderThickness="0" Padding="6,2" Margin="0,0,8,0"
+                                        VerticalAlignment="Center" Command="{Binding ToggleFavoriteCommand}"
+                                        Content="{Binding IsFavorite, Converter={x:Static vm:FavGlyph.Instance}}"
+                                        Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.AccentText}}" />
+                                <StackPanel Grid.Column="1" Spacing="2">
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                     <ItemsControl ItemsSource="{Binding VisibleTags}">
                                         <ItemsControl.ItemsPanel>
@@ -56,9 +60,11 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
+                                <TextBlock Grid.Column="2" Text="{Binding PingText}" VerticalAlignment="Center"
+                                           Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                <TextBlock Grid.Column="3" Text="{Binding Population}" VerticalAlignment="Center"
                                            Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
-                                <Button Grid.Column="2" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
+                                <Button Grid.Column="4" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
                             </Grid>
                         </Border>
                     </DataTemplate>

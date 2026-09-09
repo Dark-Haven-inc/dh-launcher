@@ -70,6 +70,10 @@ public partial class ConnectingViewModel : ViewModelBase
         {
             var compat = _services.Settings.GetConfig("CompatMode") == "true";
             var proc = await _services.Launch.ConnectAsync(_server.Address, allowGuest: true, compat, progress, _cts.Token);
+
+            try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
+            catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
+
             _ = WatchProcessAsync(proc);
         }
         catch (OperationCanceledException)

@@ -112,6 +112,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnPageChanged(NavPage value)
     {
+        if (value == NavPage.Home)
+            Home.Reload();
+
         Current = value switch
         {
             NavPage.Home => Home,

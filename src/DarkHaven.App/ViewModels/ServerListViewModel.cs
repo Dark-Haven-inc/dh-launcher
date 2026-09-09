@@ -59,6 +59,6 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     {
         Servers.Clear();
         foreach (var e in _filter.Apply(services.ServerList.Servers))
-            Servers.Add(new ServerRowViewModel(e, connect));
+            Servers.Add(new ServerRowViewModel(services, e, connect));
     }
 }

@@ -65,6 +65,43 @@ public class SettingsDatabaseTests : IDisposable
         Assert.Equal(shouldRefresh, token.ShouldRefresh);
     }
 
+    [Fact]
+    public void Recent_bumps_dedupes_and_trims_to_twelve()
+    {
+        var db = new SettingsDatabase(_path);
+        db.Initialize();
+
+        for (var i = 0; i < 15; i++)
+            db.RecordRecent($"ss14://s{i}", $"Server {i}", isRegion: i == 0);
+
+        var recent = db.GetRecent();
+        Assert.Equal(12, recent.Count);
+        Assert.Equal("ss14://s14", recent[0].Address);      // newest first
+        Assert.DoesNotContain(recent, r => r.Address == "ss14://s0");
+
+        db.RecordRecent("ss14://s10", "Server 10 renamed", isRegion: true);
+        recent = db.GetRecent();
+        Assert.Equal("ss14://s10", recent[0].Address);       // bumped to front
+        Assert.Equal("Server 10 renamed", recent[0].Name);
+        Assert.True(recent[0].IsRegion);
+        Assert.Equal(12, recent.Count);                      // still deduped
+    }
+
+    [Fact]
+    public void Favorites_toggle_round_trips()
+    {
+        var db = new SettingsDatabase(_path);
+        db.Initialize();
+
+        Assert.False(db.IsFavorite("ss14://x"));
+        Assert.True(db.ToggleFavorite("ss14://x", "X server"));
+        Assert.True(db.IsFavorite("ss14://x"));
+        Assert.Equal("X server", Assert.Single(db.GetFavorites()).Name);
+
+        Assert.False(db.ToggleFavorite("ss14://x", "X server"));
+        Assert.Empty(db.GetFavorites());
+    }
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

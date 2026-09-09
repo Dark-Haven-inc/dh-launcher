@@ -1,26 +1,90 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:data="using:DarkHaven.Launcher.Data"
              x:Class="DarkHaven.App.Views.HomeView"
              x:DataType="vm:HomeViewModel">
 
-    <StackPanel Margin="40,36" Spacing="24" MaxWidth="640" HorizontalAlignment="Left">
-        <StackPanel Spacing="4">
-            <TextBlock Text="{Binding Greeting}" Classes="h1" />
-            <TextBlock Text="Сеть станций Frontier 15" Classes="dim" />
-        </StackPanel>
+    <ScrollViewer>
+        <StackPanel Margin="40,36" Spacing="22" MaxWidth="680" HorizontalAlignment="Left">
 
-        <Border Classes="card" Padding="24">
-            <StackPanel Spacing="14">
-                <TextBlock Text="Куда играть" Classes="caps" />
-                <Button Classes="primary" HorizontalAlignment="Left" Content="ОТКРЫТЬ СЕКТОР DARK HAVEN"
-                        Command="{Binding OpenRegionsCommand}" />
-                <Button Classes="ghost" HorizontalAlignment="Left" Content="Все серверы SS14"
-                        Command="{Binding OpenServersCommand}" />
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Greeting}" Classes="h1" />
+                <TextBlock Text="Сеть станций Dark Haven" Classes="dim" />
             </StackPanel>
-        </Border>
 
-        <TextBlock Classes="dim" TextWrapping="Wrap"
-                   Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Dark Haven." />
-    </StackPanel>
+            <!-- Continue -->
+            <Border Classes="card" Padding="22" IsVisible="{Binding HasContinue}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="ПРОДОЛЖИТЬ" Classes="caps" />
+                        <TextBlock Text="{Binding ContinueServer.Name}" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="{Binding ContinueServer.Address}" Classes="dim mono" FontSize="11" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="primary" Content="ПОДКЛЮЧИТЬСЯ" VerticalAlignment="Center"
+                            Command="{Binding ConnectContinueCommand}" />
+                </Grid>
+            </Border>
+
+            <!-- Quick nav -->
+            <Border Classes="card" Padding="22">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="КУДА ИГРАТЬ" Classes="caps" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="primary" Content="СЕКТОР DARK HAVEN" Command="{Binding OpenRegionsCommand}" />
+                        <Button Classes="ghost" Content="Все серверы SS14" Command="{Binding OpenServersCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Favourites -->
+            <StackPanel Spacing="10" IsVisible="{Binding HasFavorites}">
+                <TextBlock Text="★ ИЗБРАННОЕ" Classes="caps" />
+                <ItemsControl ItemsSource="{Binding Favorites}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="data:FavoriteServerEntry">
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="14,10" CornerRadius="6"
+                                    Background="{StaticResource DhBgElevatedBrush}" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1"
+                                    Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).ConnectFavoriteCommand}"
+                                    CommandParameter="{Binding}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Address}" Classes="dim mono" FontSize="11" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <!-- Recent -->
+            <StackPanel Spacing="10" IsVisible="{Binding HasRecent}">
+                <TextBlock Text="НЕДАВНИЕ" Classes="caps" />
+                <ItemsControl ItemsSource="{Binding Recent}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="data:RecentServer">
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="14,10" CornerRadius="6"
+                                    Background="{StaticResource DhBgElevatedBrush}" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1"
+                                    Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).ConnectRecentCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Address}" Classes="dim mono" FontSize="11" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="регион" Classes="dim" VerticalAlignment="Center"
+                                               IsVisible="{Binding IsRegion}" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <TextBlock Classes="dim" TextWrapping="Wrap"
+                       Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Dark Haven." />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
