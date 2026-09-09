@@ -15,10 +15,14 @@ internal static class Program
     {
         // Must run before anything else: handles Velopack's install / update / uninstall hooks
         // (the process exits inside Run() when invoked for one of those).
-        VelopackApp.Build()
-            .OnFirstRun(_ => RegisterUriScheme())
-            .OnAfterUpdateFastCallback(_ => RegisterUriScheme())
-            .Run();
+        var velo = VelopackApp.Build();
+        if (OperatingSystem.IsWindows())
+        {
+            velo = velo
+                .OnFirstRun(_ => RegisterUriScheme())
+                .OnAfterUpdateFastCallback(_ => RegisterUriScheme());
+        }
+        velo.Run();
 
         LauncherPaths.EnsureDirectories();
 
@@ -29,8 +33,9 @@ internal static class Program
                 rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
             .CreateLogger();
 
-        // Keep the ss14:// association pointed at the current install on every normal launch too.
-        if (IsInstalledBuild())
+        // Keep the ss14:// association pointed at the current install on every normal launch.
+        // Skipped for a dev build so `dotnet run` doesn't hijack the scheme from an install.
+        if (!IsDevBuild())
             RegisterUriScheme();
 
         LaunchUri = args.FirstOrDefault(a => a.StartsWith("ss14://") || a.StartsWith("ss14s://"));
@@ -63,17 +68,11 @@ internal static class Program
             UriScheme.EnsureRegistered(exe);
     }
 
-    /// <summary>Velopack lays the app out as <c>&lt;root&gt;\current\</c> with <c>Update.exe</c> in <c>&lt;root&gt;</c>.</summary>
-    private static bool IsInstalledBuild()
+    /// <summary>True when running straight from <c>bin/Debug</c> or <c>bin/Release</c> build output.</summary>
+    private static bool IsDevBuild()
     {
-        try
-        {
-            var parent = Directory.GetParent(AppContext.BaseDirectory)?.FullName;
-            return parent is not null && File.Exists(Path.Combine(parent, "Update.exe"));
-        }
-        catch
-        {
-            return false;
-        }
+        var dir = AppContext.BaseDirectory.Replace('\\', '/');
+        return dir.Contains("/bin/Debug/", StringComparison.OrdinalIgnoreCase)
+               || dir.Contains("/bin/Release/", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -34,7 +34,7 @@ if ($LASTEXITCODE) { throw "app publish failed" }
 
 # 2. The in-process engine loader, into ./loader/ (GameLauncher looks for it there).
 #    Also self-contained: it is launched as its own process.
-Write-Host "-- publish DarkHaven.Loader -> loader/" -ForegroundColor DarkCyan
+Write-Host "-- publish DarkHaven.Loader into loader/" -ForegroundColor DarkCyan
 dotnet publish (Join-Path $repo "src/DarkHaven.Loader/DarkHaven.Loader.csproj") `
     -c Release -r $Rid --self-contained true `
     -p:Version=$Version `
@@ -44,7 +44,7 @@ if ($LASTEXITCODE) { throw "loader publish failed" }
 # 3. Sanity: the forked engine must be bundled or nobody can connect to Dark Haven.
 $engineZip = Get-ChildItem (Join-Path $pub "bundled-engines") -Filter *.zip -ErrorAction SilentlyContinue
 if (-not $engineZip) {
-    Write-Warning "no bundled engine zip in artifacts/publish/bundled-engines/ — build it first (see src/DarkHaven.App/bundled-engines/README.md)"
+    Write-Warning "no bundled engine zip in artifacts/publish/bundled-engines/. Build it first: see src/DarkHaven.App/bundled-engines/README.md"
 }
 
 # 4. Velopack: installer + delta + release manifest.
@@ -61,5 +61,5 @@ dotnet vpk pack `
     --outputDir $OutputDir
 if ($LASTEXITCODE) { throw "vpk pack failed" }
 
-Write-Host "== done -> $OutputDir ==" -ForegroundColor Green
+Write-Host "== done: $OutputDir ==" -ForegroundColor Green
 Get-ChildItem $OutputDir | Format-Table Name, Length -AutoSize
