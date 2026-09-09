@@ -17,6 +17,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             Services = new AppServices();
+            desktop.ShutdownRequested += (_, _) => Services.Dispose();
 
             var vm = new MainWindowViewModel(Services);
             desktop.MainWindow = new MainWindow { DataContext = vm };

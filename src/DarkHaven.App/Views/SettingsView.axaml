@@ -63,6 +63,17 @@
                     </Grid>
                 </StackPanel>
 
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ИНТЕГРАЦИИ" Classes="caps" />
+                    <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,4,Auto">
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Discord — статус" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DiscordAppId}"
+                                 Watermark="ID приложения Discord — необязательно" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Classes="dim" TextWrapping="Wrap" FontSize="11"
+                                   Text="Покажет «В игре — ХЕЙВЕН» в вашем профиле Discord. ID берётся на discord.com/developers/applications. Применяется после перезапуска лаунчера." />
+                    </Grid>
+                </StackPanel>
+
             </StackPanel>
         </ScrollViewer>
     </DockPanel>

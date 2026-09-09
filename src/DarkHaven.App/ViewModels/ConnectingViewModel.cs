@@ -65,6 +65,7 @@ public partial class ConnectingViewModel : ViewModelBase
     public async void Start()
     {
         var progress = new Progress<LaunchProgress>(p => Dispatcher.UIThread.Post(() => Apply(p)));
+        _services.Discord.SetConnecting(_server.DisplayName);
 
         try
         {
@@ -74,15 +75,18 @@ public partial class ConnectingViewModel : ViewModelBase
             try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
             catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
 
+            _services.Discord.SetInGame(_server.DisplayName, _server.IsDarkHavenRegion);
             _ = WatchProcessAsync(proc);
         }
         catch (OperationCanceledException)
         {
+            _services.Discord.SetIdle();
             Close();
         }
         catch (Exception e)
         {
             Log.Error(e, "Connect failed");
+            _services.Discord.SetIdle();
             IsBusy = false;
             var active = Steps.FirstOrDefault(s => s.State == StepState.Active);
             if (active is not null) active.State = StepState.Failed;
@@ -134,6 +138,7 @@ public partial class ConnectingViewModel : ViewModelBase
         {
             if (proc.HasExited && proc.ExitCode != 0)
             {
+                _services.Discord.SetIdle();
                 IsBusy = false;
                 ErrorText = $"Клиент завершился с ошибкой (код {proc.ExitCode}). Смотрите лог лаунчера.";
             }
@@ -142,6 +147,8 @@ public partial class ConnectingViewModel : ViewModelBase
                 Close();
             }
         });
+
+        _ = exited.ContinueWith(_ => _services.Discord.SetIdle(), TaskScheduler.Default);
     }
 
     [RelayCommand]

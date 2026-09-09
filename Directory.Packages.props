@@ -19,6 +19,9 @@
     <!-- Self-update + installer -->
     <PackageVersion Include="Velopack" Version="1.2.0" />
 
+    <!-- Discord Rich Presence (optional integration) -->
+    <PackageVersion Include="DiscordRichPresence" Version="1.6.1.70" />
+
     <!-- UI -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Avalonia" Version="11.3.20" />

@@ -12,7 +12,7 @@ using DarkHaven.Launcher.Update;
 namespace DarkHaven.App;
 
 /// <summary>Hand-rolled composition root. Small enough that a DI container would just be ceremony.</summary>
-public sealed class AppServices
+public sealed class AppServices : IDisposable
 {
     public HttpClient Http { get; }
     public SettingsDatabase Settings { get; }
@@ -28,6 +28,7 @@ public sealed class AppServices
     public GameLauncher Game { get; }
     public LaunchCoordinator Launch { get; }
     public LauncherUpdater Updater { get; }
+    public DiscordPresence Discord { get; }
 
     public AppServices()
     {
@@ -58,6 +59,13 @@ public sealed class AppServices
         Game = new GameLauncher(LocateLoader(), LauncherPaths.SigningKeyPath, Engines, LauncherPaths.ContentDbPath);
         Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
         Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
+        Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
+    }
+
+    public void Dispose()
+    {
+        Discord.Dispose();
+        Http.Dispose();
     }
 
     private static string LocateLoader()
