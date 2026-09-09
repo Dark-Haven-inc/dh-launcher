@@ -127,7 +127,7 @@ public sealed class ManifestDownloader(HttpClient http)
         using var resp = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel);
         resp.EnsureSuccessStatusCode();
 
-        await using var netStream = await resp.Content.ReadAsStreamAsync(cancel);
+        await using var netStream = DownloadThrottle.Wrap(await resp.Content.ReadAsStreamAsync(cancel));
         await using var stream = WrapZstdIfNeeded(netStream, resp.Content.Headers.ContentEncoding);
 
         var header = new byte[4];

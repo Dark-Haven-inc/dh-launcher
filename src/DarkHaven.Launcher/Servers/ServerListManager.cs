@@ -14,6 +14,9 @@ public sealed class ServerListManager(HubApi hub)
     public IReadOnlyList<ServerEntry> Servers => _servers;
     public DateTimeOffset? LastRefresh { get; private set; }
 
+    /// <summary>Set when the last refresh fell back to the on-disk cache (hub unreachable).</summary>
+    public DateTimeOffset? StaleSince => hub.ServedFromCacheAt;
+
     public async Task RefreshAsync(CancellationToken cancel = default)
     {
         var entries = await hub.GetServersAsync(cancel);

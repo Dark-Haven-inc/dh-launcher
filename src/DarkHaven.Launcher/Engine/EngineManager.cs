@@ -270,7 +270,7 @@ public sealed class EngineManager(
         resp.EnsureSuccessStatusCode();
 
         var total = resp.Content.Headers.ContentLength ?? -1;
-        await using var netStream = await resp.Content.ReadAsStreamAsync(cancel);
+        await using var netStream = DownloadThrottle.Wrap(await resp.Content.ReadAsStreamAsync(cancel));
         await using var fileStream = File.Create(destPath);
         using var sha = SHA256.Create();
 

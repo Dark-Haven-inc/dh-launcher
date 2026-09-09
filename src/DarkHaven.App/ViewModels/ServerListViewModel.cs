@@ -46,6 +46,9 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
             LoadFavorites();
             await services.ServerList.RefreshAsync();
             TotalCount = services.ServerList.Servers.Count;
+            Error = services.ServerList.StaleSince is { } t
+                ? $"Хаб недоступен — список от {t.ToLocalTime():dd.MM HH:mm}."
+                : null;
             ApplyFilter();
         }
         catch (Exception e)

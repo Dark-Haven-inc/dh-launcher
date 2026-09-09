@@ -60,7 +60,10 @@ public sealed class AppServices : IDisposable
         Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing,
             bundledEngines, Settings.GetConfig("EngineBuildsUrl"));
 
-        Hub = new HubApi(Http);
+        if (int.TryParse(Settings.GetConfig("DownloadLimitKbps"), out var kbps))
+            DarkHaven.Launcher.Content.DownloadThrottle.SetKbps(kbps);
+
+        Hub = new HubApi(Http, LauncherPaths.HubCachePath);
         ServerList = new ServerListManager(Hub);
         Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
 

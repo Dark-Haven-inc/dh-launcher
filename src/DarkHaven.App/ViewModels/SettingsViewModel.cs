@@ -16,6 +16,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _minimizeOnLaunch;
     [ObservableProperty] private bool _verboseLog;
     [ObservableProperty] private bool _compatMode;
+    [ObservableProperty] private string _downloadLimit;
     [ObservableProperty] private string _authUrl;
     [ObservableProperty] private string _buildsUrl;
     [ObservableProperty] private string _regionsUrl;
@@ -34,6 +35,7 @@ public partial class SettingsViewModel : ViewModelBase
         _minimizeOnLaunch = Cfg("MinimizeOnLaunch", true);
         _verboseLog = Cfg("VerboseLog", false);
         _compatMode = Cfg("CompatMode", false);
+        _downloadLimit = services.Settings.GetConfig("DownloadLimitKbps") ?? "";
         _authUrl = services.Settings.GetConfig("AuthUrl") ?? AuthApi.DefaultBaseUrl;
         _buildsUrl = services.Settings.GetConfig("EngineBuildsUrl") ?? EngineManager.BuildsManifestUrl;
         _regionsUrl = services.Settings.GetConfig("RegionsUrl") ?? "";
@@ -48,6 +50,13 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnMinimizeOnLaunchChanged(bool v) => _services.Settings.SetConfig("MinimizeOnLaunch", v ? "true" : "false");
     partial void OnVerboseLogChanged(bool v) => _services.Settings.SetConfig("VerboseLog", v ? "true" : "false");
     partial void OnCompatModeChanged(bool v) => _services.Settings.SetConfig("CompatMode", v ? "true" : "false");
+
+    partial void OnDownloadLimitChanged(string v)
+    {
+        var kbps = int.TryParse(v?.Trim(), out var n) && n > 0 ? n : 0;
+        _services.Settings.SetConfig("DownloadLimitKbps", kbps > 0 ? kbps.ToString() : null);
+        DarkHaven.Launcher.Content.DownloadThrottle.SetKbps(kbps);
+    }
     partial void OnAuthUrlChanged(string v) => _services.Settings.SetConfig("AuthUrl", Trim(v));
     partial void OnBuildsUrlChanged(string v) => _services.Settings.SetConfig("EngineBuildsUrl", Trim(v));
     partial void OnRegionsUrlChanged(string v) => _services.Settings.SetConfig("RegionsUrl", Trim(v));

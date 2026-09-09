@@ -45,6 +45,11 @@
                         <TextBlock><Run Text="Подробный журнал" /><Run Foreground="#7C8DB0" Text=" — нужен, только если просят разработчики" /></TextBlock>
                     </CheckBox>
                     <CheckBox Content="Режим совместимости рендера (GLES2)" IsChecked="{Binding CompatMode}" />
+                    <Grid ColumnDefinitions="Auto,120,Auto" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" Text="Лимит скорости загрузки" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding DownloadLimit}" Watermark="без лимита" />
+                        <TextBlock Grid.Column="2" Text="КБ/с" Classes="dim" VerticalAlignment="Center" />
+                    </Grid>
                 </StackPanel>
 
                 <StackPanel Spacing="12">
