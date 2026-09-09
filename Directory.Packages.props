@@ -14,6 +14,10 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
+
+    <!-- Self-update + installer -->
+    <PackageVersion Include="Velopack" Version="1.2.0" />
 
     <!-- UI -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />

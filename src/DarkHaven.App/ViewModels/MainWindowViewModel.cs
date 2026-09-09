@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher.Servers;
+using DarkHaven.Launcher.Update;
 
 namespace DarkHaven.App.ViewModels;
 
@@ -14,6 +15,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private ViewModelBase _current;
     [ObservableProperty] private ConnectingViewModel? _connecting;
 
+    [ObservableProperty] private UpdatePhase _updatePhase = UpdatePhase.Idle;
+    [ObservableProperty] private int _updateProgress;
+
     public HomeViewModel Home { get; }
     public RegionsViewModel Regions { get; }
     public ServerListViewModel Servers { get; }
@@ -26,10 +30,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public string? AccountName => _services.Accounts.Active?.Username ?? _services.Accounts.Accounts.FirstOrDefault()?.Username;
 
     public string VersionLine =>
-        $"ЛАУНЧЕР {LauncherVersion}   ·   ДВИЖОК Robust {EngineVersionHint}";
+        $"ЛАУНЧЕР {DarkHaven.Launcher.LauncherInfo.Version}   ·   ДВИЖОК Robust {EngineVersionHint}";
 
-    private const string LauncherVersion = "0.1.0";
-    private const string EngineVersionHint = "bundled";
+    private const string EngineVersionHint = "в комплекте";
 
     public MainWindowViewModel(AppServices services)
     {
@@ -42,7 +45,70 @@ public partial class MainWindowViewModel : ViewModelBase
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel();
         _current = Regions;
+
+        _ = CheckForUpdatesAsync();
     }
+
+    // --- Self-update banner ---
+
+    public bool ShowUpdateBanner =>
+        UpdatePhase is UpdatePhase.Available or UpdatePhase.Downloading or UpdatePhase.ReadyToRestart or UpdatePhase.Failed;
+
+    public string UpdateBannerText => UpdatePhase switch
+    {
+        UpdatePhase.Available => $"Доступно обновление лаунчера — {_services.Updater.PendingVersion}",
+        UpdatePhase.Downloading => $"Загрузка обновления… {UpdateProgress}%",
+        UpdatePhase.ReadyToRestart => "Обновление готово. Перезапустите лаунчер, чтобы применить.",
+        UpdatePhase.Failed => "Не удалось обновить лаунчер. Попробуйте позже.",
+        _ => "",
+    };
+
+    public bool CanStartUpdate => UpdatePhase == UpdatePhase.Available;
+    public bool CanRestartForUpdate => UpdatePhase == UpdatePhase.ReadyToRestart;
+
+    partial void OnUpdatePhaseChanged(UpdatePhase value)
+    {
+        OnPropertyChanged(nameof(ShowUpdateBanner));
+        OnPropertyChanged(nameof(UpdateBannerText));
+        OnPropertyChanged(nameof(CanStartUpdate));
+        OnPropertyChanged(nameof(CanRestartForUpdate));
+    }
+
+    partial void OnUpdateProgressChanged(int value) => OnPropertyChanged(nameof(UpdateBannerText));
+
+    public async Task CheckForUpdatesAsync()
+    {
+        if (!_services.Updater.Supported)
+            return;
+
+        try
+        {
+            UpdatePhase = UpdatePhase.Checking;
+            UpdatePhase = await _services.Updater.CheckAsync() ? UpdatePhase.Available : UpdatePhase.UpToDate;
+        }
+        catch
+        {
+            UpdatePhase = UpdatePhase.Idle;
+        }
+    }
+
+    [RelayCommand]
+    private async Task StartUpdate()
+    {
+        try
+        {
+            UpdatePhase = UpdatePhase.Downloading;
+            await _services.Updater.DownloadAsync(p => UpdateProgress = p);
+            UpdatePhase = UpdatePhase.ReadyToRestart;
+        }
+        catch
+        {
+            UpdatePhase = UpdatePhase.Failed;
+        }
+    }
+
+    [RelayCommand]
+    private void RestartForUpdate() => _services.Updater.ApplyAndRestart();
 
     partial void OnPageChanged(NavPage value)
     {

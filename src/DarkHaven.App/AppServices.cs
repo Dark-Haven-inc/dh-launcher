@@ -27,6 +27,7 @@ public sealed class AppServices
     public ContentUpdater Content { get; }
     public GameLauncher Game { get; }
     public LaunchCoordinator Launch { get; }
+    public LauncherUpdater Updater { get; }
 
     public AppServices()
     {
@@ -56,6 +57,7 @@ public sealed class AppServices
         Content = new ContentUpdater(ContentDb, new ManifestDownloader(Http), Engines);
         Game = new GameLauncher(LocateLoader(), LauncherPaths.SigningKeyPath, Engines, LauncherPaths.ContentDbPath);
         Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
+        Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
     }
 
     private static string LocateLoader()

@@ -21,6 +21,16 @@ public sealed record DhRegion
     [JsonPropertyName("blurb")]
     public string? Blurb { get; init; }
 
+    /// <summary>
+    /// <c>"open"</c> — a live, connectable region. <c>"quarantine"</c> — shown on the map to sketch
+    /// the planned network, but not yet online and not connectable. Defaults to open.
+    /// </summary>
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = "open";
+
+    [JsonIgnore]
+    public bool IsQuarantine => !string.Equals(Status, "open", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Codenames of adjacent regions reachable by gate.</summary>
     [JsonPropertyName("neighbours")]
     public string[] Neighbours { get; init; } = [];
@@ -74,12 +84,20 @@ public sealed class DhRegions(HttpClient http, string bundledJsonPath, string? r
             RegionX = r.X,
             RegionY = r.Y,
             RegionCentral = r.Central,
+            RegionQuarantine = r.IsQuarantine,
         }).ToList();
 
         await Task.WhenAll(entries.Select(async entry =>
         {
             try
             {
+                // A quarantined region has no server to poll — leave it as unreachable.
+                if (entry.RegionQuarantine)
+                {
+                    entry.Reachability = ServerReachability.Offline;
+                    return;
+                }
+
                 if (!Ss14Address.TryParse(entry.Address, out var uri))
                 {
                     entry.Reachability = ServerReachability.Offline;

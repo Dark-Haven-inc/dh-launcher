@@ -23,7 +23,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     public string DataDir => LauncherPaths.DataDir;
     public string VersionLine =>
-        $"ЛАУНЧЕР 0.1.0     ·     ДВИЖОК Robust (в комплекте)     ·     КОНТЕНТ —";
+        $"ЛАУНЧЕР {LauncherInfo.Version}     ·     ДВИЖОК Robust (в комплекте)";
 
     public SettingsViewModel(AppServices services)
     {
@@ -84,7 +84,27 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void CheckForUpdates() => Status = "Самообновление лаунчера появится ближе к релизу.";
+    private async Task CheckForUpdatesAsync()
+    {
+        if (!_services.Updater.Supported)
+        {
+            Status = "Самообновление доступно только в установленной версии лаунчера.";
+            return;
+        }
+
+        Status = "Проверяю обновления…";
+        try
+        {
+            if (await _services.Updater.CheckAsync())
+                Status = $"Доступно обновление {_services.Updater.PendingVersion}. Баннер вверху обновит лаунчер.";
+            else
+                Status = $"Установлена последняя версия ({_services.Updater.CurrentVersion}).";
+        }
+        catch (Exception e)
+        {
+            Status = "Не удалось проверить обновления: " + e.Message;
+        }
+    }
 
     private async Task LoadCacheSummaryAsync()
     {

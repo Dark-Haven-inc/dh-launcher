@@ -21,4 +21,14 @@
     <PackageReference Include="NSec.Cryptography" />
   </ItemGroup>
 
+  <!-- RobustToolbox client native libs (SDL3, OpenAL, freetype, glfw…). The engine zip ships
+       managed assemblies only; these are vendored and loaded from the loader's own directory
+       (see OnResolvingUnmanaged in Program.cs). -->
+  <ItemGroup>
+    <None Include="natives\win-x64\*.dll" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
 </Project>

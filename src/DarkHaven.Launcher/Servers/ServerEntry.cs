@@ -31,6 +31,9 @@ public sealed class ServerEntry(string address)
     public double RegionY { get; set; } = 0.5;
     public bool RegionCentral { get; set; }
 
+    /// <summary>A region shown on the map to sketch the planned network but not yet online / connectable.</summary>
+    public bool RegionQuarantine { get; set; }
+
     /// <summary>Round-trip time to the server's HTTP endpoint, ms — populated by a region poll.</summary>
     public int? PingMs { get; set; }
 

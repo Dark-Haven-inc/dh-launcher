@@ -19,15 +19,19 @@ public partial class RegionNodeViewModel(ServerEntry entry, Action<RegionNodeVie
     public double Y => Entry.RegionY;
     public IReadOnlyList<string> Neighbours => Entry.RegionNeighbours;
 
-    public bool IsOnline => Entry.Reachability == ServerReachability.Online;
-    public bool IsOffline => Entry.Reachability == ServerReachability.Offline;
-    public bool IsWaiting => Entry.Reachability == ServerReachability.Unknown;
+    public bool IsQuarantine => Entry.RegionQuarantine;
+    public bool IsOnline => !IsQuarantine && Entry.Reachability == ServerReachability.Online;
+    public bool IsOffline => !IsQuarantine && Entry.Reachability == ServerReachability.Offline;
+    public bool IsWaiting => !IsQuarantine && Entry.Reachability == ServerReachability.Unknown;
+
+    /// <summary>Only an open region that answered its status poll can be joined.</summary>
+    public bool CanConnect => IsOnline;
 
     [ObservableProperty] private bool _isSelected;
 
     public string Population => Entry.SoftMaxPlayers > 0 ? $"{Entry.Players}/{Entry.SoftMaxPlayers}" : Entry.Players.ToString();
     public string Ping => Entry.PingMs is { } p ? $"{p} мс" : "—";
-    public string StateText => Entry.Reachability switch
+    public string StateText => IsQuarantine ? "НА КАРАНТИНЕ" : Entry.Reachability switch
     {
         ServerReachability.Online => "ОНЛАЙН",
         ServerReachability.Offline => "офлайн",
@@ -74,6 +78,7 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
 
             SelectNode(Nodes.FirstOrDefault(n => n.Name == keepSelectedName)
                        ?? Nodes.FirstOrDefault(n => n.IsCentral)
+                       ?? Nodes.FirstOrDefault(n => !n.IsQuarantine)
                        ?? Nodes.FirstOrDefault());
         }
         catch (Exception e)
@@ -104,7 +109,7 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
     [RelayCommand]
     private void PlaySelected()
     {
-        if (Selected is { IsOffline: false })
+        if (Selected is { CanConnect: true })
             connect(Selected.Entry);
     }
 }
