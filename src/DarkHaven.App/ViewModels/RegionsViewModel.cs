@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.App.Controls;
 using DarkHaven.Launcher.Models;
 using DarkHaven.Launcher.Servers;
 using Serilog;
@@ -8,7 +9,7 @@ using Serilog;
 namespace DarkHaven.App.ViewModels;
 
 /// <summary>A region node on the "КАРТА СЕТИ".</summary>
-public partial class RegionNodeViewModel(ServerEntry entry, Action<RegionNodeViewModel> select) : ViewModelBase
+public partial class RegionNodeViewModel(ServerEntry entry, Action<RegionNodeViewModel> select) : ViewModelBase, IMapNode
 {
     public ServerEntry Entry { get; } = entry;
     public string Name => Entry.DisplayName;
@@ -91,6 +92,9 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
             IsLoading = false;
         }
     }
+
+    /// <summary>Called by the sector map when a node is clicked.</summary>
+    public void SelectFromMap(RegionNodeViewModel node) => SelectNode(node);
 
     private void SelectNode(RegionNodeViewModel? node)
     {
