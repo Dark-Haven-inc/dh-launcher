@@ -30,6 +30,16 @@ public sealed class AppServices : IDisposable
     public LauncherUpdater Updater { get; }
     public DiscordPresence Discord { get; }
 
+    /// <summary>The <c>ss14://</c> address of the server the player is currently in, or null.</summary>
+    public string? CurrentGameAddress { get; private set; }
+    public event Action? GameSessionChanged;
+
+    public void SetGameSession(string? address)
+    {
+        CurrentGameAddress = address;
+        GameSessionChanged?.Invoke();
+    }
+
     public AppServices()
     {
         Http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };

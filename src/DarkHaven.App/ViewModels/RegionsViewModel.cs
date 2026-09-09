@@ -9,7 +9,8 @@ using Serilog;
 namespace DarkHaven.App.ViewModels;
 
 /// <summary>A region node on the "КАРТА СЕТИ".</summary>
-public partial class RegionNodeViewModel(ServerEntry entry, Action<RegionNodeViewModel> select) : ViewModelBase, IMapNode
+public partial class RegionNodeViewModel(AppServices services, ServerEntry entry, Action<RegionNodeViewModel> select)
+    : ViewModelBase, IMapNode
 {
     public ServerEntry Entry { get; } = entry;
     public string Name => Entry.DisplayName;
@@ -24,6 +25,9 @@ public partial class RegionNodeViewModel(ServerEntry entry, Action<RegionNodeVie
     public bool IsOnline => !IsQuarantine && Entry.Reachability == ServerReachability.Online;
     public bool IsOffline => !IsQuarantine && Entry.Reachability == ServerReachability.Offline;
     public bool IsWaiting => !IsQuarantine && Entry.Reachability == ServerReachability.Unknown;
+
+    public bool IsCurrent => services.CurrentGameAddress is { } a
+        && string.Equals(a, Entry.Address, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Only an open region that answered its status poll can be joined.</summary>
     public bool CanConnect => IsOnline;
@@ -73,7 +77,7 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
             var keepSelectedName = Selected?.Name;
             Nodes.Clear();
             foreach (var e in entries)
-                Nodes.Add(new RegionNodeViewModel(e, SelectNode));
+                Nodes.Add(new RegionNodeViewModel(services, e, SelectNode));
 
             TotalPlayers = Nodes.Where(n => n.IsOnline).Sum(n => n.Entry.Players);
 

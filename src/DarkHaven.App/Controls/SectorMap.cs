@@ -51,10 +51,16 @@ public sealed class SectorMap : Control
     private double _phase;
 
     private double _scale = 1.0;
+    private double _targetScale = 1.0;
+    private Point _zoomAnchorScreen;
+    private Point _zoomAnchorMap;
     private Vector _pan;
     private Point? _dragFrom;
     private Vector _dragPanStart;
     private bool _dragged;
+    private IMapNode? _hover;
+    private Point _hoverAt;
+    private bool _needsFit = true;
 
     private readonly Typeface _face = new("Inter, Segoe UI, sans-serif");
 
@@ -71,6 +77,15 @@ public sealed class SectorMap : Control
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(33), DispatcherPriority.Background, (_, _) =>
         {
             _phase += 0.016;
+
+            if (Math.Abs(_targetScale - _scale) > 0.0005)
+            {
+                _scale += (_targetScale - _scale) * 0.25;
+                // keep the point under the cursor fixed while the zoom eases in
+                var anchorNow = ToScreen(_zoomAnchorMap);
+                _pan += new Vector(_zoomAnchorScreen.X - anchorNow.X, _zoomAnchorScreen.Y - anchorNow.Y);
+            }
+
             InvalidateVisual();
         });
     }
@@ -90,8 +105,35 @@ public sealed class SectorMap : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == ItemsSourceProperty)
+            _needsFit = true;
         if (change.Property == ItemsSourceProperty || change.Property == SelectedItemProperty || change.Property == BoundsProperty)
             InvalidateVisual();
+    }
+
+    /// <summary>Frame all regions with a little padding, centred, at the start and on data changes.</summary>
+    private void Fit(IReadOnlyList<IMapNode> nodes)
+    {
+        _needsFit = false;
+        _scale = _targetScale = 1.0;
+        _pan = default;
+
+        double minX = 1, minY = 1, maxX = 0, maxY = 0;
+        foreach (var n in nodes)
+        {
+            minX = Math.Min(minX, n.X); maxX = Math.Max(maxX, n.X);
+            minY = Math.Min(minY, n.Y); maxY = Math.Max(maxY, n.Y);
+        }
+
+        var spanX = Math.Max(0.15, maxX - minX);
+        var spanY = Math.Max(0.15, maxY - minY);
+        // BasePx maps a span of 1.0; leave ~22% breathing room around the cluster
+        _targetScale = _scale = Math.Clamp(0.78 / Math.Max(spanX, spanY), 0.6, 2.2);
+
+        var midMap = new Point((minX + maxX) / 2, (minY + maxY) / 2);
+        var mid = ToScreen(midMap);
+        var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        _pan = new Vector(c.X - mid.X, c.Y - mid.Y);
     }
 
     private IReadOnlyList<IMapNode> Nodes()
@@ -140,13 +182,37 @@ public sealed class SectorMap : Control
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
-        if (_dragFrom is not { } from) return;
         var now = e.GetPosition(this);
-        var delta = new Vector(now.X - from.X, now.Y - from.Y);
-        if (Math.Abs(delta.X) + Math.Abs(delta.Y) > 3)
-            _dragged = true;
-        _pan = _dragPanStart + delta;
-        InvalidateVisual();
+
+        if (_dragFrom is { } from)
+        {
+            var delta = new Vector(now.X - from.X, now.Y - from.Y);
+            if (Math.Abs(delta.X) + Math.Abs(delta.Y) > 3)
+                _dragged = true;
+            _pan = _dragPanStart + delta;
+            _hover = null;
+            InvalidateVisual();
+            return;
+        }
+
+        var hit = HitTest(now);
+        if (!ReferenceEquals(hit, _hover))
+        {
+            _hover = hit;
+            Cursor = new Cursor(hit is null ? StandardCursorType.Arrow : StandardCursorType.Hand);
+            InvalidateVisual();
+        }
+        _hoverAt = now;
+    }
+
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (_hover is not null)
+        {
+            _hover = null;
+            InvalidateVisual();
+        }
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
@@ -171,11 +237,9 @@ public sealed class SectorMap : Control
     {
         base.OnPointerWheelChanged(e);
         var cursor = e.GetPosition(this);
-        var before = ToMap(cursor);
-        _scale = Math.Clamp(_scale * (e.Delta.Y > 0 ? 1.12 : 1 / 1.12), 0.55, 3.5);
-        var after = ToScreen(before);
-        _pan += new Vector(cursor.X - after.X, cursor.Y - after.Y);
-        InvalidateVisual();
+        _zoomAnchorScreen = cursor;
+        _zoomAnchorMap = ToMap(cursor);
+        _targetScale = Math.Clamp(_targetScale * (e.Delta.Y > 0 ? 1.18 : 1 / 1.18), 0.55, 3.5);
         e.Handled = true;
     }
 
@@ -223,6 +287,9 @@ public sealed class SectorMap : Control
             DrawCentered(ctx, "нет данных о секторе", Dim, 13);
             return;
         }
+
+        if (_needsFit && b.Width > 1 && b.Height > 1)
+            Fit(nodes);
 
         var byName = new Dictionary<string, IMapNode>(StringComparer.OrdinalIgnoreCase);
         foreach (var n in nodes) byName[n.Name] = n;
@@ -283,6 +350,19 @@ public sealed class SectorMap : Control
             if (selected)
                 ctx.DrawEllipse(null, new Pen(new SolidColorBrush(AccentBright), 2), p, r + 9, r + 9);
 
+            // "you are here"
+            if (n.IsCurrent)
+            {
+                var badge = Fmt("ВЫ ЗДЕСЬ", Online, 9, true);
+                var bw = badge.Width + 12;
+                var br = new Rect(p.X - bw / 2, p.Y - r - 22, bw, 15);
+                ctx.DrawRectangle(new SolidColorBrush(Online, 0.15), new Pen(new SolidColorBrush(Online), 1),
+                    br, 4, 4);
+                ctx.DrawText(badge, new Point(br.X + 6, br.Y + 2));
+                var ringP = 1 + 0.18 * Math.Sin(_phase * 3);
+                ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Online, 0.7), 1.5), p, (r + 7) * ringP, (r + 7) * ringP);
+            }
+
             // label
             var label = Fmt(n.Name, selected ? Text : Dim, selected ? 13 : 12, selected);
             ctx.DrawText(label, new Point(p.X - label.Width / 2, p.Y + r + 6));
@@ -299,9 +379,33 @@ public sealed class SectorMap : Control
             }
         }
 
+        // hover tooltip
+        if (_hover is { } hv)
+            DrawTooltip(ctx, hv);
+
         // hint
         var hint = Fmt("тащить — двигать · колесо — масштаб", Dim, 10, false);
         ctx.DrawText(hint, new Point(14, b.Height - hint.Height - 10));
+    }
+
+    private void DrawTooltip(DrawingContext ctx, IMapNode n)
+    {
+        const double w = 210;
+        var title = Fmt(n.Name, Text, 12, true);
+        var body = new FormattedText(
+            string.IsNullOrWhiteSpace(n.Blurb) ? "—" : n.Blurb,
+            CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface(_face.FontFamily), 11, new SolidColorBrush(Dim)) { MaxTextWidth = w - 20 };
+
+        var h = 14 + title.Height + 4 + body.Height + 12;
+        var x = Math.Clamp(_hoverAt.X + 16, 6, Bounds.Width - w - 6);
+        var y = Math.Clamp(_hoverAt.Y + 16, 6, Bounds.Height - h - 6);
+        var rect = new Rect(x, y, w, h);
+
+        ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#111A2E"), 0.97),
+            new Pen(new SolidColorBrush(Accent, 0.6), 1), rect, 6, 6);
+        ctx.DrawText(title, new Point(x + 10, y + 8));
+        ctx.DrawText(body, new Point(x + 10, y + 8 + title.Height + 4));
     }
 
     private FormattedText Fmt(string text, Color color, double size, bool bold) =>

@@ -76,17 +76,20 @@ public partial class ConnectingViewModel : ViewModelBase
             catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
 
             _services.Discord.SetInGame(_server.DisplayName, _server.IsDarkHavenRegion);
+            _services.SetGameSession(_server.Address);
             _ = WatchProcessAsync(proc);
         }
         catch (OperationCanceledException)
         {
             _services.Discord.SetIdle();
+            _services.SetGameSession(null);
             Close();
         }
         catch (Exception e)
         {
             Log.Error(e, "Connect failed");
             _services.Discord.SetIdle();
+            _services.SetGameSession(null);
             IsBusy = false;
             var active = Steps.FirstOrDefault(s => s.State == StepState.Active);
             if (active is not null) active.State = StepState.Failed;
@@ -148,7 +151,11 @@ public partial class ConnectingViewModel : ViewModelBase
             }
         });
 
-        _ = exited.ContinueWith(_ => _services.Discord.SetIdle(), TaskScheduler.Default);
+        _ = exited.ContinueWith(_ =>
+        {
+            _services.Discord.SetIdle();
+            _services.SetGameSession(null);
+        }, TaskScheduler.Default);
     }
 
     [RelayCommand]
