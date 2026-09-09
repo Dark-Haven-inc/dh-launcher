@@ -36,12 +36,14 @@ public sealed class LaunchCoordinator(
         bool allowGuest,
         bool compatMode,
         IProgress<LaunchProgress>? progress = null,
+        Action<ResolvedServerInfo>? onResolved = null,
         CancellationToken cancel = default)
     {
         void Step(LaunchStep s, StepState st, string d, double? f = null, double? bps = null, TimeSpan? eta = null)
             => progress?.Report(new LaunchProgress(s, st, d, f, bps, eta));
 
         var resolved = await serverInfo.GetAsync(address, cancel);
+        onResolved?.Invoke(resolved);
         var build = resolved.Info.Build
                     ?? throw new InvalidOperationException("Сервер не сообщил информацию о сборке");
 

@@ -41,6 +41,7 @@ public partial class ConnectingViewModel : ViewModelBase
     [ObservableProperty] private string _subtitle = "";
     [ObservableProperty] private string _speedEta = "";
     [ObservableProperty] private string _buildTag = "";
+    [ObservableProperty] private string? _motd;
     [ObservableProperty] private bool _isBusy = true;
     [ObservableProperty] private string? _errorText;
 
@@ -70,7 +71,16 @@ public partial class ConnectingViewModel : ViewModelBase
         try
         {
             var compat = _services.Settings.GetConfig("CompatMode") == "true";
-            var proc = await _services.Launch.ConnectAsync(_server.Address, allowGuest: true, compat, progress, _cts.Token);
+            var proc = await _services.Launch.ConnectAsync(
+                _server.Address, allowGuest: true, compat, progress,
+                onResolved: r => Dispatcher.UIThread.Post(() =>
+                {
+                    if (r.Info.Desc is { Length: > 0 } d)
+                        Motd = d.Trim();
+                    if (!_server.IsDarkHavenRegion && r.Info.Desc is null && _server.ServerName is { Length: > 0 } sn)
+                        Title = sn;
+                }),
+                cancel: _cts.Token);
 
             try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
             catch (Exception e) { Log.Warning(e, "Could not record recent server"); }

@@ -41,6 +41,44 @@ public sealed class EngineManager(
     public bool IsEngineInstalled(string version)
         => File.Exists(EnginePath(version)) && File.Exists(EngineSigPath(version));
 
+    /// <summary>Engine versions shipped inside the launcher — never cull these.</summary>
+    public IReadOnlyCollection<string> BundledVersions => LoadBundled().Keys;
+
+    /// <summary>
+    /// Deletes cached engine zips (and their sidecars) that aren't bundled and aren't currently in
+    /// use. Returns the number of bytes freed. Culled engines re-download on the next connect.
+    /// </summary>
+    public long CullEngines(IEnumerable<string>? keepVersions = null)
+    {
+        if (!Directory.Exists(enginesDir))
+            return 0;
+
+        var keep = new HashSet<string>(BundledVersions, StringComparer.OrdinalIgnoreCase);
+        foreach (var v in keepVersions ?? [])
+            keep.Add(v);
+
+        long freed = 0;
+        foreach (var zip in Directory.GetFiles(enginesDir, "*.zip"))
+        {
+            var version = Path.GetFileNameWithoutExtension(zip);
+            if (keep.Contains(version))
+                continue;
+
+            try
+            {
+                freed += new FileInfo(zip).Length;
+                File.Delete(zip);
+                var sig = zip + ".sig";
+                if (File.Exists(sig)) File.Delete(sig);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e, "Could not delete cached engine {Zip}", zip);
+            }
+        }
+        return freed;
+    }
+
     /// <summary>
     /// Ensures <paramref name="requestedVersion"/> (after following manifest redirects) is on disk.
     /// Returns the resolved version string.

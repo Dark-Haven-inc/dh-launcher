@@ -91,6 +91,33 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task VerifyContentAsync()
+    {
+        Status = "Проверяю целостность кэша…";
+        var problem = await Task.Run(_services.ContentDb.CheckIntegrity);
+        Status = problem is null
+            ? "Кэш контента цел."
+            : "Кэш повреждён — нажмите «Очистить», он скачается заново. " + problem;
+    }
+
+    [RelayCommand]
+    private async Task CullEnginesAsync()
+    {
+        try
+        {
+            var freed = await Task.Run(() => _services.Engines.CullEngines());
+            Status = freed > 0
+                ? $"Удалено неиспользуемых сборок движка на {freed / 1_000_000.0:0} МБ."
+                : "Лишних сборок движка нет.";
+            await LoadCacheSummaryAsync();
+        }
+        catch (Exception e)
+        {
+            Status = "Не удалось: " + e.Message;
+        }
+    }
+
+    [RelayCommand]
     private async Task ClearContentCacheAsync()
     {
         try

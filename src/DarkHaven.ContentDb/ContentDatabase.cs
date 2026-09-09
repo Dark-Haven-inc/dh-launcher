@@ -60,6 +60,34 @@ public sealed class ContentDatabase(string dbPath)
         Console.Error.WriteLine($"content DB migrated {userVersion} -> {ContentDbSchema.CurrentVersion} in {sw.ElapsedMilliseconds}ms");
     }
 
+    /// <summary>
+    /// Runs SQLite's <c>integrity_check</c> on the content store. Returns <c>null</c> if healthy,
+    /// otherwise the first problems reported.
+    /// </summary>
+    public string? CheckIntegrity()
+    {
+        if (!System.IO.File.Exists(Path))
+            return null;
+
+        try
+        {
+            using var con = Connect();
+            using var cmd = con.CreateCommand();
+            cmd.CommandText = "PRAGMA integrity_check(20)";
+            using var reader = cmd.ExecuteReader();
+
+            var lines = new List<string>();
+            while (reader.Read())
+                lines.Add(reader.GetString(0));
+
+            return lines is ["ok"] ? null : string.Join("; ", lines);
+        }
+        catch (Exception e)
+        {
+            return e.Message;
+        }
+    }
+
     /// <summary>Content version ids currently pinned by a live client process (prunes dead rows).</summary>
     public static IReadOnlyList<long> GetRunningClientVersions(SqliteConnection con)
     {

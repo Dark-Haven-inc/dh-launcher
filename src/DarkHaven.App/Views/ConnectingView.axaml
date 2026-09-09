@@ -9,6 +9,9 @@
             <StackPanel DockPanel.Dock="Top" Margin="28,24,28,18" Spacing="3">
                 <TextBlock Text="{Binding Subtitle}" Classes="caps" />
                 <TextBlock Text="{Binding Title}" Classes="h1" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Motd}" Classes="dim" TextWrapping="Wrap" Margin="0,4,0,0" MaxLines="3"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding Motd, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
 
             <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgPanelBrush}"
