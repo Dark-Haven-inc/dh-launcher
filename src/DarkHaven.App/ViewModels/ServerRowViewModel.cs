@@ -1,10 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.App.Controls;
 using DarkHaven.Launcher.Servers;
 
 namespace DarkHaven.App.ViewModels;
 
-public partial class ServerRowViewModel : ViewModelBase
+public partial class ServerRowViewModel : ViewModelBase, IGalaxyNode
 {
     private readonly AppServices _services;
     private readonly Action<ServerEntry> _connect;
@@ -26,6 +27,7 @@ public partial class ServerRowViewModel : ViewModelBase
 
     public bool IsOnline => Entry.Reachability == ServerReachability.Online;
     public bool IsOffline => Entry.Reachability == ServerReachability.Offline;
+    public int Players => Entry.Players;
 
     [ObservableProperty] private bool _isFavorite;
 

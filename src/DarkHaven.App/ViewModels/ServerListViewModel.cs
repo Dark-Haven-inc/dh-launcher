@@ -19,6 +19,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private bool _hide18Plus;
     [ObservableProperty] private bool _favoritesOnly;
     [ObservableProperty] private bool _sortByName;
+    [ObservableProperty] private bool _mapView;
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
 
@@ -69,6 +70,9 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         if (addr.Length > 0)
             connect(new ServerEntry(addr));
     }
+
+    /// <summary>Called by the galaxy map when a star is clicked.</summary>
+    public void ConnectRow(ServerRowViewModel row) => connect(row.Entry);
 
     private void LoadFavorites()
     {
