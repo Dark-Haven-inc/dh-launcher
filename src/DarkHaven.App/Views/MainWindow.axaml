@@ -6,6 +6,7 @@
         x:DataType="vm:MainWindowViewModel"
         Title="Dark Haven Launcher" Width="1100" Height="720"
         MinWidth="960" MinHeight="600"
+        Icon="/Assets/icon.ico"
         Background="{StaticResource DhBgBrush}">
 
     <Window.DataTemplates>
@@ -26,10 +27,7 @@
                     BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1" Height="58">
                 <Grid Margin="20,0" ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Border Width="30" Height="30" CornerRadius="15" Background="{StaticResource DhAccentBrush}">
-                            <TextBlock Text="✦" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="White" FontSize="16" />
-                        </Border>
+                        <Image Source="/Assets/emblem.png" Width="32" Height="32" VerticalAlignment="Center" />
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="DARK HAVEN" FontWeight="Bold" FontSize="15" LetterSpacing="1"
                                        Foreground="{StaticResource DhTextBrush}" />

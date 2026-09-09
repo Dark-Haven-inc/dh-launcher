@@ -5,6 +5,7 @@
     <RootNamespace>DarkHaven.App</RootNamespace>
     <AssemblyName>DarkHavenLauncher</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
@@ -21,6 +22,10 @@
   <ItemGroup>
     <!-- The forked Dark Haven engine, shipped with the launcher (see EngineManager). -->
     <None Include="bundled-engines\**" CopyToOutputDirectory="PreserveNewest" LinkBase="bundled-engines" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
   <ItemGroup>

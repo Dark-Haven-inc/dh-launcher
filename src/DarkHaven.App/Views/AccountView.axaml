@@ -8,6 +8,7 @@
         <StackPanel Margin="0,32" Spacing="16" MaxWidth="420" HorizontalAlignment="Center">
 
             <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <Image Source="/Assets/emblem.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,6" />
                 <TextBlock Text="ВХОД В СЕТЬ" Classes="h1" HorizontalAlignment="Center" LetterSpacing="2" />
                 <TextBlock Text="Аккаунт Space Station 14 для всех регионов Dark Haven"
                            Classes="dim" HorizontalAlignment="Center" TextAlignment="Center" />

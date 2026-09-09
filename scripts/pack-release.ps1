@@ -57,6 +57,7 @@ dotnet vpk pack `
     --mainExe DarkHavenLauncher.exe `
     --packTitle "Dark Haven Launcher" `
     --packAuthors "Dark Haven" `
+    --icon (Join-Path $repo "src/DarkHaven.App/Assets/icon.ico") `
     --channel $Channel `
     --outputDir $OutputDir
 if ($LASTEXITCODE) { throw "vpk pack failed" }
