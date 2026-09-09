@@ -21,6 +21,8 @@
                                Text="{Binding BuildTag}" />
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                         <Button Classes="ghost" Content="Отмена" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+                        <Button Classes="ghost" Content="Логи" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
+                        <Button Classes="ghost" Content="Ещё раз" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
                         <Button Classes="ghost" Content="Закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
                     </StackPanel>
                 </Grid>

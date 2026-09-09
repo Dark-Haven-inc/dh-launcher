@@ -44,7 +44,16 @@ public partial class MainWindowViewModel : ViewModelBase
         Account = new AccountViewModel(services);
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel();
-        _current = Regions;
+
+        // First run with no saved account: land on the login screen instead of the map.
+        if (services.Settings.GetConfig("SeenWelcome") != "true")
+        {
+            services.Settings.SetConfig("SeenWelcome", "true");
+            if (services.Accounts.Accounts.Count == 0)
+                _page = NavPage.Account;
+        }
+
+        _current = _page == NavPage.Account ? Account : Regions;
 
         _ = CheckForUpdatesAsync();
     }

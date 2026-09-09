@@ -45,6 +45,9 @@ public partial class ConnectingViewModel : ViewModelBase
     [ObservableProperty] private bool _isBusy = true;
     [ObservableProperty] private string? _errorText;
 
+    public bool HasError => ErrorText is not null;
+    partial void OnErrorTextChanged(string? value) => OnPropertyChanged(nameof(HasError));
+
     public ObservableCollection<ChecklistStepViewModel> Steps { get; } =
     [
         new(LaunchStep.Engine, "Версия движка"),
@@ -179,4 +182,25 @@ public partial class ConnectingViewModel : ViewModelBase
 
     [RelayCommand]
     private void Close() => Finished?.Invoke();
+
+    [RelayCommand]
+    private void Retry()
+    {
+        ErrorText = null;
+        foreach (var s in Steps) { s.State = StepState.Pending; s.Detail = ""; s.ShowBar = false; }
+        SpeedEta = "";
+        IsBusy = true;
+        Start();
+    }
+
+    [RelayCommand]
+    private void OpenLogs()
+    {
+        try
+        {
+            DarkHaven.Launcher.LauncherPaths.EnsureDirectories();
+            Process.Start(new ProcessStartInfo(DarkHaven.Launcher.LauncherPaths.LogsDir) { UseShellExecute = true });
+        }
+        catch { /* ignore */ }
+    }
 }

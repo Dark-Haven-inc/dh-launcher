@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -27,7 +28,7 @@ public partial class App : Application
             SingleInstance.StartListening(msg => Dispatcher.UIThread.Post(() => HandleForwarded(msg)));
 
             if (Program.LaunchUri is { } uri)
-                vm.ConnectToAddress(uri);
+                Connect(vm, uri, Program.IsRedial);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -39,6 +40,10 @@ public partial class App : Application
         if (MainWindow() is not { } w)
             return;
 
+        var redial = msg.StartsWith("redial\n");
+        if (redial)
+            msg = msg["redial\n".Length..];
+
         if (w.WindowState == WindowState.Minimized)
             w.WindowState = WindowState.Normal;
         w.Activate();
@@ -46,7 +51,16 @@ public partial class App : Application
         w.Topmost = false;
 
         if ((msg.StartsWith("ss14://") || msg.StartsWith("ss14s://")) && w.DataContext is MainWindowViewModel vm)
-            vm.ConnectToAddress(msg);
+            Connect(vm, msg, redial);
+    }
+
+    /// <summary>On a redial the previous client is still tearing down — give it a moment before reconnecting.</summary>
+    private static void Connect(MainWindowViewModel vm, string address, bool redial)
+    {
+        if (redial)
+            _ = Task.Delay(1500).ContinueWith(_ => Dispatcher.UIThread.Post(() => vm.ConnectToAddress(address)));
+        else
+            vm.ConnectToAddress(address);
     }
 
     /// <summary>Minimise while the game runs (if the setting is on); restore + focus when it exits.</summary>
