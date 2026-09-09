@@ -89,7 +89,7 @@ public partial class ConnectingViewModel : ViewModelBase
             catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
 
             _services.Discord.SetInGame(_server.DisplayName, _server.IsDarkHavenRegion);
-            _services.SetGameSession(_server.Address);
+            _services.SetGameSession(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion);
             App.SetGameRunning(true);
             _ = WatchProcessAsync(proc);
         }

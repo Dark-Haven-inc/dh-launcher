@@ -34,8 +34,27 @@ public sealed class AppServices : IDisposable
     public string? CurrentGameAddress { get; private set; }
     public event Action? GameSessionChanged;
 
-    public void SetGameSession(string? address)
+    private long _playSessionId;
+    private DateTime _playSessionStart;
+
+    public void SetGameSession(string? address, string? name = null, bool isRegion = false)
     {
+        if (address is not null)
+        {
+            try
+            {
+                _playSessionId = Settings.StartPlaySession(address, string.IsNullOrWhiteSpace(name) ? address : name, isRegion);
+                _playSessionStart = DateTime.UtcNow;
+            }
+            catch { _playSessionId = 0; }
+        }
+        else if (_playSessionId > 0)
+        {
+            try { Settings.EndPlaySession(_playSessionId, (long)(DateTime.UtcNow - _playSessionStart).TotalSeconds); }
+            catch { /* non-fatal */ }
+            _playSessionId = 0;
+        }
+
         CurrentGameAddress = address;
         GameSessionChanged?.Invoke();
     }

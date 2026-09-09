@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="36,28" Spacing="22" MaxWidth="760">
+
+            <!-- Header: avatar + identity -->
+            <Grid ColumnDefinitions="Auto,20,*,Auto">
+                <Border Grid.Column="0" Width="92" Height="92" CornerRadius="46"
+                        Background="{Binding FrameColors.FillBrush}"
+                        BorderBrush="{Binding FrameColors.RingBrush}" BorderThickness="3">
+                    <Panel>
+                        <Image Source="{Binding Avatar}" IsVisible="{Binding HasAvatar}" Stretch="UniformToFill" />
+                        <Image Source="/Assets/emblem.png" Margin="20" IsVisible="{Binding !HasAvatar}" />
+                    </Panel>
+                </Border>
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="{Binding AccountName}" Classes="h1" />
+                    <TextBlock Text="{Binding AccountStatus}" Classes="dim" />
+                    <TextBlock Classes="dim" FontSize="12">
+                        <Run Text="в сети с" /><Run Text=" " /><Run Text="{Binding MemberSince}" />
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="6">
+                    <Button Classes="ghost" Content="Сменить аватар" Name="PickAvatarButton" />
+                    <Button Classes="ghost" Content="Убрать аватар" Command="{Binding ClearAvatarCommand}"
+                            IsVisible="{Binding HasAvatar}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Frame picker -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="РАМКА" Classes="caps" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Classes="ghost" Content="Синяя"   Command="{Binding SetFrameCommand}" CommandParameter="blue" />
+                    <Button Classes="ghost" Content="Золотая" Command="{Binding SetFrameCommand}" CommandParameter="gold" />
+                    <Button Classes="ghost" Content="Циан"    Command="{Binding SetFrameCommand}" CommandParameter="cyan" />
+                    <Button Classes="ghost" Content="Без рамки" Command="{Binding SetFrameCommand}" CommandParameter="none" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Stat tiles -->
+            <Grid ColumnDefinitions="*,10,*,10,*" >
+                <Border Grid.Column="0" Classes="card" Padding="16,12">
+                    <StackPanel><TextBlock Text="Наиграно" Classes="dim" />
+                        <TextBlock Text="{Binding TotalPlaytime}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="card" Padding="16,12">
+                    <StackPanel><TextBlock Text="В избранном" Classes="dim" />
+                        <TextBlock Text="{Binding FavoritesCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                </Border>
+                <Border Grid.Column="4" Classes="card" Padding="16,12">
+                    <StackPanel><TextBlock Text="Недавних" Classes="dim" />
+                        <TextBlock Text="{Binding RecentCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Per-server playtime -->
+            <StackPanel Spacing="10">
+                <TextBlock Text="ВРЕМЯ ПО СЕРВЕРАМ" Classes="caps" />
+                <TextBlock Text="Пока пусто — сыграй пару заходов, и здесь появится статистика."
+                           Classes="dim" IsVisible="{Binding NoPlaytime}" />
+                <ItemsControl ItemsSource="{Binding Servers}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PlaytimeRowViewModel">
+                            <Border Classes="card" Padding="14,10">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Hours}" Foreground="{StaticResource DhAccentBrush}" />
+                                    </Grid>
+                                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding BarFraction}" Height="4" />
+                                    <TextBlock Text="{Binding Sessions}" Classes="dim" FontSize="11" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
+            <Button Classes="ghost" HorizontalAlignment="Left" Content="Управление аккаунтами"
+                    Command="{Binding ManageAccountsCommand}" />
+
+            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11"
+                       Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Dark Haven." />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

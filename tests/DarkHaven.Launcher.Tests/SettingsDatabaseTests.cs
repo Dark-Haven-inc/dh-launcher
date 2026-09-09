@@ -102,6 +102,31 @@ public class SettingsDatabaseTests : IDisposable
         Assert.Empty(db.GetFavorites());
     }
 
+    [Fact]
+    public void Playtime_sessions_aggregate_per_server()
+    {
+        var db = new SettingsDatabase(_path);
+        db.Initialize();
+
+        var s1 = db.StartPlaySession("ss14://haven:1212", "ХЕЙВЕН", isRegion: true);
+        db.EndPlaySession(s1, 3600);
+        var s2 = db.StartPlaySession("ss14://haven:1212", "ХЕЙВЕН", isRegion: true);
+        db.EndPlaySession(s2, 1800);
+        var s3 = db.StartPlaySession("ss14://other:1212", "Other", isRegion: false);
+        db.EndPlaySession(s3, 600);
+        db.EndPlaySession(0, 999);          // no-op: invalid id
+        db.StartPlaySession("ss14://open:1212", "Open", false);   // still running → 0s, ignored in totals
+
+        Assert.Equal(6000, db.GetTotalPlaytimeSeconds());
+        Assert.NotNull(db.GetFirstPlayed());
+
+        var by = db.GetPlaytimeByServer();
+        Assert.Equal("ss14://haven:1212", by[0].Address);   // most-played first
+        Assert.Equal(5400, by[0].TotalSeconds);
+        Assert.Equal(2, by[0].Sessions);
+        Assert.True(by[0].IsRegion);
+    }
+
     public void Dispose()
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();

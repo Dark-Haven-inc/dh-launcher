@@ -5,7 +5,7 @@ using DarkHaven.Launcher.Update;
 
 namespace DarkHaven.App.ViewModels;
 
-public enum NavPage { Home, Regions, Servers, News, Settings, Admin, Account }
+public enum NavPage { Home, Regions, Servers, News, Settings, Admin, Account, Profile }
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -23,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ServerListViewModel Servers { get; }
     public NewsViewModel News { get; }
     public AccountViewModel Account { get; }
+    public ProfileViewModel Profile { get; }
     public SettingsViewModel Settings { get; }
     public AdminViewModel Admin { get; }
 
@@ -42,6 +43,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Servers = new ServerListViewModel(services, Connect);
         News = new NewsViewModel();
         Account = new AccountViewModel(services);
+        Profile = new ProfileViewModel(services, () => Page = NavPage.Account);
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel();
 
@@ -123,6 +125,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (value == NavPage.Home)
             Home.Reload();
+        else if (value == NavPage.Profile)
+            Profile.Reload();
 
         Current = value switch
         {
@@ -133,12 +137,13 @@ public partial class MainWindowViewModel : ViewModelBase
             NavPage.Settings => Settings,
             NavPage.Admin => Admin,
             NavPage.Account => Account,
+            NavPage.Profile => Profile,
             _ => Regions,
         };
     }
 
     [RelayCommand] private void Navigate(NavPage page) => Page = page;
-    [RelayCommand] private void OpenAccount() => Page = NavPage.Account;
+    [RelayCommand] private void OpenAccount() => Page = NavPage.Profile;
     [RelayCommand] private void OpenDiscord() => OpenUrl("https://discord.gg/");
     [RelayCommand] private void OpenSite() => OpenUrl("https://spacestation14.com/");
 

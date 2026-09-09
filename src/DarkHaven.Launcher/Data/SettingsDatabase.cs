@@ -15,13 +15,16 @@ public sealed record RecentServer(string Address, string Name, DateTimeOffset La
 /// <summary>A pinned favourite server.</summary>
 public sealed record FavoriteServerEntry(string Address, string Name);
 
+/// <summary>Aggregated local playtime for one server / region.</summary>
+public sealed record PlaytimeEntry(string Name, string Address, long TotalSeconds, int Sessions, DateTimeOffset LastPlayed, bool IsRegion);
+
 /// <summary>
 /// The launcher's small settings/accounts DB. Schema mirrors the reference launcher's
 /// <c>settings.db</c> so it feels familiar and could be imported later.
 /// </summary>
 public sealed class SettingsDatabase(string dbPath)
 {
-    private const int SchemaVersion = 2;
+    private const int SchemaVersion = 3;
 
     private const string CreateV1 = """
         CREATE TABLE Login (
@@ -59,6 +62,18 @@ public sealed class SettingsDatabase(string dbPath)
         );
         """;
 
+    private const string CreateV3 = """
+        CREATE TABLE PlaySession (
+            Id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            Address    TEXT NOT NULL,
+            Name       TEXT NOT NULL,
+            StartedUtc DATETIME NOT NULL,
+            Seconds    INTEGER NOT NULL DEFAULT 0,
+            IsRegion   INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX IX_PlaySession_Address ON PlaySession(Address);
+        """;
+
     public void Initialize()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
@@ -75,6 +90,8 @@ public sealed class SettingsDatabase(string dbPath)
             Exec(con, CreateV1);
         if (version < 2)
             Exec(con, CreateV2);
+        if (version < 3)
+            Exec(con, CreateV3);
         Exec(con, $"PRAGMA user_version = {SchemaVersion}");
         tx.Commit();
     }
@@ -266,6 +283,75 @@ public sealed class SettingsDatabase(string dbPath)
             cmd.Parameters.AddWithValue("$a", addr);
             return cmd.ExecuteScalar() is not null;
         }
+    }
+
+    // --- playtime ---
+
+    /// <summary>Opens a play session and returns its id; call <see cref="EndPlaySession"/> when the client exits.</summary>
+    public long StartPlaySession(string address, string name, bool isRegion)
+    {
+        using var con = Connect();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO PlaySession (Address, Name, StartedUtc, Seconds, IsRegion)
+            VALUES ($a, $n, $t, 0, $r);
+            SELECT last_insert_rowid();
+            """;
+        cmd.Parameters.AddWithValue("$a", address);
+        cmd.Parameters.AddWithValue("$n", name);
+        cmd.Parameters.AddWithValue("$t", DateTimeOffset.UtcNow.UtcDateTime);
+        cmd.Parameters.AddWithValue("$r", isRegion ? 1 : 0);
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public void EndPlaySession(long id, long seconds)
+    {
+        if (id <= 0 || seconds <= 0)
+            return;
+
+        using var con = Connect();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "UPDATE PlaySession SET Seconds = $s WHERE Id = $id";
+        cmd.Parameters.AddWithValue("$s", seconds);
+        cmd.Parameters.AddWithValue("$id", id);
+        cmd.ExecuteNonQuery();
+    }
+
+    public long GetTotalPlaytimeSeconds()
+    {
+        using var con = Connect();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT COALESCE(SUM(Seconds), 0) FROM PlaySession";
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public DateTimeOffset? GetFirstPlayed()
+    {
+        using var con = Connect();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = "SELECT StartedUtc FROM PlaySession ORDER BY StartedUtc ASC LIMIT 1";
+        using var reader = cmd.ExecuteReader();
+        return reader.Read() ? new DateTimeOffset(reader.GetDateTime(0), TimeSpan.Zero) : null;
+    }
+
+    public IReadOnlyList<PlaytimeEntry> GetPlaytimeByServer()
+    {
+        using var con = Connect();
+        using var cmd = con.CreateCommand();
+        cmd.CommandText = """
+            SELECT Address, MAX(Name), SUM(Seconds), COUNT(*), MAX(StartedUtc), MAX(IsRegion)
+            FROM PlaySession
+            GROUP BY Address
+            ORDER BY SUM(Seconds) DESC
+            """;
+        using var reader = cmd.ExecuteReader();
+
+        var list = new List<PlaytimeEntry>();
+        while (reader.Read())
+            list.Add(new PlaytimeEntry(
+                reader.GetString(1), reader.GetString(0), reader.GetInt64(2), reader.GetInt32(3),
+                new DateTimeOffset(reader.GetDateTime(4), TimeSpan.Zero), reader.GetInt64(5) != 0));
+        return list;
     }
 
     private static void Exec(SqliteConnection con, string sql)
