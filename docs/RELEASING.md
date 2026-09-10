@@ -29,18 +29,33 @@ static-file base URL for a self-hosted feed); `UpdateChannel` overrides the chan
 ### The bundled engine
 
 The forked Dark Haven engine is **not** in git (large, build-specific — see
-`src/DarkHaven.App/bundled-engines/README.md`). CI pulls it from the `BUNDLED_ENGINE_URL` repo
-secret before packing. Without that secret the installer still builds, but the launcher can only
-connect to servers whose engine is on the public robust-builds CDN — i.e. not Dark Haven.
+`src/DarkHaven.App/bundled-engines/README.md`). It lives as assets on the **`engine-bundles`**
+release in this repo. CI (`release.yml`) runs `gh release download engine-bundles` before packing,
+using the built-in `GITHUB_TOKEN` — no secret needed. `pack-release.ps1` then verifies every file
+named in `manifest.json` against its pinned SHA-256 and **fails the build on a mismatch or a
+missing file**, so a release can't silently ship without a connectable engine.
 
-To build locally with the engine, drop the zip + `manifest.json` into
-`src/DarkHaven.App/bundled-engines/` first, then:
+To build locally: make sure `src/DarkHaven.App/bundled-engines/` has the zip(s) `manifest.json`
+names (either build them per that folder's README, or
+`gh release download engine-bundles --repo Dark-Haven-inc/dh-launcher -D src/DarkHaven.App/bundled-engines -p '*.zip'`),
+then:
 
 ```
 pwsh scripts/pack-release.ps1 -Version 0.2.0
 ```
 
 Output lands in `artifacts/releases/`.
+
+### Bumping the engine
+
+When the live server moves to a new RT commit:
+
+1. Build the new client zip (folder README recipe) and note its SHA-256.
+2. `gh release upload engine-bundles <new>.zip --repo Dark-Haven-inc/dh-launcher`
+   (add `--clobber` if reusing a filename).
+3. Update `src/DarkHaven.App/bundled-engines/manifest.json` — the version key, `file`, `sha256`,
+   `note`. Commit it.
+4. Cut a normal `vX.Y.Z` release. Every installed launcher pulls the new engine as a delta.
 
 ## Local test of the update flow
 

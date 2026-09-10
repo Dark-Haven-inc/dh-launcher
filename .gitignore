@@ -23,5 +23,7 @@ artifacts/
 .DS_Store
 Thumbs.db
 
-## Bundled engine zips are large and build-machine-specific — rebuild locally (see bundled-engines/README.md)
+## Bundled engine zips are large — kept as assets on the `engine-bundles` release, not in git
+## (see src/DarkHaven.App/bundled-engines/README.md). manifest.json pins each one's SHA-256.
 src/DarkHaven.App/bundled-engines/*.zip
+src/DarkHaven.App/bundled-engines/*.zip.sig

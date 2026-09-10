@@ -42,9 +42,24 @@ dotnet publish (Join-Path $repo "src/DarkHaven.Loader/DarkHaven.Loader.csproj") 
 if ($LASTEXITCODE) { throw "loader publish failed" }
 
 # 3. Sanity: the forked engine must be bundled or nobody can connect to Dark Haven.
-$engineZip = Get-ChildItem (Join-Path $pub "bundled-engines") -Filter *.zip -ErrorAction SilentlyContinue
-if (-not $engineZip) {
-    Write-Warning "no bundled engine zip in artifacts/publish/bundled-engines/. Build it first: see src/DarkHaven.App/bundled-engines/README.md"
+#    Every version in manifest.json must have its file present with a matching SHA-256.
+$bundledDir = Join-Path $pub "bundled-engines"
+$manifestFile = Join-Path $bundledDir "manifest.json"
+if (-not (Test-Path $manifestFile)) {
+    Write-Warning "no bundled-engines/manifest.json in the publish output — the launcher will fall back to the public CDN and cannot connect to Dark Haven."
+} else {
+    $manifest = Get-Content $manifestFile -Raw | ConvertFrom-Json
+    foreach ($ver in $manifest.PSObject.Properties) {
+        $file = Join-Path $bundledDir $ver.Value.file
+        if (-not (Test-Path $file)) {
+            throw "bundled engine $($ver.Name): $($ver.Value.file) is missing. Fetch it (gh release download engine-bundles) or see src/DarkHaven.App/bundled-engines/README.md"
+        }
+        $sha = (Get-FileHash $file -Algorithm SHA256).Hash
+        if ($sha -ne $ver.Value.sha256) {
+            throw "bundled engine $($ver.Name): SHA-256 mismatch (manifest $($ver.Value.sha256), file $sha)"
+        }
+        Write-Host "-- bundled engine $($ver.Name): $($ver.Value.file) OK ($sha)" -ForegroundColor DarkGreen
+    }
 }
 
 # 4. Velopack: installer + delta + release manifest.

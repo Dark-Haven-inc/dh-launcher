@@ -19,6 +19,9 @@ jobs:
     permissions:
       contents: write   # create the GitHub Release + upload assets
 
+    env:
+      GH_TOKEN: ${{ github.token }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,19 +45,39 @@ jobs:
       - name: Restore tools
         run: dotnet tool restore
 
-      # The forked Dark Haven engine is not in git (large, build-specific). Fetch it from the
-      # secret so releases actually ship a connectable engine. Skipped if the secret is absent —
-      # the build still produces an installer, just without a bundled engine.
-      - name: Fetch bundled engine
-        if: ${{ secrets.BUNDLED_ENGINE_URL != '' }}
+      # The forked Dark Haven engine is not in git (large, build-specific). It lives as assets on
+      # the `engine-bundles` release in this repo; pull every file it references. manifest.json
+      # names the file(s) and pins their SHA-256, which pack-release.ps1 re-checks.
+      - name: Fetch bundled engine(s)
         shell: bash
         run: |
           mkdir -p src/DarkHaven.App/bundled-engines
-          curl -fsSL "${{ secrets.BUNDLED_ENGINE_URL }}" -o src/DarkHaven.App/bundled-engines/engine.zip
-          echo "Fetched $(du -h src/DarkHaven.App/bundled-engines/engine.zip | cut -f1) engine bundle"
+          gh release download engine-bundles \
+            --repo "${{ github.repository }}" \
+            --dir src/DarkHaven.App/bundled-engines \
+            --pattern '*.zip' --clobber
+          echo "Bundled engines present:"
+          ls -lh src/DarkHaven.App/bundled-engines/*.zip
+
+      # Prior releases in the delta channel, so vpk can build a delta from the last version.
+      - name: Fetch previous releases
+        shell: bash
+        run: |
+          mkdir -p artifacts/releases
+          dotnet vpk download github \
+            --repoUrl "https://github.com/${{ github.repository }}" \
+            --channel win \
+            --outputDir artifacts/releases \
+            --token "${{ github.token }}" || echo "no prior release yet — first cut"
 
       - name: Pack release
         run: pwsh scripts/pack-release.ps1 -Version ${{ steps.v.outputs.version }}
+
+      - name: Drop stale full packages
+        shell: bash
+        run: |
+          find artifacts/releases -name '*-full.nupkg' \
+            ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
 
       - name: Publish to GitHub Releases
         run: >
@@ -63,5 +86,6 @@ jobs:
           --publish
           --releaseName "Dark Haven Launcher ${{ steps.v.outputs.version }}"
           --tag v${{ steps.v.outputs.version }}
-          --token ${{ secrets.GITHUB_TOKEN }}
+          --channel win
+          --token ${{ github.token }}
           --outputDir artifacts/releases

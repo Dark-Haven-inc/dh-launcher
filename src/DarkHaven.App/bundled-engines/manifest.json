@@ -1,7 +1,7 @@
 {
   "275.1.0": {
     "file": "275.1.0.zip",
-    "sha256": "96E45BD8D75B014C2754D267F296072AD700F2C38E2EED63AC8AF5E9834A6D79",
-    "note": "DH forked RobustToolbox @ c46e7d3a5 (local-test match)."
+    "sha256": "5C70F44A1C98091EED980F4B0F452D181CEE46DBCB45EFF127781152C3C28062",
+    "note": "Dark Haven forked RobustToolbox, built from c333ccb58145767922946bf08d919d8856bc1f40 (live server, медецина build)"
   }
 }
