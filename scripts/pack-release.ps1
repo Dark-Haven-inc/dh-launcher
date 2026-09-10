@@ -46,7 +46,7 @@ if ($LASTEXITCODE) { throw "loader publish failed" }
 $bundledDir = Join-Path $pub "bundled-engines"
 $manifestFile = Join-Path $bundledDir "manifest.json"
 if (-not (Test-Path $manifestFile)) {
-    Write-Warning "no bundled-engines/manifest.json in the publish output — the launcher will fall back to the public CDN and cannot connect to Dark Haven."
+    Write-Warning "no bundled-engines/manifest.json in the publish output - the launcher will fall back to the public CDN and cannot connect to Dark Haven."
 } else {
     $manifest = Get-Content $manifestFile -Raw | ConvertFrom-Json
     foreach ($ver in $manifest.PSObject.Properties) {
