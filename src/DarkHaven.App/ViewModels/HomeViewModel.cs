@@ -69,11 +69,73 @@ public partial class HomeViewModel(
     }
 }
 
-/// <summary>НОВОСТИ — needs a DH news endpoint / CMS (see project-dh-launcher-design).</summary>
-public sealed class NewsViewModel : ViewModelBase
+/// <summary>One news card.</summary>
+public sealed partial class NewsItemViewModel(DhNewsItem item)
 {
-    public string Message =>
-        "Лента новостей появится, когда будет готов бэкенд сообщества Dark Haven.";
+    public string Title => item.Title;
+    public string Body => item.Body;
+    public string? Tag => item.Tag;
+    public bool HasTag => !string.IsNullOrWhiteSpace(item.Tag);
+    public bool Pinned => item.Pinned;
+    public string? Link => item.Link;
+    public bool HasLink => !string.IsNullOrWhiteSpace(item.Link);
+
+    public string DateText
+    {
+        get
+        {
+            if (item.ParsedDate is not { } d)
+                return "";
+            var days = DateOnly.FromDateTime(DateTime.Now).DayNumber - d.DayNumber;
+            return days switch
+            {
+                <= 0 => "сегодня",
+                1 => "вчера",
+                < 7 => $"{days} дн. назад",
+                < 31 => $"{days / 7} нед. назад",
+                _ => d.ToString("d MMMM yyyy"),
+            };
+        }
+    }
+
+    [RelayCommand]
+    private void Open()
+    {
+        if (item.Link is { } url)
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
+            catch { /* ignore */ }
+    }
+}
+
+/// <summary>НОВОСТИ — a static feed (bundled news.json + optional remote refresh). No backend.</summary>
+public partial class NewsViewModel(AppServices services) : ViewModelBase
+{
+    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty] private bool _loaded;
+
+    public ObservableCollection<NewsItemViewModel> Items { get; } = [];
+
+    public bool IsEmpty => Loaded && Items.Count == 0;
+
+    public async Task LoadAsync()
+    {
+        if (IsLoading) return;
+        IsLoading = true;
+        try
+        {
+            await services.News.LoadAsync();
+            Items.Clear();
+            foreach (var i in services.News.Items)
+                Items.Add(new NewsItemViewModel(i));
+        }
+        catch { /* keep whatever's already shown */ }
+        finally
+        {
+            IsLoading = false;
+            Loaded = true;
+            OnPropertyChanged(nameof(IsEmpty));
+        }
+    }
 }
 
 /// <summary>АДМИН — needs a DH platform API (roles, launcher bans, per-region server control).</summary>

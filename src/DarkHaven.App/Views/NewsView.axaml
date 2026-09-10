@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.NewsView"
+             x:DataType="vm:NewsViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="40,36" Spacing="18" MaxWidth="680" HorizontalAlignment="Left">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Новости" Classes="h1" />
+                <TextBlock Text="Обновления лаунчера и сети Dark Haven" Classes="dim" />
+            </StackPanel>
+
+            <TextBlock Text="Загрузка…" Classes="dim" IsVisible="{Binding IsLoading}" />
+
+            <TextBlock IsVisible="{Binding IsEmpty}" Classes="dim" TextWrapping="Wrap"
+                       Text="Пока новостей нет." />
+
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="14" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:NewsItemViewModel">
+                        <Border Classes="card" Padding="22">
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Border Background="{StaticResource DhBgElevatedBrush}"
+                                            BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1"
+                                            CornerRadius="3" Padding="6,2" IsVisible="{Binding HasTag}">
+                                        <TextBlock Text="{Binding Tag}" Classes="caps" FontSize="9" />
+                                    </Border>
+                                    <TextBlock Text="📌" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding Pinned}" />
+                                    <TextBlock Text="{Binding DateText}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Body}" Classes="dim" TextWrapping="Wrap" LineHeight="20" />
+
+                                <Button Classes="ghost" Content="Подробнее →" HorizontalAlignment="Left"
+                                        Margin="0,4,0,0" IsVisible="{Binding HasLink}"
+                                        Command="{Binding OpenCommand}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

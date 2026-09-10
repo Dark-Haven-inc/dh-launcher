@@ -18,6 +18,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private UpdatePhase _updatePhase = UpdatePhase.Idle;
     [ObservableProperty] private int _updateProgress;
 
+    [ObservableProperty] private string? _regionOnlineName;
+    private string? _regionOnlineAddress;
+
     public HomeViewModel Home { get; }
     public RegionsViewModel Regions { get; }
     public ServerListViewModel Servers { get; }
@@ -41,11 +44,19 @@ public partial class MainWindowViewModel : ViewModelBase
         Home = new HomeViewModel(services, Connect, () => Page = NavPage.Regions, () => Page = NavPage.Servers);
         Regions = new RegionsViewModel(services, Connect);
         Servers = new ServerListViewModel(services, Connect);
-        News = new NewsViewModel();
+        News = new NewsViewModel(services);
         Account = new AccountViewModel(services);
         Profile = new ProfileViewModel(services, () => Page = NavPage.Account);
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel();
+
+        _services.RegionWatch.CameOnline += (name, address) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                _regionOnlineAddress = address;
+                RegionOnlineName = name;
+                App.AlertUser();
+            });
 
         // First run with no saved account: land on the login screen instead of the map.
         if (services.Settings.GetConfig("SeenWelcome") != "true")
@@ -76,6 +87,25 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool CanStartUpdate => UpdatePhase == UpdatePhase.Available;
     public bool CanRestartForUpdate => UpdatePhase == UpdatePhase.ReadyToRestart;
+
+    // --- "watched region is back online" banner ---
+
+    public bool ShowRegionBanner => RegionOnlineName is not null;
+    public string RegionBannerText => $"🟢  {RegionOnlineName} снова онлайн";
+
+    partial void OnRegionOnlineNameChanged(string? value) => OnPropertyChanged(nameof(ShowRegionBanner));
+
+    [RelayCommand]
+    private void ConnectOnlineRegion()
+    {
+        var addr = _regionOnlineAddress;
+        RegionOnlineName = null;
+        if (addr is not null)
+            ConnectToAddress(addr);
+    }
+
+    [RelayCommand]
+    private void DismissRegionBanner() => RegionOnlineName = null;
 
     partial void OnUpdatePhaseChanged(UpdatePhase value)
     {
@@ -127,6 +157,8 @@ public partial class MainWindowViewModel : ViewModelBase
             Home.Reload();
         else if (value == NavPage.Profile)
             Profile.Reload();
+        else if (value == NavPage.News)
+            _ = News.LoadAsync();
 
         Current = value switch
         {

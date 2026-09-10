@@ -32,7 +32,22 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
     /// <summary>Only an open region that answered its status poll can be joined.</summary>
     public bool CanConnect => IsOnline;
 
+    /// <summary>A real region that's currently down — offer "поднимется — уведомить".</summary>
+    public bool CanWatch => !IsQuarantine && !IsOnline && !string.IsNullOrWhiteSpace(Address);
+
     [ObservableProperty] private bool _isSelected;
+    [ObservableProperty] private bool _isWatched;
+
+    public string WatchLabel => IsWatched ? "🔔 Уведомлю, когда поднимется" : "Уведомить, когда поднимется";
+
+    partial void OnIsWatchedChanged(bool value) => OnPropertyChanged(nameof(WatchLabel));
+
+    [RelayCommand]
+    private void ToggleWatch()
+    {
+        IsWatched = !IsWatched;
+        services.RegionWatch.SetWatched(Name, IsWatched);
+    }
 
     public string Population => Entry.SoftMaxPlayers > 0 ? $"{Entry.Players}/{Entry.SoftMaxPlayers}" : Entry.Players.ToString();
     public string Ping => Entry.PingMs is { } p ? $"{p} мс" : "—";
@@ -77,7 +92,13 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
             var keepSelectedName = Selected?.Name;
             Nodes.Clear();
             foreach (var e in entries)
-                Nodes.Add(new RegionNodeViewModel(services, e, SelectNode));
+                Nodes.Add(new RegionNodeViewModel(services, e, SelectNode)
+                {
+                    IsWatched = services.RegionWatch.IsWatched(e.DisplayName),
+                });
+
+            // Anything armed from a previous session: make sure the poll loop is running.
+            services.RegionWatch.EnsureRunning();
 
             TotalPlayers = Nodes.Where(n => n.IsOnline).Sum(n => n.Entry.Players);
 

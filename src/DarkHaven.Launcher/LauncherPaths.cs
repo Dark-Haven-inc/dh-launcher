@@ -15,6 +15,7 @@ public static class LauncherPaths
     public static string ContentDbPath => Path.Combine(DataDir, "content.db");
     public static string SettingsDbPath => Path.Combine(DataDir, "settings.db");
     public static string HubCachePath => Path.Combine(DataDir, "hub-cache.json");
+    public static string NewsCachePath => Path.Combine(DataDir, "news-cache.json");
 
     /// <summary>The SS14 engine signing public key, shipped next to the launcher assembly.</summary>
     public static string SigningKeyPath =>
@@ -23,6 +24,10 @@ public static class LauncherPaths
     /// <summary>Bundled fallback list of Dark Haven regions.</summary>
     public static string RegionsJsonPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "dh-regions.json");
+
+    /// <summary>Bundled fallback news feed.</summary>
+    public static string NewsJsonPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "news.json");
 
     public static void EnsureDirectories()
     {

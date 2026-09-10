@@ -23,6 +23,8 @@ public sealed class AppServices : IDisposable
     public HubApi Hub { get; }
     public ServerListManager ServerList { get; }
     public DhRegions Regions { get; }
+    public RegionWatcher RegionWatch { get; }
+    public DhNews News { get; }
     public ServerInfoApi ServerInfo { get; }
     public ContentUpdater Content { get; }
     public GameLauncher Game { get; }
@@ -85,6 +87,9 @@ public sealed class AppServices : IDisposable
         Hub = new HubApi(Http, LauncherPaths.HubCachePath);
         ServerList = new ServerListManager(Hub);
         Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
+        RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
+        RegionWatch.EnsureRunning();
+        News = new DhNews(Http, LauncherPaths.NewsJsonPath, LauncherPaths.NewsCachePath, Settings.GetConfig("NewsUrl"));
 
         ServerInfo = new ServerInfoApi(Http);
         Content = new ContentUpdater(ContentDb, new ManifestDownloader(Http), Engines);
@@ -96,6 +101,7 @@ public sealed class AppServices : IDisposable
 
     public void Dispose()
     {
+        RegionWatch.Dispose();
         Discord.Dispose();
         Http.Dispose();
     }

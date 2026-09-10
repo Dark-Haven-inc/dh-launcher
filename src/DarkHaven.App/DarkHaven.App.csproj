@@ -10,7 +10,7 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
     <!-- Launcher version. Release builds override this from the git tag (see scripts/pack-release.ps1). -->
-    <Version>0.1.0</Version>
+    <Version>0.1.8.1</Version>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
