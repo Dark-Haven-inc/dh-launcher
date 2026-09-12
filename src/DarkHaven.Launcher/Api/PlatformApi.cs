@@ -16,6 +16,7 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public bool IsSignedIn => _jwt is not null;
     public IReadOnlyList<string> Roles { get; private set; } = [];
     public bool CanAdmin => Roles.Contains("admin") || Roles.Contains("owner");
+    public bool CanModerate => CanAdmin || Roles.Contains("moderator");
 
     private string? _jwt;
 
@@ -134,6 +135,52 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> RemoveRoleAsync(Guid userId, CancellationToken cancel = default) =>
         await DeleteAuthed($"/api/admin/roles/{userId}", cancel);
 
+    // --- Audit log (admin/owner only, enforced server-side) ---
+
+    public Task<IReadOnlyList<PlatformAuditEntry>> GetAuditLogAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformAuditEntry>("/api/admin/audit", cancel);
+
+    // --- Announcements (admin/owner only) ---
+
+    public async Task<bool> PostAnnouncementAsync(string text, CancellationToken cancel = default) =>
+        await PostAuthed("/api/admin/announcement", new { text }, cancel);
+
+    // --- Live game-server bridge (moderator+): chat + ahelp reply, per region ---
+
+    public Task<IReadOnlyList<string>> GetGameServersAsync(CancellationToken cancel = default) =>
+        GetAuthedList<string>("/api/admin/game-servers", cancel);
+
+    public async Task<bool> SendGameChatAsync(string region, string channel, string text, CancellationToken cancel = default) =>
+        await PostAuthed("/api/admin/game-chat", new { region, channel, text }, cancel);
+
+    public async Task<bool> ReplyAhelpAsync(string region, Guid userId, string text, bool adminOnly, CancellationToken cancel = default) =>
+        await PostAuthed($"/api/admin/ahelp/{userId}/reply", new { region, text, adminOnly }, cancel);
+
+    // --- Discord account linking ---
+
+    /// <summary>Requests a short-lived code to give the "Дозорный" bot via <c>!link &lt;код&gt;</c> in
+    /// Discord. Null if not signed in or the platform is unreachable.</summary>
+    public async Task<(string Code, int ExpiresInSeconds)?> StartDiscordLinkAsync(CancellationToken cancel = default)
+    {
+        if (_jwt is null) return null;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/discord/link/start"))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            var res = await http.SendAsync(req, cancel);
+            if (!res.IsSuccessStatusCode) return null;
+            var body = await res.Content.ReadFromJsonAsync<DiscordLinkStartResponse>(LauncherJson.Options, cancel);
+            return body is null ? null : (body.Code, body.ExpiresInSeconds);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Discord link-start failed");
+            return null;
+        }
+    }
+
     private async Task<bool> PostAuthed(string path, object body, CancellationToken cancel)
     {
         if (_jwt is null) return false;
@@ -220,6 +267,7 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     private string Url(string path) => baseUrl!.TrimEnd('/') + path;
 
     private sealed record SessionResponse(string Token, int ExpiresIn, Guid UserId, string Username, string[]? Roles);
+    private sealed record DiscordLinkStartResponse(string Code, int ExpiresInSeconds);
 }
 
 public sealed record PlatformProfile(
@@ -241,3 +289,7 @@ public sealed record PlatformPlayerInfo(
     long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
 
 public sealed record PlatformRole(Guid UserId, string Username, string Role);
+
+public sealed record PlatformAuditEntry(
+    int Id, Guid ActorUserId, string ActorUsername, string Action,
+    Guid? TargetUserId, string? TargetUsername, string Details, DateTimeOffset At);

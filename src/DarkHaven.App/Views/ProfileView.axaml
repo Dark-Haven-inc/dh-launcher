@@ -94,6 +94,27 @@
                 </ItemsControl>
             </StackPanel>
 
+            <!-- Discord account link -->
+            <StackPanel Spacing="8" IsVisible="{Binding IsPlatformConnected}">
+                <TextBlock Text="DISCORD" Classes="caps" />
+                <Border Classes="card" Padding="14,12">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="dim" TextWrapping="Wrap"
+                                   Text="Привяжите Discord-аккаунт, чтобы роль на Discord-сервере DH автоматически давала доступ в АДМИН (если она настроена)." />
+                        <Button Classes="ghost" HorizontalAlignment="Left" Content="Получить код привязки"
+                                Command="{Binding RequestDiscordLinkCommand}" IsEnabled="{Binding !DiscordLinkRequesting}" />
+                        <StackPanel Spacing="2" IsVisible="{Binding DiscordLinkCode, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <TextBlock FontSize="12" Classes="dim">
+                                <Run Text="Отправьте боту «Дозорный» в Discord:" />
+                            </TextBlock>
+                            <TextBlock FontFamily="Consolas,monospace" FontSize="16" FontWeight="Bold">
+                                <Run Text="!link " /><Run Text="{Binding DiscordLinkCode}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
             <Button Classes="ghost" HorizontalAlignment="Left" Content="Управление аккаунтами"
                     Command="{Binding ManageAccountsCommand}" />
 

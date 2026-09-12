@@ -36,6 +36,10 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
     [ObservableProperty] private bool _launcherBanned;
     [ObservableProperty] private string? _launcherBanText;
 
+    /// <summary>The code to type as <c>!link &lt;код&gt;</c> to the "Дозорный" Discord bot, once requested.</summary>
+    [ObservableProperty] private string? _discordLinkCode;
+    [ObservableProperty] private bool _discordLinkRequesting;
+
     public ObservableCollection<PlaytimeRowViewModel> Servers { get; } = [];
 
     public string AccountName => services.Accounts.Active?.Username
@@ -153,6 +157,24 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
     }
 
     [RelayCommand] private void ManageAccounts() => openAccounts();
+
+    [RelayCommand]
+    private async Task RequestDiscordLink()
+    {
+        if (!services.Platform.IsSignedIn) return;
+
+        DiscordLinkRequesting = true;
+        DiscordLinkCode = null;
+        try
+        {
+            var result = await services.Platform.StartDiscordLinkAsync();
+            DiscordLinkCode = result?.Code;
+        }
+        finally
+        {
+            DiscordLinkRequesting = false;
+        }
+    }
 
     private void LoadAvatar(string? path)
     {

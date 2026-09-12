@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher.Api;
@@ -31,11 +32,20 @@ public sealed class AdminRoleRowViewModel(PlatformRole r)
     public string Role => r.Role;
 }
 
-/// <summary>АДМИН — news CRUD, launcher bans, warnings, player lookup, role management (owner-only).
-/// Everything here needs an "admin"/"owner" (or "news" for the news actions) role on
-/// DarkHaven.Platform.Api. The nav tab itself is hidden for anyone without a role — see
-/// MainWindowViewModel/MainWindow.axaml binding to <see cref="CanAdmin"/> — this VM's own gating is
-/// defence in depth (and covers the moment between window-open and the platform sign-in landing).</summary>
+public sealed class AdminAuditRowViewModel(PlatformAuditEntry a)
+{
+    public string ActorUsername => a.ActorUsername;
+    public string Action => a.Action;
+    public string? TargetUsername => a.TargetUsername;
+    public string Details => a.Details;
+    public string WhenText => a.At.ToLocalTime().ToString("d MMM yyyy HH:mm");
+}
+
+/// <summary>АДМИН — player lookup, launcher bans, warnings, live game chat/ahelp (moderator+); news
+/// CRUD, audit log, announcements (admin/owner); role management (owner-only). The nav tab itself is
+/// hidden for anyone without at least "moderator" on DarkHaven.Platform.Api — see
+/// MainWindowViewModel/MainWindow.axaml binding to <see cref="CanModerate"/> — this VM's own gating
+/// is defence in depth (and covers the moment between window-open and the platform sign-in landing).</summary>
 public partial class AdminViewModel : ViewModelBase
 {
     private readonly AppServices _services;
@@ -61,15 +71,28 @@ public partial class AdminViewModel : ViewModelBase
     [ObservableProperty] private string _roleUsername = "";
     [ObservableProperty] private string _roleToGrant = "admin";
 
+    [ObservableProperty] private string _selectedRegion = "";
+    [ObservableProperty] private string _chatChannel = "ooc";
+    [ObservableProperty] private string _chatText = "";
+
+    [ObservableProperty] private string _ahelpUsername = "";
+    [ObservableProperty] private string _ahelpText = "";
+    [ObservableProperty] private bool _ahelpAdminOnly;
+
+    [ObservableProperty] private string _announcementText = "";
+
     public ObservableCollection<AdminNewsRowViewModel> News { get; } = [];
     public ObservableCollection<AdminBanRowViewModel> Bans { get; } = [];
     public ObservableCollection<AdminRoleRowViewModel> Roles { get; } = [];
+    public ObservableCollection<AdminAuditRowViewModel> AuditLog { get; } = [];
+    public ObservableCollection<string> GameServers { get; } = [];
 
     public bool NotConnected => !_services.Platform.IsConfigured;
     public bool NotSignedIn => _services.Platform.IsConfigured && !_services.Platform.IsSignedIn;
+    public bool CanModerate => _services.Platform.CanModerate;
     public bool CanAdmin => _services.Platform.CanAdmin;
     public bool IsOwner => _services.Platform.Roles.Contains("owner");
-    public bool NoAccess => _services.Platform.IsSignedIn && !CanAdmin;
+    public bool NoAccess => _services.Platform.IsSignedIn && !CanModerate;
     public bool IsEditingNews => EditingNews is not null;
     public string NewsSubmitLabel => IsEditingNews ? "Сохранить" : "Опубликовать";
 
@@ -77,7 +100,7 @@ public partial class AdminViewModel : ViewModelBase
     {
         _services = services;
         // The platform sign-in resolves async after the window opens — re-check gating (and, via
-        // MainWindow's binding to CanAdmin, show/hide the nav tab itself) whenever it changes.
+        // MainWindow's binding to CanModerate, show/hide the nav tab itself) whenever it changes.
         services.PlatformSessionChanged += OnPlatformSessionChanged;
     }
 
@@ -85,6 +108,7 @@ public partial class AdminViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(NotConnected));
         OnPropertyChanged(nameof(NotSignedIn));
+        OnPropertyChanged(nameof(CanModerate));
         OnPropertyChanged(nameof(CanAdmin));
         OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(NoAccess));
@@ -93,21 +117,36 @@ public partial class AdminViewModel : ViewModelBase
     public async Task ReloadAsync()
     {
         OnPlatformSessionChanged();
-        if (!CanAdmin)
+        if (!CanModerate)
             return;
 
         IsLoading = true;
         try
         {
-            var news = await _services.Platform.GetAllNewsAsync();
-            News.Clear();
-            foreach (var n in news)
-                News.Add(new AdminNewsRowViewModel(n));
-
             var bans = await _services.Platform.GetLauncherBansAsync();
             Bans.Clear();
             foreach (var b in bans)
                 Bans.Add(new AdminBanRowViewModel(b));
+
+            var servers = await _services.Platform.GetGameServersAsync();
+            GameServers.Clear();
+            foreach (var s in servers)
+                GameServers.Add(s);
+            if (SelectedRegion.Length == 0 || !GameServers.Contains(SelectedRegion))
+                SelectedRegion = GameServers.FirstOrDefault() ?? "";
+
+            if (CanAdmin)
+            {
+                var news = await _services.Platform.GetAllNewsAsync();
+                News.Clear();
+                foreach (var n in news)
+                    News.Add(new AdminNewsRowViewModel(n));
+
+                var audit = await _services.Platform.GetAuditLogAsync();
+                AuditLog.Clear();
+                foreach (var a in audit)
+                    AuditLog.Add(new AdminAuditRowViewModel(a));
+            }
 
             if (IsOwner)
             {
@@ -287,5 +326,54 @@ public partial class AdminViewModel : ViewModelBase
             Roles.Remove(row);
         else
             Status = "Не удалось снять роль.";
+    }
+
+    // --- Live game chat (moderator+): OOC/AdminChat/DeadChat on a chosen region's server ---
+
+    [RelayCommand]
+    private void SetChatChannel(string channel) => ChatChannel = channel;
+
+    [RelayCommand]
+    private async Task SendGameChat()
+    {
+        if (ChatText.Length == 0 || SelectedRegion.Length == 0) return;
+
+        var ok = await _services.Platform.SendGameChatAsync(SelectedRegion, ChatChannel, ChatText.Trim());
+        Status = ok ? "Отправлено в игру." : "Не удалось отправить — сервер недоступен или нет прав.";
+        if (ok)
+            ChatText = "";
+    }
+
+    // --- AHelp reply (moderator+): resolve a typed username to a UserId, then reply to their ticket ---
+
+    [RelayCommand]
+    private async Task ReplyAhelp()
+    {
+        if (AhelpUsername.Length == 0 || AhelpText.Length == 0 || SelectedRegion.Length == 0) return;
+
+        var who = await _services.Platform.GetPlayerAsync(AhelpUsername.Trim());
+        if (who is null)
+        {
+            Status = $"Игрок «{AhelpUsername}» не найден.";
+            return;
+        }
+
+        var ok = await _services.Platform.ReplyAhelpAsync(SelectedRegion, who.UserId, AhelpText.Trim(), AhelpAdminOnly);
+        Status = ok ? $"Ответ отправлен {who.Username}." : "Не удалось отправить — игрок не в сети или сервер недоступен.";
+        if (ok)
+            AhelpText = "";
+    }
+
+    // --- Announcements (admin/owner only) ---
+
+    [RelayCommand]
+    private async Task PostAnnouncement()
+    {
+        if (AnnouncementText.Length == 0) return;
+
+        var ok = await _services.Platform.PostAnnouncementAsync(AnnouncementText.Trim());
+        Status = ok ? "Объявление отправлено." : "Не удалось отправить объявление.";
+        if (ok)
+            AnnouncementText = "";
     }
 }

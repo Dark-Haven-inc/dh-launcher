@@ -104,7 +104,7 @@
                                 CommandParameter="{x:Static vm:NavPage.Settings}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}" />
                         <Button Classes="tab" Content="АДМИН" Command="{Binding NavigateCommand}"
-                                CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanAdmin}"
+                                CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanModerate}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}" />
                     </StackPanel>
                 </Grid>

@@ -28,7 +28,7 @@
 
             <TextBlock Text="{Binding Status}" Classes="dim" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
-            <StackPanel Spacing="22" IsVisible="{Binding CanAdmin}">
+            <StackPanel Spacing="22" IsVisible="{Binding CanModerate}">
 
                 <!-- Player search -->
                 <StackPanel Spacing="10">
@@ -68,8 +68,8 @@
                     </Border>
                 </StackPanel>
 
-                <!-- News -->
-                <StackPanel Spacing="10">
+                <!-- News: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
                     <TextBlock Text="НОВОСТИ" Classes="caps" />
                     <Border Classes="card" Padding="16">
                         <StackPanel Spacing="8">
@@ -162,6 +162,78 @@
                                     Command="{Binding SendWarningCommand}" IsEnabled="{Binding !IsLoading}" />
                         </StackPanel>
                     </Border>
+                </StackPanel>
+
+                <!-- Live game chat: moderator+ -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ЧАТ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Сервер:" Classes="dim" VerticalAlignment="Center" />
+                                <ComboBox ItemsSource="{Binding GameServers}" SelectedItem="{Binding SelectedRegion}" MinWidth="140" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Classes="ghost" Content="OOC" Command="{Binding SetChatChannelCommand}" CommandParameter="ooc" />
+                                <Button Classes="ghost" Content="AdminChat" Command="{Binding SetChatChannelCommand}" CommandParameter="adminchat" />
+                                <Button Classes="ghost" Content="DeadChat" Command="{Binding SetChatChannelCommand}" CommandParameter="dead" />
+                                <TextBlock Text="{Binding ChatChannel, StringFormat='выбрано: {0}'}" Classes="dim" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBox Text="{Binding ChatText}" Watermark="Сообщение" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
+                            <Button Classes="primary" Content="Отправить в игру" HorizontalAlignment="Left"
+                                    Command="{Binding SendGameChatCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- AHelp reply: moderator+ -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="AHELP" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding AhelpUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding AhelpText}" Watermark="Ответ" />
+                            <CheckBox Content="Только для админов (ao:)" IsChecked="{Binding AhelpAdminOnly}" />
+                            <Button Classes="primary" Content="Ответить" HorizontalAlignment="Left"
+                                    Command="{Binding ReplyAhelpCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Announcement: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Text="ОБЪЯВЛЕНИЕ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding AnnouncementText}" Watermark="Текст для всех известных игроков" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
+                            <Button Classes="primary" Content="Отправить всем" HorizontalAlignment="Left"
+                                    Command="{Binding PostAnnouncementCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Audit log: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Text="ЖУРНАЛ" Classes="caps" />
+                    <ItemsControl ItemsSource="{Binding AuditLog}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminAuditRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <StackPanel Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding ActorUsername}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Action}" Classes="dim" FontSize="11" />
+                                            <TextBlock Text="{Binding TargetUsername}" Classes="dim" FontSize="11"
+                                                       IsVisible="{Binding TargetUsername, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Details}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding WhenText}" Classes="dim" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
 
                 <!-- Roles: owner only -->
