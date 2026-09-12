@@ -153,6 +153,18 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> SendGameChatAsync(string region, string channel, string text, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/game-chat", new { region, channel, text }, cancel);
 
+    /// <summary>Recent messages on a channel, so the chat panel shows what's actually being said —
+    /// not just what was sent blind. Pass <paramref name="afterUtc"/> (from the last call's newest
+    /// entry) to poll incrementally instead of re-fetching everything each time.</summary>
+    public Task<IReadOnlyList<PlatformChatMessage>> GetRecentGameChatAsync(
+        string region, string channel, DateTimeOffset? afterUtc = null, CancellationToken cancel = default)
+    {
+        var path = $"/api/admin/game-chat/recent?region={Uri.EscapeDataString(region)}&channel={Uri.EscapeDataString(channel)}";
+        if (afterUtc is { } after)
+            path += $"&afterUtc={Uri.EscapeDataString(after.UtcDateTime.ToString("o"))}";
+        return GetAuthedList<PlatformChatMessage>(path, cancel);
+    }
+
     public async Task<bool> ReplyAhelpAsync(string region, Guid userId, string text, bool adminOnly, CancellationToken cancel = default) =>
         await PostAuthed($"/api/admin/ahelp/{userId}/reply", new { region, text, adminOnly }, cancel);
 
@@ -289,6 +301,8 @@ public sealed record PlatformPlayerInfo(
     long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
 
 public sealed record PlatformRole(Guid UserId, string Username, string Role);
+
+public sealed record PlatformChatMessage(string Sender, string Text, DateTimeOffset AtUtc);
 
 public sealed record PlatformAuditEntry(
     int Id, Guid ActorUserId, string ActorUsername, string Action,

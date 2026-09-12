@@ -41,6 +41,14 @@ public sealed class AdminAuditRowViewModel(PlatformAuditEntry a)
     public string WhenText => a.At.ToLocalTime().ToString("d MMM yyyy HH:mm");
 }
 
+public sealed class AdminChatMessageViewModel(PlatformChatMessage m)
+{
+    public string Sender => m.Sender;
+    public string Text => m.Text;
+    public DateTimeOffset AtUtc => m.AtUtc;
+    public string TimeText => m.AtUtc.ToLocalTime().ToString("HH:mm:ss");
+}
+
 /// <summary>АДМИН — player lookup, launcher bans, warnings, live game chat/ahelp (moderator+); news
 /// CRUD, audit log, announcements (admin/owner); role management (owner-only). The nav tab itself is
 /// hidden for anyone without at least "moderator" on DarkHaven.Platform.Api — see
@@ -86,6 +94,9 @@ public partial class AdminViewModel : ViewModelBase
     public ObservableCollection<AdminRoleRowViewModel> Roles { get; } = [];
     public ObservableCollection<AdminAuditRowViewModel> AuditLog { get; } = [];
     public ObservableCollection<string> GameServers { get; } = [];
+    public ObservableCollection<AdminChatMessageViewModel> ChatMessages { get; } = [];
+
+    private DateTimeOffset? _chatCursor;
 
     public bool NotConnected => !_services.Platform.IsConfigured;
     public bool NotSignedIn => _services.Platform.IsConfigured && !_services.Platform.IsSignedIn;
@@ -102,6 +113,45 @@ public partial class AdminViewModel : ViewModelBase
         // The platform sign-in resolves async after the window opens — re-check gating (and, via
         // MainWindow's binding to CanModerate, show/hide the nav tab itself) whenever it changes.
         services.PlatformSessionChanged += OnPlatformSessionChanged;
+
+        // Writing into a channel with no way to see the reply isn't very useful — poll for new
+        // messages on whatever region/channel is currently selected. Cheap enough (one small GET
+        // every few seconds) to just run for the app's lifetime rather than start/stop it with
+        // page navigation, matching RegionWatcher's existing always-on polling pattern.
+        _ = ChatPollLoopAsync();
+    }
+
+    partial void OnSelectedRegionChanged(string value) => ResetChatFeed();
+    partial void OnChatChannelChanged(string value) => ResetChatFeed();
+
+    private void ResetChatFeed()
+    {
+        ChatMessages.Clear();
+        _chatCursor = null;
+    }
+
+    private async Task ChatPollLoopAsync()
+    {
+        while (true)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            if (!CanModerate || SelectedRegion.Length == 0 || ChatChannel.Length == 0)
+                continue;
+
+            try
+            {
+                var fresh = await _services.Platform.GetRecentGameChatAsync(SelectedRegion, ChatChannel, _chatCursor);
+                foreach (var m in fresh)
+                {
+                    ChatMessages.Add(new AdminChatMessageViewModel(m));
+                    if (_chatCursor is null || m.AtUtc > _chatCursor)
+                        _chatCursor = m.AtUtc;
+                }
+                while (ChatMessages.Count > 200)
+                    ChatMessages.RemoveAt(0);
+            }
+            catch { /* next poll tries again */ }
+        }
     }
 
     private void OnPlatformSessionChanged()

@@ -179,6 +179,29 @@
                                 <Button Classes="ghost" Content="DeadChat" Command="{Binding SetChatChannelCommand}" CommandParameter="dead" />
                                 <TextBlock Text="{Binding ChatChannel, StringFormat='выбрано: {0}'}" Classes="dim" VerticalAlignment="Center" />
                             </StackPanel>
+
+                            <!-- Recent messages on the selected server/channel, polled every few seconds —
+                                 writing blind with no way to see a reply isn't very useful. -->
+                            <Border Background="{StaticResource DhBgBrush}" BorderBrush="{StaticResource DhBorderBrush}"
+                                    BorderThickness="1" CornerRadius="4" Height="160">
+                                <ScrollViewer>
+                                    <ItemsControl ItemsSource="{Binding ChatMessages}" Margin="8">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AdminChatMessageViewModel">
+                                                <TextBlock TextWrapping="Wrap" FontSize="12">
+                                                    <Run Text="{Binding TimeText}" Foreground="{StaticResource DhTextDimBrush}" />
+                                                    <Run Text=" " />
+                                                    <Run Text="{Binding Sender}" FontWeight="SemiBold" />
+                                                    <Run Text=": " />
+                                                    <Run Text="{Binding Text}" />
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+
                             <TextBox Text="{Binding ChatText}" Watermark="Сообщение" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
                             <Button Classes="primary" Content="Отправить в игру" HorizontalAlignment="Left"
                                     Command="{Binding SendGameChatCommand}" IsEnabled="{Binding !IsLoading}" />
