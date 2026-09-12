@@ -142,8 +142,8 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         // The spiral spreads well on average, but doesn't *guarantee* a minimum gap between any one
         // pair — a few relaxation passes (push apart anything still too close, then clamp back inside
         // the disk) turns "spread well on average" into "never actually crowded".
-        const double minGap = 0.34;
-        const double maxR = 0.58;
+        const double minGap = 0.60;
+        const double maxR = 0.62;
         for (var pass = 0; pass < 60; pass++)
         {
             var moved = false;

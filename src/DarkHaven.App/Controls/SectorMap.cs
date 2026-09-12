@@ -711,13 +711,13 @@ public sealed class SectorMap : Control
             sumX += s.X;
         }
         var cx = sumX / nodes.Count;
-        var y = minY - 52;
+        var y = Math.Max(4, minY - 52); // stay on-screen even when a spread-out layout pushes minY negative
 
         var word = Fmt("FRONTIER", Lerp(Text, Colors.White, 0.25), 19, true);
         var num = Fmt("15", FrontierRed, 19, true);
         var gap = 8.0;
         var totalW = word.Width + gap + num.Width;
-        var x = cx - totalW / 2;
+        var x = Math.Clamp(cx - totalW / 2, 6, Math.Max(6, Bounds.Width - totalW - 6));
 
         var underline = new Rect(x, y + word.Height + 2, totalW, 2);
         ctx.DrawRectangle(new SolidColorBrush(FrontierRed, 0.55), null, underline);
