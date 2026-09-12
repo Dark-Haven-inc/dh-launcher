@@ -92,6 +92,29 @@ public sealed class SectorMap : Control
     private readonly Typeface _face = new("Inter, Segoe UI, sans-serif");
     private readonly Typeface _faceBold = new("Inter, Segoe UI, sans-serif", weight: FontWeight.Bold);
 
+    // --- render caches ---
+    // Every one of these draws a color the layout can repeat across dozens of nodes (up to ~45+ on
+    // the РУхаб map), and every gradient here is positioned via RelativeUnit.Relative — meaning the
+    // SAME brush instance paints correctly at any node's screen position/size. Before this, DrawNode
+    // allocated a fresh gradient brush + several pens + geometries for EVERY node on EVERY ~45ms
+    // tick; on a busy region map that was tens of thousands of small allocations a second, pure GC
+    // pressure with no visual benefit since the values never actually varied per node. Keying by the
+    // handful of distinct state colors that actually occur turns that into dictionary lookups.
+    private readonly Dictionary<(Color Color, double Opacity), IBrush> _solidCache = new();
+    private readonly Dictionary<(Color Color, double Opacity, double Thickness, PenLineCap Cap), Pen> _penCache = new();
+    private readonly Dictionary<Color, RadialGradientBrush> _glowCache = new();
+    private readonly Dictionary<Color, RadialGradientBrush> _regionBlobCache = new();
+    private readonly Dictionary<Color, (Pen Tether, IBrush GroundFill, Pen GroundStroke)> _groundKitCache = new();
+    private readonly Dictionary<(Color Core, bool Offline), (IBrush Fill, Pen Stroke)> _coreKitCache = new();
+
+    // Legend/hint text never changes at runtime — no reason to re-measure it on every repaint.
+    private readonly FormattedText _hintText;
+    private readonly FormattedText _legendOnlineText, _legendOfflineText, _legendQuarantineText;
+
+    // Busy scenes (the РУхаб region map, dozens of dots) skip the secondary diagonal sparkle rays —
+    // a subtle accent on a handful of beacons, real geometry+brush cost multiplied by node count.
+    private bool _dense;
+
     private double _phase;
     private double _scale = 1.0;
     private double _targetScale = 1.0;
@@ -154,6 +177,11 @@ public sealed class SectorMap : Control
                 nebColors[i % nebColors.Length],
                 rng.NextDouble() * 0.6 + 0.2,
                 rng.NextDouble() * 6.28);
+
+        _hintText = Fmt("тащить — двигать · колесо — масштаб", Color.Parse("#5A6B8A"), 9, false);
+        _legendOnlineText = Fmt("онлайн", Dim, 9.5, false);
+        _legendOfflineText = Fmt("офлайн", Dim, 9.5, false);
+        _legendQuarantineText = Fmt("карантин", Dim, 9.5, false);
 
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(45), DispatcherPriority.Background, (_, _) =>
         {
@@ -303,7 +331,10 @@ public sealed class SectorMap : Control
 
         var spanX = Math.Max(0.15, maxX - minX);
         var spanY = Math.Max(0.15, maxY - minY) * SinT; // the holo deck is tilted, so its screen footprint is squished
-        _targetScale = _scale = Math.Clamp(0.74 / Math.Max(spanX, spanY), 0.6, 2.0);
+        // Fixed-size labels don't shrink with the camera, so the only way to give them breathing
+        // room is to push nodes further apart on screen — i.e. start zoomed in close, not fitted
+        // wide. The player pans/wheel-zooms from here; wheel zoom's own range (0.5–4.0) is untouched.
+        _targetScale = _scale = Math.Clamp(2.2 / Math.Max(spanX, spanY), 1.8, 3.8);
 
         var mid = ToScreen(new Point((minX + maxX) / 2, (minY + maxY) / 2));
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
@@ -419,7 +450,15 @@ public sealed class SectorMap : Control
         if (_needsFit && b.Width > 1 && b.Height > 1)
             Fit(nodes);
 
+        _dense = nodes.Count > 24;
+
         DrawRangeRings(ctx, b);
+
+        var hasRegions = nodes.Any(n => !string.IsNullOrEmpty(n.RegionLabel));
+        // Computed once (not once per drawing pass) and handed to both callers — this walks every
+        // node and averages screen points per region, no reason to pay for that twice a frame.
+        var regions = hasRegions ? ComputeRegions(nodes) : null;
+        if (regions is not null) DrawRegionBlobs(ctx, regions);
 
         var byName = new Dictionary<string, IMapNode>(StringComparer.OrdinalIgnoreCase);
         foreach (var n in nodes) byName[n.Name] = n;
@@ -429,10 +468,15 @@ public sealed class SectorMap : Control
         foreach (var n in nodes)
             DrawNode(ctx, n);
 
-        foreach (var n in nodes)
-            DrawLabel(ctx, n);
+        // Region mode: dozens of small dots inside a few named clusters — a permanent label under
+        // EVERY dot would be the exact crowding this whole map already fought its way out of once.
+        // The region's own big title carries the "what is this" job; a dot's own name shows on
+        // hover (tooltip, already implemented) and on click (the side panel) instead.
+        if (!hasRegions)
+            foreach (var n in nodes)
+                DrawLabel(ctx, n);
 
-        DrawClusterTitle(ctx, nodes);
+        if (regions is not null) DrawRegionTitles(ctx, regions); else DrawClusterTitle(ctx, nodes);
 
         if (_hover is { } hv)
             DrawTooltip(ctx, hv);
@@ -507,18 +551,20 @@ public sealed class SectorMap : Control
         for (var i = 1; i <= 3; i++)
         {
             var rr = basis * 0.22 * i;
-            var pen = new Pen(new SolidColorBrush(Cyan, 0.08), 1)
+            // dash offset animates every frame per ring, so only the brush portion is cacheable
+            var pen = new Pen(Solid(Cyan, 0.08), 1)
             {
                 DashStyle = new DashStyle([1, 6], _phase * (i % 2 == 0 ? 2 : -2)),
             };
             ctx.DrawEllipse(null, pen, c, rr, rr * SinT); // squished into an ellipse — a tilted holo deck, not a flat circle
         }
+        var spokePen = SolidPen(Cyan, 0.04, 1);
         for (var k = 0; k < 12; k++)
         {
             var ang = k / 12.0 * Math.Tau + _phase * 0.02;
             var p1 = new Point(c.X + Math.Cos(ang) * basis * 0.16, c.Y + Math.Sin(ang) * basis * 0.16 * SinT);
             var p2 = new Point(c.X + Math.Cos(ang) * basis * 0.66, c.Y + Math.Sin(ang) * basis * 0.66 * SinT);
-            ctx.DrawLine(new Pen(new SolidColorBrush(Cyan, 0.04), 1), p1, p2);
+            ctx.DrawLine(spokePen, p1, p2);
         }
     }
 
@@ -553,9 +599,9 @@ public sealed class SectorMap : Control
                     gc.EndFigure(false);
                 }
 
-                ctx.DrawGeometry(null, new Pen(new SolidColorBrush(col, live ? 0.07 : 0.04), 7) { LineCap = PenLineCap.Round }, g);
-                ctx.DrawGeometry(null, new Pen(new SolidColorBrush(col, live ? 0.18 : 0.1), 2.6) { LineCap = PenLineCap.Round }, g);
-                ctx.DrawGeometry(null, new Pen(new SolidColorBrush(live ? AccentBright : col, live ? 0.5 : 0.22), 1) { LineCap = PenLineCap.Round }, g);
+                ctx.DrawGeometry(null, SolidPen(col, live ? 0.07 : 0.04, 7, PenLineCap.Round), g);
+                ctx.DrawGeometry(null, SolidPen(col, live ? 0.18 : 0.1, 2.6, PenLineCap.Round), g);
+                ctx.DrawGeometry(null, SolidPen(live ? AccentBright : col, live ? 0.5 : 0.22, 1, PenLineCap.Round), g);
 
                 if (live)
                 {
@@ -563,10 +609,10 @@ public sealed class SectorMap : Control
                     {
                         var t = ((_phase * 0.3) + m / 3.0 + n.X * 0.7) % 1.0;
                         var p = Quad(a, ctrl, d, t);
-                        ctx.DrawEllipse(new SolidColorBrush(AccentBright, 0.9), null, p, 2.4, 2.4);
-                        ctx.DrawEllipse(new SolidColorBrush(AccentBright, 0.25), null, p, 5.5, 5.5);
+                        ctx.DrawEllipse(Solid(AccentBright, 0.9), null, p, 2.4, 2.4);
+                        ctx.DrawEllipse(Solid(AccentBright, 0.25), null, p, 5.5, 5.5);
                         var pt = Quad(a, ctrl, d, Math.Max(0, t - 0.05));
-                        ctx.DrawLine(new Pen(new SolidColorBrush(AccentBright, 0.35), 1.6) { LineCap = PenLineCap.Round }, pt, p);
+                        ctx.DrawLine(SolidPen(AccentBright, 0.35, 1.6, PenLineCap.Round), pt, p);
                     }
                 }
             }
@@ -587,34 +633,20 @@ public sealed class SectorMap : Control
 
         // tether + ground shadow — the beacon floats above the tilted holo deck, this is what pins it there
         var ground = ToScreen(new Point(n.X, n.Y));
-        var tetherPen = new Pen(new SolidColorBrush(core, 0.28), 1) { DashStyle = new DashStyle([1, 2], 0) };
+        var (tetherPen, groundFill, groundStroke) = GroundKit(core);
         ctx.DrawLine(tetherPen, ground, p);
-        ctx.DrawEllipse(new SolidColorBrush(core, 0.16), new Pen(new SolidColorBrush(core, 0.32), 1),
-            ground, Math.Max(3, r * 0.55), Math.Max(2, r * 0.55 * SinT));
+        ctx.DrawEllipse(groundFill, groundStroke, ground, Math.Max(3, r * 0.55), Math.Max(2, r * 0.55 * SinT));
 
         // atmospheric glow
         var glowCol = selected ? AccentBright : n.IsCurrent ? Online : n.IsCentral ? AccentBright : core;
-        var glow = new RadialGradientBrush
-        {
-            Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
-            GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
-            RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
-            RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(new Color(90, glowCol.R, glowCol.G, glowCol.B), 0),
-                new GradientStop(new Color(24, glowCol.R, glowCol.G, glowCol.B), 0.5),
-                new GradientStop(new Color(0, glowCol.R, glowCol.G, glowCol.B), 1),
-            },
-        };
         var gr = r * (n.IsOnline || selected || n.IsCentral ? 4.2 : 2.6);
-        ctx.DrawEllipse(glow, null, p, gr, gr);
+        ctx.DrawEllipse(GlowBrush(glowCol), null, p, gr, gr);
 
-        // selection ping
+        // selection ping — opacity animates every frame, so this one pen isn't a cache candidate
         if (selected && _selectPing is > 0 and < 1)
         {
             var pr = r + _selectPing * 42;
-            ctx.DrawEllipse(null, new Pen(new SolidColorBrush(AccentBright, (1 - _selectPing) * 0.7), 2), p, pr, pr);
+            ctx.DrawEllipse(null, new Pen(Solid(AccentBright, (1 - _selectPing) * 0.7), 2), p, pr, pr);
         }
 
         // rotating reticle for online / central
@@ -625,7 +657,7 @@ public sealed class SectorMap : Control
 
         // quarantine hazard ring
         if (n.IsQuarantine)
-            ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Warn, 0.6), 1.4) { DashStyle = new DashStyle([2, 3], _phase * 4) }, p, r + 6, r + 6);
+            ctx.DrawEllipse(null, new Pen(Solid(Warn, 0.6), 1.4) { DashStyle = new DashStyle([2, 3], _phase * 4) }, p, r + 6, r + 6);
 
         // body — a beacon, not a planet: a bright core + a 4-point sparkle flare (this is a region marker on a network map, not a celestial body)
         var coreBright = Lerp(core, Colors.White, n.IsOffline ? 0.15 : 0.55);
@@ -634,13 +666,14 @@ public sealed class SectorMap : Control
         var rayW = r * 0.16;
         foreach (var ang in MainAxes)
             DrawSparkleRay(ctx, p, ang, rayLen, rayW, coreBright, rayAlpha);
-        foreach (var ang in DiagAxes)
-            DrawSparkleRay(ctx, p, ang, rayLen * 0.5, rayW * 0.65, core, rayAlpha * 0.7);
+        // Dense scenes (the РУхаб region map — dozens of dots) drop the secondary diagonal flare:
+        // a subtle accent per beacon, but 4 more geometry+brush allocations multiplied by node count.
+        if (!_dense)
+            foreach (var ang in DiagAxes)
+                DrawSparkleRay(ctx, p, ang, rayLen * 0.5, rayW * 0.65, core, rayAlpha * 0.7);
 
-        ctx.DrawEllipse(
-            new SolidColorBrush(coreBright),
-            new Pen(new SolidColorBrush(Lerp(core, Colors.White, 0.3), n.IsOffline ? 0.35 : 0.9), 1),
-            p, r * 0.42, r * 0.42);
+        var (coreFill, coreStroke) = CoreKit(core, n.IsOffline);
+        ctx.DrawEllipse(coreFill, coreStroke, p, r * 0.42, r * 0.42);
 
         // "you are here" bracket + tag
         if (n.IsCurrent)
@@ -649,7 +682,7 @@ public sealed class SectorMap : Control
             var badge = Fmt("ВЫ ЗДЕСЬ", Online, 8.5, true);
             var bw = badge.Width + 12;
             var br = new Rect(p.X - bw / 2, p.Y - r - 26, bw, 15);
-            ctx.DrawRectangle(new SolidColorBrush(Online, 0.16), new Pen(new SolidColorBrush(Online), 1), br, 4, 4);
+            ctx.DrawRectangle(Solid(Online, 0.16), SolidPen(Online, 1, 1), br, 4, 4);
             ctx.DrawText(badge, new Point(br.X + 6, br.Y + 2.5));
         }
 
@@ -672,12 +705,12 @@ public sealed class SectorMap : Control
                     new Size(radius, radius), 0, false, SweepDirection.Clockwise);
                 gc.EndFigure(false);
             }
-            ctx.DrawGeometry(null, new Pen(new SolidColorBrush(color, 0.55), 1.4) { LineCap = PenLineCap.Round }, g);
+            ctx.DrawGeometry(null, SolidPen(color, 0.55, 1.4, PenLineCap.Round), g);
         }
     }
 
     /// <summary>One spike of a 4/8-point sparkle-flare marker: a tapered kite from the center out to a tip.</summary>
-    private static void DrawSparkleRay(DrawingContext ctx, Point c, double angle, double length, double width, Color color, double alpha)
+    private void DrawSparkleRay(DrawingContext ctx, Point c, double angle, double length, double width, Color color, double alpha)
     {
         var dir = new Point(Math.Cos(angle), Math.Sin(angle));
         var perp = new Point(-dir.Y, dir.X);
@@ -695,7 +728,7 @@ public sealed class SectorMap : Control
             gc.LineTo(baseB);
             gc.EndFigure(true);
         }
-        ctx.DrawGeometry(new SolidColorBrush(color, alpha), null, g);
+        ctx.DrawGeometry(Solid(color, alpha), null, g);
     }
 
     private void DrawClusterTitle(DrawingContext ctx, IReadOnlyList<IMapNode> nodes)
@@ -723,6 +756,75 @@ public sealed class SectorMap : Control
         ctx.DrawRectangle(new SolidColorBrush(FrontierRed, 0.55), null, underline);
         ctx.DrawText(word, new Point(x, y));
         ctx.DrawText(num, new Point(x + word.Width + gap, y));
+    }
+
+    private static readonly Color[] RegionPalette =
+    [
+        Color.Parse("#4ADE80"), Color.Parse("#F0384C"), Color.Parse("#3B82F6"), Color.Parse("#F5B54C"),
+        Color.Parse("#A855F7"), Color.Parse("#22D3EE"), Color.Parse("#F472B6"), Color.Parse("#84CC16"),
+    ];
+
+    private static Color RegionColor(string label)
+    {
+        var h = 0;
+        foreach (var c in label) h = (h * 31 + c) & 0x7FFFFFFF;
+        return RegionPalette[h % RegionPalette.Length];
+    }
+
+    /// <summary>One entry per distinct <see cref="IMapNode.RegionLabel"/> — its on-screen centroid and
+    /// a radius that comfortably encloses every member, used both for the soft boundary blob and for
+    /// placing that region's big floating title.</summary>
+    private Dictionary<string, (Point Centroid, double Radius, Color Color)> ComputeRegions(IReadOnlyList<IMapNode> nodes)
+    {
+        var byLabel = new Dictionary<string, List<Point>>();
+        foreach (var n in nodes)
+        {
+            if (string.IsNullOrEmpty(n.RegionLabel)) continue;
+            if (!byLabel.TryGetValue(n.RegionLabel, out var list)) byLabel[n.RegionLabel] = list = [];
+            list.Add(ToScreen(n));
+        }
+
+        var result = new Dictionary<string, (Point, double, Color)>();
+        foreach (var (label, pts) in byLabel)
+        {
+            var cx = pts.Average(p => p.X);
+            var cy = pts.Average(p => p.Y);
+            var radius = 46.0;
+            foreach (var p in pts)
+                radius = Math.Max(radius, Math.Sqrt((p.X - cx) * (p.X - cx) + (p.Y - cy) * (p.Y - cy)) + 34);
+            result[label] = (new Point(cx, cy), radius, RegionColor(label));
+        }
+        return result;
+    }
+
+    /// <summary>A soft coloured boundary behind each named region — one hue per network, drawn before
+    /// the lanes/nodes so it reads as "ground" the beacons sit on, like the nebula outlines on a
+    /// galaxy map.</summary>
+    private void DrawRegionBlobs(DrawingContext ctx, Dictionary<string, (Point Centroid, double Radius, Color Color)> regions)
+    {
+        foreach (var (centroid, radius, color) in regions.Values)
+        {
+            ctx.DrawEllipse(RegionBlobBrush(color), null, centroid, radius, radius * 0.82);
+            // dash phase animates with _phase, so this one pen can't be cached like the brush above
+            ctx.DrawEllipse(null, new Pen(Solid(color, 0.28), 1.4) { DashStyle = new DashStyle([2, 4], _phase) },
+                centroid, radius, radius * 0.82);
+        }
+    }
+
+    /// <summary>The big always-visible name over each region — e.g. "Corvax" — drawn after the nodes
+    /// so it stays legible over the starfield/blob.</summary>
+    private void DrawRegionTitles(DrawingContext ctx, Dictionary<string, (Point Centroid, double Radius, Color Color)> regions)
+    {
+        foreach (var (label, (centroid, radius, color)) in regions)
+        {
+            var t = Fmt(label, Lerp(color, Colors.White, 0.4), 14, true);
+            var x = Math.Clamp(centroid.X - t.Width / 2, 6, Math.Max(6, Bounds.Width - t.Width - 6));
+            var y = Math.Max(4, centroid.Y - radius * 0.82 - t.Height - 8);
+
+            const double pad = 5.0;
+            ctx.DrawRectangle(Solid(Bg, 0.6), null, new Rect(x - pad, y - 2, t.Width + pad * 2, t.Height + 4), 4, 4);
+            ctx.DrawText(t, new Point(x, y));
+        }
     }
 
     private static void DrawBrackets(DrawingContext ctx, Point c, double d, Color color, double s)
@@ -787,18 +889,19 @@ public sealed class SectorMap : Control
 
     private void DrawLegend(DrawingContext ctx, Rect b)
     {
-        var items = new (Color, string)[] { (Online, "онлайн"), (Offline, "офлайн"), (Warn, "карантин") };
+        var items = new (Color Col, FormattedText Text)[]
+        {
+            (Online, _legendOnlineText), (Offline, _legendOfflineText), (Warn, _legendQuarantineText),
+        };
         var x = 16.0;
         var y = b.Height - 24;
-        foreach (var (col, lbl) in items)
+        foreach (var (col, t) in items)
         {
-            ctx.DrawEllipse(new SolidColorBrush(col), null, new Point(x + 4, y + 5), 3.5, 3.5);
-            var t = Fmt(lbl, Dim, 9.5, false);
+            ctx.DrawEllipse(Solid(col), null, new Point(x + 4, y + 5), 3.5, 3.5);
             ctx.DrawText(t, new Point(x + 13, y));
             x += 13 + t.Width + 16;
         }
-        var hint = Fmt("тащить — двигать · колесо — масштаб", Color.Parse("#5A6B8A"), 9, false);
-        ctx.DrawText(hint, new Point(b.Width - hint.Width - 14, b.Height - hint.Height - 12));
+        ctx.DrawText(_hintText, new Point(b.Width - _hintText.Width - 14, b.Height - _hintText.Height - 12));
     }
 
     // --- helpers ---
@@ -819,6 +922,74 @@ public sealed class SectorMap : Control
 
     private FormattedText Fmt(string text, Color color, double size, bool bold) =>
         new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, bold ? _faceBold : _face, size, new SolidColorBrush(color));
+
+    // --- render cache helpers (see the cache fields' comment) ---
+
+    private IBrush Solid(Color color, double opacity = 1)
+    {
+        var key = (color, opacity);
+        if (_solidCache.TryGetValue(key, out var b)) return b;
+        return _solidCache[key] = new SolidColorBrush(color, opacity);
+    }
+
+    private Pen SolidPen(Color color, double opacity, double thickness, PenLineCap cap = PenLineCap.Flat)
+    {
+        var key = (color, opacity, thickness, cap);
+        if (_penCache.TryGetValue(key, out var p)) return p;
+        return _penCache[key] = new Pen(Solid(color, opacity), thickness) { LineCap = cap };
+    }
+
+    private RadialGradientBrush GlowBrush(Color color)
+    {
+        if (_glowCache.TryGetValue(color, out var b)) return b;
+        return _glowCache[color] = new RadialGradientBrush
+        {
+            Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+            RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(new Color(90, color.R, color.G, color.B), 0),
+                new GradientStop(new Color(24, color.R, color.G, color.B), 0.5),
+                new GradientStop(new Color(0, color.R, color.G, color.B), 1),
+            },
+        };
+    }
+
+    private RadialGradientBrush RegionBlobBrush(Color color)
+    {
+        if (_regionBlobCache.TryGetValue(color, out var b)) return b;
+        return _regionBlobCache[color] = new RadialGradientBrush
+        {
+            Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+            RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(new Color(40, color.R, color.G, color.B), 0),
+                new GradientStop(new Color(14, color.R, color.G, color.B), 0.6),
+                new GradientStop(new Color(0, color.R, color.G, color.B), 1),
+            },
+        };
+    }
+
+    private (Pen Tether, IBrush GroundFill, Pen GroundStroke) GroundKit(Color core)
+    {
+        if (_groundKitCache.TryGetValue(core, out var kit)) return kit;
+        var tether = new Pen(Solid(core, 0.28), 1) { DashStyle = new DashStyle([1, 2], 0) };
+        return _groundKitCache[core] = (tether, Solid(core, 0.16), SolidPen(core, 0.32, 1));
+    }
+
+    private (IBrush Fill, Pen Stroke) CoreKit(Color core, bool offline)
+    {
+        var key = (core, offline);
+        if (_coreKitCache.TryGetValue(key, out var kit)) return kit;
+        var fill = Solid(Lerp(core, Colors.White, offline ? 0.15 : 0.55));
+        var stroke = SolidPen(Lerp(core, Colors.White, 0.3), offline ? 0.35 : 0.9, 1);
+        return _coreKitCache[key] = (fill, stroke);
+    }
 
     private void DrawCentered(DrawingContext ctx, string text, Color color, double size)
     {

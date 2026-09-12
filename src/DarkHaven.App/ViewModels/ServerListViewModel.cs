@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DarkHaven.App.Controls;
 using DarkHaven.Launcher.Servers;
 using Serilog;
 
@@ -23,14 +22,18 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private bool _mapView;
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
-    [ObservableProperty] private ServerGroupViewModel? _selectedNetwork;
+    [ObservableProperty] private ServerRowViewModel? _selectedServer;
 
-    /// <summary>Flat list — every row, for counts and favourites lookups.</summary>
+    /// <summary>Flat list — every row, for counts and favourites lookups, and the grouped list view.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
 
-    /// <summary>The same servers grouped by network — this IS the "СЕКТОР"-style map's item source
-    /// too (each group is one beacon), as well as the grouped list view's sections.</summary>
+    /// <summary>The same servers grouped by network — sections in the grouped list view.</summary>
     public ObservableCollection<ServerGroupViewModel> Groups { get; } = [];
+
+    /// <summary>Only the servers actually placed on the map (a big network is capped — see
+    /// <see cref="MaxDotsPerRegion"/>) — this is the "СЕКТОР"-style map's item source: one dot per
+    /// server, connected to its siblings, clustered under its network's floating name.</summary>
+    public ObservableCollection<ServerRowViewModel> MapNodes { get; } = [];
 
     partial void OnSearchChanged(string value) => ApplyFilter();
     partial void OnHideEmptyChanged(bool value) { _filter.HideEmpty = value; ApplyFilter(); }
@@ -78,8 +81,8 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
             connect(new ServerEntry(addr));
     }
 
-    /// <summary>Called by the map when a network beacon is clicked.</summary>
-    public void SelectFromMap(ServerGroupViewModel group) => SelectedNetwork = group;
+    /// <summary>Called by the map when a server dot is clicked.</summary>
+    public void SelectFromMap(ServerRowViewModel row) => SelectedServer = row;
 
     private void LoadFavorites()
     {
@@ -95,10 +98,13 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
 
         var groups = NetworkGrouping.Group(hardFiltered);
         var search = Search.Trim();
-        var keepSelected = SelectedNetwork?.Label;
+        var keepSelected = SelectedServer?.Address;
 
         Servers.Clear();
         Groups.Clear();
+        MapNodes.Clear();
+
+        var regions = new List<(string Label, List<ServerRowViewModel> MapRows)>();
         foreach (var g in groups)
         {
             // typing a network's name (e.g. "corvax") keeps the whole network; typing a server's own
@@ -113,134 +119,99 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
 
             Groups.Add(new ServerGroupViewModel(g.Label, rows));
             foreach (var r in rows) Servers.Add(r);
+
+            // A network with dozens of members (mainly "Другие сервера") would just be noise as dots —
+            // cap what actually gets placed on the map to its busiest few; every member still shows up
+            // in the plain list regardless.
+            var mapRows = rows.OrderByDescending(r => r.Players).Take(MaxDotsPerRegion).ToList();
+            foreach (var r in mapRows) r.RegionLabel = g.Label;
+            regions.Add((g.Label, mapRows));
         }
 
-        // The biggest real network anchors the map's centre (like ХЕЙВЕН does for our own sector);
-        // everything else — including the "Другие сервера" catch-all — fills the rest of the disk in
-        // a sunflower/phyllotaxis spiral (the classic "N points, evenly spread, no crowding" layout —
-        // seed-heads use it for the same reason). A plain ring only spends the circle's rim, so with
-        // ~15 networks each one only gets rim-length/N of separation; spreading through the whole
-        // area instead gives each one roughly area/N, which stays roomy even after the map auto-fits
-        // to the view (Fit() rescales the whole layout, but can't change how well IT packed to begin
-        // with). Sorted by label (not player count) so the layout doesn't reshuffle just because
-        // population moved a bit between refreshes.
-        var central = Groups.Where(g => !g.IsMisc).OrderByDescending(g => g.TotalPlayers).FirstOrDefault();
-        var ring = Groups.Where(g => !ReferenceEquals(g, central))
-                          .OrderBy(g => g.Label, StringComparer.OrdinalIgnoreCase)
-                          .ToList();
-        const double innerR = 0.14; // keeps everyone clear of the (bigger) central beacon
-        const double outerR = 0.48;
+        LayoutMap(regions.OrderBy(r => r.Label, StringComparer.OrdinalIgnoreCase).ToList());
+
+        SelectedServer = MapNodes.FirstOrDefault(s => s.Address == keepSelected) ?? MapNodes.FirstOrDefault();
+    }
+
+    private const int MaxDotsPerRegion = 9;
+
+    /// <summary>Spreads each network's centre across the whole disk (sunflower spiral + a relaxation
+    /// pass enforcing a real minimum gap — see the earlier "далековато" pass), then arranges that
+    /// network's own servers as a small connected loop around its centre, like the systems inside one
+    /// region of a galaxy map.</summary>
+    private void LayoutMap(IReadOnlyList<(string Label, List<ServerRowViewModel> MapRows)> regions)
+    {
+        if (regions.Count == 0) return;
+
+        const double outerR = 0.46;
         const double goldenAngle = 2.39996323; // ~137.5°, the phyllotaxis constant
-        for (var i = 0; i < ring.Count; i++)
+        var centers = new (double X, double Y)[regions.Count];
+        for (var i = 0; i < regions.Count; i++)
         {
-            var r = innerR + (outerR - innerR) * Math.Sqrt((i + 0.5) / ring.Count);
+            var r = regions.Count == 1 ? 0 : outerR * Math.Sqrt((i + 0.5) / regions.Count);
             var angle = i * goldenAngle;
-            ring[i].X = 0.5 + Math.Cos(angle) * r;
-            ring[i].Y = 0.5 + Math.Sin(angle) * r;
+            centers[i] = (0.5 + Math.Cos(angle) * r, 0.5 + Math.Sin(angle) * r);
         }
 
-        // The spiral spreads well on average, but doesn't *guarantee* a minimum gap between any one
-        // pair — a few relaxation passes (push apart anything still too close, then clamp back inside
-        // the disk) turns "spread well on average" into "never actually crowded".
-        const double minGap = 0.60;
-        const double maxR = 0.62;
+        const double minGap = 0.40;
+        const double maxR = 0.48;
         for (var pass = 0; pass < 60; pass++)
         {
             var moved = false;
-            for (var i = 0; i < ring.Count; i++)
-            for (var j = i + 1; j < ring.Count; j++)
+            for (var i = 0; i < centers.Length; i++)
+            for (var j = i + 1; j < centers.Length; j++)
             {
-                var dx = ring[j].X - ring[i].X;
-                var dy = ring[j].Y - ring[i].Y;
+                var dx = centers[j].X - centers[i].X;
+                var dy = centers[j].Y - centers[i].Y;
                 var d = Math.Sqrt(dx * dx + dy * dy);
                 if (d >= minGap || d < 1e-6) continue;
                 var push = (minGap - d) / 2;
                 var ux = dx / d;
                 var uy = dy / d;
-                ring[i].X -= ux * push; ring[i].Y -= uy * push;
-                ring[j].X += ux * push; ring[j].Y += uy * push;
+                centers[i] = (centers[i].X - ux * push, centers[i].Y - uy * push);
+                centers[j] = (centers[j].X + ux * push, centers[j].Y + uy * push);
                 moved = true;
             }
             if (!moved) break;
         }
-        foreach (var g in ring)
+        for (var i = 0; i < centers.Length; i++)
         {
-            var dx = g.X - 0.5;
-            var dy = g.Y - 0.5;
+            var dx = centers[i].X - 0.5;
+            var dy = centers[i].Y - 0.5;
             var r = Math.Sqrt(dx * dx + dy * dy);
             if (r <= maxR) continue;
-            g.X = 0.5 + dx / r * maxR;
-            g.Y = 0.5 + dy / r * maxR;
+            centers[i] = (0.5 + dx / r * maxR, 0.5 + dy / r * maxR);
         }
 
-        if (central is not null)
+        for (var i = 0; i < regions.Count; i++)
         {
-            central.IsCentral = true;
-            central.X = 0.5;
-            central.Y = 0.5;
+            var (cx, cy) = centers[i];
+            var rows = regions[i].MapRows;
+            var localR = rows.Count <= 1 ? 0 : 0.05 + 0.007 * rows.Count;
+            for (var k = 0; k < rows.Count; k++)
+            {
+                var angle = rows.Count == 1 ? 0 : k / (double)rows.Count * Math.Tau;
+                rows[k].X = cx + Math.Cos(angle) * localR;
+                rows[k].Y = cy + Math.Sin(angle) * localR;
+                rows[k].Neighbours = rows.Count <= 1
+                    ? []
+                    : [rows[(k - 1 + rows.Count) % rows.Count].Name, rows[(k + 1) % rows.Count].Name];
+                MapNodes.Add(rows[k]);
+            }
         }
-
-        SelectedNetwork = Groups.FirstOrDefault(g => g.Label == keepSelected) ?? central ?? Groups.FirstOrDefault();
     }
 }
 
-/// <summary>
-/// One network — e.g. "Corvax" with its shards underneath. Doubles as a section in the grouped list
-/// view AND as a beacon on the map (implements <see cref="IMapNode"/>), so the РУхаб map is built from
-/// the exact same control as СЕКТОР FRONTIER 15 instead of a bespoke one: pick a network, see its
-/// servers appear in the same "selected node" side panel, same as picking a region.
-/// </summary>
-public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers) : IMapNode
+/// <summary>One network section in the grouped РУхаб list — e.g. "Corvax" with its shards underneath.</summary>
+public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers)
 {
     public string Label { get; } = label;
     public IReadOnlyList<ServerRowViewModel> Servers { get; } = servers;
     public int Count => Servers.Count;
     public int TotalPlayers => Servers.Sum(s => s.Players);
-    public bool IsMisc => Label == "Другие сервера";
+    public bool IsMisc => Label == NetworkGrouping.MiscLabel;
 
     public string SummaryLine => TotalPlayers > 0
         ? $"{Count} · {TotalPlayers} игроков"
         : $"{Count}";
-
-    // --- IMapNode ---
-    public string Name => Label;
-
-    /// <summary>Shown both as the map's hover tooltip and atop the side panel — since the tooltip is
-    /// the only info a player gets before actually clicking, it lists the busiest servers by name and
-    /// player count directly, not just a one-line summary.</summary>
-    public string Blurb
-    {
-        get
-        {
-            var head = IsMisc
-                ? $"{Count} {Decl(Count, "сервер", "сервера", "серверов")} без общей сети."
-                : $"{Count} {Decl(Count, "сервер", "сервера", "серверов")} · {TotalPlayers} {Decl(TotalPlayers, "игрок", "игрока", "игроков")} онлайн.";
-
-            const int shown = 5;
-            var top = Servers.OrderByDescending(s => s.Players).Take(shown).ToList();
-            if (top.Count == 0) return head;
-
-            var lines = top.Select(s => $"{(s.IsOnline ? s.Population : "офлайн")} — {s.Name}");
-            var rest = Servers.Count - top.Count;
-            var tail = rest > 0 ? $"\n…и ещё {rest} {Decl(rest, "сервер", "сервера", "серверов")}" : "";
-            return head + "\n" + string.Join("\n", lines) + tail;
-        }
-    }
-
-    private static string Decl(int n, string one, string few, string many)
-    {
-        var m = Math.Abs(n) % 100;
-        if (m is >= 11 and <= 14) return many;
-        return (m % 10) switch { 1 => one, 2 or 3 or 4 => few, _ => many };
-    }
-
-    public double X { get; set; }
-    public double Y { get; set; }
-    public bool IsCentral { get; set; }
-    public bool IsOnline => Servers.Any(s => s.IsOnline);
-    public bool IsOffline => !IsOnline;
-    public bool IsQuarantine => false;
-    public bool IsCurrent => false;
-    public string Population => TotalPlayers.ToString();
-    public IReadOnlyList<string> Neighbours => [];
 }

@@ -22,6 +22,7 @@ public sealed record ServerNetworkGroup(string Label, IReadOnlyList<ServerEntry>
 public static class NetworkGrouping
 {
     private const int MinNetworkSize = 4;
+    public const string MiscLabel = "Другие сервера";
 
     public static IReadOnlyList<ServerNetworkGroup> Group(IEnumerable<ServerEntry> servers)
     {
@@ -50,7 +51,7 @@ public static class NetworkGrouping
             .ToList();
 
         if (misc.Count > 0)
-            groups.Add(new ServerNetworkGroup("Другие сервера", misc.OrderByDescending(s => s.Players).ToList()));
+            groups.Add(new ServerNetworkGroup(MiscLabel, misc.OrderByDescending(s => s.Players).ToList()));
 
         return groups;
     }

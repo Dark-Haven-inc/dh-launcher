@@ -17,8 +17,8 @@ public partial class ServerListView : UserControl
 
         Map.NodeInvoked += (_, node) =>
         {
-            if (DataContext is ServerListViewModel vm && node is ServerGroupViewModel group)
-                vm.SelectFromMap(group);
+            if (DataContext is ServerListViewModel vm && node is ServerRowViewModel row)
+                vm.SelectFromMap(row);
         };
     }
 }

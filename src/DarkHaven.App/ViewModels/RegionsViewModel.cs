@@ -20,6 +20,7 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
     public double X => Entry.RegionX;
     public double Y => Entry.RegionY;
     public IReadOnlyList<string> Neighbours => Entry.RegionNeighbours;
+    public string? RegionLabel => null;
 
     public bool IsQuarantine => Entry.RegionQuarantine;
     public bool IsOnline => !IsQuarantine && Entry.Reachability == ServerReachability.Online;

@@ -1,10 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.App.Controls;
 using DarkHaven.Launcher.Servers;
 
 namespace DarkHaven.App.ViewModels;
 
-public partial class ServerRowViewModel : ViewModelBase
+/// <summary>
+/// One server row — in the plain list, in a network's section, AND (implementing <see cref="IMapNode"/>)
+/// as one of the small connected dots inside its network's region on the РУхаб map. Same object, same
+/// "click it, see its description, hit Играть" behaviour everywhere it appears.
+/// </summary>
+public partial class ServerRowViewModel : ViewModelBase, IMapNode
 {
     private readonly AppServices _services;
     private readonly Action<ServerEntry> _connect;
@@ -21,8 +27,6 @@ public partial class ServerRowViewModel : ViewModelBase
 
     public string Name => Entry.DisplayName;
     public string Address => Entry.Address;
-    public string? Blurb => Entry.RegionBlurb;
-    public bool IsRegion => Entry.IsDarkHavenRegion;
 
     public bool IsOnline => Entry.Reachability == ServerReachability.Online;
     public bool IsOffline => Entry.Reachability == ServerReachability.Offline;
@@ -35,6 +39,8 @@ public partial class ServerRowViewModel : ViewModelBase
         : Entry.Players.ToString();
 
     public string PingText => Entry.PingMs is { } p ? $"{p} мс" : "";
+
+    public string StateText => IsOnline ? "ОНЛАЙН" : "офлайн";
 
     public string RoundInfo => Entry.RunLevel switch
     {
@@ -62,5 +68,27 @@ public partial class ServerRowViewModel : ViewModelBase
     {
         try { return services.Settings.IsFavorite(address); }
         catch { return false; }
+    }
+
+    // --- IMapNode — only set/meaningful for the servers chosen to actually appear on the РУхаб map ---
+
+    public double X { get; set; }
+    public double Y { get; set; }
+    public bool IsCentral { get; set; }
+    public bool IsQuarantine => false;
+    public bool IsCurrent => _services.CurrentGameAddress is { } a && string.Equals(a, Address, StringComparison.OrdinalIgnoreCase);
+    public IReadOnlyList<string> Neighbours { get; set; } = [];
+    public string? RegionLabel { get; set; }
+
+    /// <summary>The map's hover tooltip and click description — the actual "descriptions when you
+    /// click each one" the map is for, not just a name.</summary>
+    public string Blurb
+    {
+        get
+        {
+            var status = IsOnline ? $"{Population} игроков онлайн." : "Сейчас офлайн.";
+            var tags = VisibleTags.ToList();
+            return tags.Count == 0 ? status : status + "\n" + string.Join(" · ", tags);
+        }
     }
 }

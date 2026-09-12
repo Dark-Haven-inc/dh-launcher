@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using DarkHaven.Launcher.Api;
 using Serilog;
 
@@ -9,9 +10,11 @@ namespace DarkHaven.Launcher.Servers;
 ///
 /// This is the "РУхаб": the browser only ever holds servers self-tagged (or hub-inferred) as
 /// <c>lang:ru</c> or <c>lang:uk</c> — every other server is dropped right here, before it ever
-/// reaches a ViewModel, so there's no separate toggle to turn this back off.
+/// reaches a ViewModel, so there's no separate toggle to turn this back off. Mapping/test builds
+/// (named "... [Mapping]", "... MAPPING", "... [TEST]") are dropped the same way — they're not
+/// something a player should ever be offered a "play" button for.
 /// </summary>
-public sealed class ServerListManager(HubApi hub)
+public sealed partial class ServerListManager(HubApi hub)
 {
     private static readonly string[] RuHubLanguages = ["ru", "uk"];
 
@@ -35,7 +38,7 @@ public sealed class ServerListManager(HubApi hub)
             if (e.StatusData is { } status)
                 entry.ApplyStatus(status, e.InferredTags);
 
-            if (IsRuHub(entry.Tags))
+            if (IsRuHub(entry.Tags) && !IsMappingOrTestBuild(entry.DisplayName))
                 _servers.Add(entry);
         }
         Log.Debug("РУхаб: kept {Count} of {Total} hub servers", _servers.Count, entries.Count);
@@ -45,4 +48,9 @@ public sealed class ServerListManager(HubApi hub)
     private static bool IsRuHub(IReadOnlyList<string> tags) =>
         tags.Any(t => t.StartsWith("lang:", StringComparison.OrdinalIgnoreCase)
                       && RuHubLanguages.Contains(t["lang:".Length..], StringComparer.OrdinalIgnoreCase));
+
+    private static bool IsMappingOrTestBuild(string name) => MappingOrTestPattern().IsMatch(name);
+
+    [GeneratedRegex(@"\bmapping\b|\[test\]", RegexOptions.IgnoreCase)]
+    private static partial Regex MappingOrTestPattern();
 }
