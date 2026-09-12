@@ -24,6 +24,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
     [ObservableProperty] private ServerGroupViewModel? _selectedNetwork;
+    [ObservableProperty] private bool _canQuickPlay;
 
     /// <summary>Flat list — every row, for counts and favourites lookups.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
@@ -76,6 +77,15 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         var addr = DirectAddress.Trim();
         if (addr.Length > 0)
             connect(new ServerEntry(addr));
+    }
+
+    /// <summary>The "just play something" button — no map, no networks, no choices: jump straight
+    /// into whichever RU-hub server currently has the most people in it.</summary>
+    [RelayCommand]
+    private void QuickPlay()
+    {
+        var best = Servers.Where(s => s.IsOnline).OrderByDescending(s => s.Players).FirstOrDefault();
+        if (best is not null) connect(best.Entry);
     }
 
     /// <summary>Called by the map when a network beacon is clicked.</summary>
@@ -135,6 +145,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         }
 
         SelectedNetwork = Groups.FirstOrDefault(g => g.Label == keepSelected) ?? central ?? Groups.FirstOrDefault();
+        CanQuickPlay = Servers.Any(s => s.IsOnline);
     }
 
     private static (double X, double Y) HashPosition(string seed)
