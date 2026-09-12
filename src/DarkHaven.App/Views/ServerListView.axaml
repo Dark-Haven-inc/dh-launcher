@@ -39,9 +39,63 @@
                    IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,6" />
 
         <Grid Margin="0,12,0,0">
-        <Border Classes="panel" CornerRadius="8" ClipToBounds="True" IsVisible="{Binding MapView}">
-            <c:GalaxyMap x:Name="Galaxy" ItemsSource="{Binding Servers}" />
-        </Border>
+        <Grid ColumnDefinitions="*,16,360" IsVisible="{Binding MapView}">
+            <Border Grid.Column="0" Classes="panel" CornerRadius="8" ClipToBounds="True">
+                <c:SectorMap x:Name="Map" ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedNetwork}" />
+            </Border>
+
+            <!-- Right: selected network detail — same pattern as СЕКТОР FRONTIER 15's region panel -->
+            <Border Grid.Column="2" Classes="panel" CornerRadius="8"
+                    IsVisible="{Binding SelectedNetwork, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <DockPanel Margin="20">
+                    <StackPanel DockPanel.Dock="Top" Spacing="2">
+                        <TextBlock Text="ВЫБРАННАЯ СЕТЬ" Classes="caps" />
+                        <TextBlock Text="{Binding SelectedNetwork.Label}" Classes="h1" />
+                        <TextBlock Text="{Binding SelectedNetwork.Blurb}" Classes="dim" TextWrapping="Wrap" Margin="0,2,0,0" />
+                    </StackPanel>
+
+                    <Grid DockPanel.Dock="Top" Margin="0,16,0,0" ColumnDefinitions="*,8,*">
+                        <Border Grid.Column="0" Classes="card" Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="Серверов" Classes="dim" />
+                                <TextBlock Text="{Binding SelectedNetwork.Count}" FontSize="18" FontWeight="Bold" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="card" Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="Игроков" Classes="dim" />
+                                <TextBlock Text="{Binding SelectedNetwork.TotalPlayers}" FontSize="18" FontWeight="Bold" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <TextBlock DockPanel.Dock="Top" Text="СЕРВЕРА ЭТОЙ СЕТИ" Classes="caps" Margin="0,18,0,8" />
+                    <ScrollViewer>
+                        <ItemsControl ItemsSource="{Binding SelectedNetwork.Servers}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ServerRowViewModel">
+                                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,9"
+                                            Command="{Binding ConnectCommand}" Background="{StaticResource DhBgElevatedBrush}"
+                                            BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1" CornerRadius="5">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsOnline}" />
+                                            <TextBlock Grid.Column="1" Text="офлайн" Classes="dim" VerticalAlignment="Center"
+                                                       IsVisible="{Binding IsOffline}" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
 
         <ScrollViewer IsVisible="{Binding !MapView}">
             <ItemsControl ItemsSource="{Binding Groups}">

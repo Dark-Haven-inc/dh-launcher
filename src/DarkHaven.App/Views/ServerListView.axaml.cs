@@ -15,10 +15,10 @@ public partial class ServerListView : UserControl
                 await vm.RefreshAsync();
         };
 
-        Galaxy.NodeInvoked += (_, node) =>
+        Map.NodeInvoked += (_, node) =>
         {
-            if (DataContext is ServerListViewModel vm && node is ServerRowViewModel row)
-                vm.ConnectRow(row);
+            if (DataContext is ServerListViewModel vm && node is ServerGroupViewModel group)
+                vm.SelectFromMap(group);
         };
     }
 }

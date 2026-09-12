@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.App.Controls;
 using DarkHaven.Launcher.Servers;
 using Serilog;
 
@@ -22,11 +23,13 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private bool _mapView;
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
+    [ObservableProperty] private ServerGroupViewModel? _selectedNetwork;
 
-    /// <summary>Flat list — used as the galaxy map's ItemsSource (it clusters by <c>NetworkLabel</c> itself).</summary>
+    /// <summary>Flat list — every row, for counts and favourites lookups.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
 
-    /// <summary>The same servers, grouped by network for the list view — see <see cref="NetworkGrouping"/>.</summary>
+    /// <summary>The same servers grouped by network — this IS the "СЕКТОР"-style map's item source
+    /// too (each group is one beacon), as well as the grouped list view's sections.</summary>
     public ObservableCollection<ServerGroupViewModel> Groups { get; } = [];
 
     partial void OnSearchChanged(string value) => ApplyFilter();
@@ -75,8 +78,8 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
             connect(new ServerEntry(addr));
     }
 
-    /// <summary>Called by the galaxy map when a star is clicked.</summary>
-    public void ConnectRow(ServerRowViewModel row) => connect(row.Entry);
+    /// <summary>Called by the map when a network beacon is clicked.</summary>
+    public void SelectFromMap(ServerGroupViewModel group) => SelectedNetwork = group;
 
     private void LoadFavorites()
     {
@@ -92,6 +95,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
 
         var groups = NetworkGrouping.Group(hardFiltered);
         var search = Search.Trim();
+        var keepSelected = SelectedNetwork?.Label;
 
         Servers.Clear();
         Groups.Clear();
@@ -104,17 +108,52 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
                 members = members.Where(s => s.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)
                                              || s.Address.Contains(search, StringComparison.OrdinalIgnoreCase));
 
-            var rows = members.Select(e => new ServerRowViewModel(services, e, connect, g.Label)).ToList();
+            var rows = members.Select(e => new ServerRowViewModel(services, e, connect)).ToList();
             if (rows.Count == 0) continue;
 
             Groups.Add(new ServerGroupViewModel(g.Label, rows));
             foreach (var r in rows) Servers.Add(r);
         }
+
+        // The biggest real network anchors the map's centre (like ХЕЙВЕН does for our own sector);
+        // everything else — including the "Другие сервера" catch-all — scatters by a stable hash of
+        // its own label, so a given network sits in the same spot between refreshes.
+        var real = Groups.Where(g => !g.IsMisc).ToList();
+        var central = real.OrderByDescending(g => g.TotalPlayers).FirstOrDefault();
+        foreach (var g in Groups)
+        {
+            if (ReferenceEquals(g, central))
+            {
+                g.IsCentral = true;
+                g.X = 0.5;
+                g.Y = 0.5;
+            }
+            else
+            {
+                (g.X, g.Y) = HashPosition(g.Label);
+            }
+        }
+
+        SelectedNetwork = Groups.FirstOrDefault(g => g.Label == keepSelected) ?? central ?? Groups.FirstOrDefault();
+    }
+
+    private static (double X, double Y) HashPosition(string seed)
+    {
+        uint h = 2166136261;
+        foreach (var c in seed) h = (h ^ c) * 16777619;
+        var angle = (h & 0xFFFF) / 65535.0 * Math.Tau;
+        var radius = 0.22 + 0.26 * Math.Sqrt(((h >> 16) & 0xFFFF) / 65535.0);
+        return (0.5 + Math.Cos(angle) * radius, 0.5 + Math.Sin(angle) * radius);
     }
 }
 
-/// <summary>One network section in the grouped РУхаб list — e.g. "Corvax" with its shards underneath.</summary>
-public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers)
+/// <summary>
+/// One network — e.g. "Corvax" with its shards underneath. Doubles as a section in the grouped list
+/// view AND as a beacon on the map (implements <see cref="IMapNode"/>), so the РУхаб map is built from
+/// the exact same control as СЕКТОР FRONTIER 15 instead of a bespoke one: pick a network, see its
+/// servers appear in the same "selected node" side panel, same as picking a region.
+/// </summary>
+public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers) : IMapNode
 {
     public string Label { get; } = label;
     public IReadOnlyList<ServerRowViewModel> Servers { get; } = servers;
@@ -125,4 +164,19 @@ public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowVi
     public string SummaryLine => TotalPlayers > 0
         ? $"{Count} · {TotalPlayers} игроков"
         : $"{Count}";
+
+    // --- IMapNode ---
+    public string Name => Label;
+    public string Blurb => IsMisc
+        ? "Разные серверы без общей сети — каждый сам по себе."
+        : Count == 1 ? "Один сервер." : $"{Count} серверов этой сети.";
+    public double X { get; set; }
+    public double Y { get; set; }
+    public bool IsCentral { get; set; }
+    public bool IsOnline => Servers.Any(s => s.IsOnline);
+    public bool IsOffline => !IsOnline;
+    public bool IsQuarantine => false;
+    public bool IsCurrent => false;
+    public string Population => TotalPlayers.ToString();
+    public IReadOnlyList<string> Neighbours => [];
 }
