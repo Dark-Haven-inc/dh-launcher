@@ -89,17 +89,20 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ServerRowViewModel">
-                                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,2">
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Classes="dim" FontSize="11"
-                                                       Text="{Binding Population, StringFormat='{}{0} игроков'}"
-                                                       IsVisible="{Binding IsOnline}" />
-                                            <TextBlock Classes="dim" FontSize="11" Text="офлайн" IsVisible="{Binding IsOffline}" />
+                                    <Border Classes="card" Padding="10,8">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Classes="dim" FontSize="11" VerticalAlignment="Center"
+                                                           Text="{Binding Population, StringFormat='{}{0} игроков'}"
+                                                           IsVisible="{Binding IsOnline}" />
+                                                <TextBlock Grid.Column="0" Classes="dim" FontSize="11" VerticalAlignment="Center"
+                                                           Text="офлайн" IsVisible="{Binding IsOffline}" />
+                                                <Button Grid.Column="1" Classes="primary" Content="▶ Играть" Padding="14,6"
+                                                        Command="{Binding ConnectCommand}" />
+                                            </Grid>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Classes="primary" Content="▶ Играть" Padding="14,6"
-                                                Command="{Binding ConnectCommand}" VerticalAlignment="Center" />
-                                    </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
