@@ -2,12 +2,19 @@ using System.Text;
 using Avalonia;
 using DarkHaven.Launcher;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using Velopack;
 
 namespace DarkHaven.App;
 
 internal static class Program
 {
+    /// <summary>Backs the "VerboseLog" setting — SettingsViewModel flips this at startup and on
+    /// every change instead of the logger's minimum level being fixed at Debug regardless of the
+    /// checkbox (which is what it did before: the setting was persisted but never actually read).</summary>
+    public static readonly LoggingLevelSwitch LevelSwitch = new(LogEventLevel.Debug);
+
     /// <summary>The <c>ss14(s)://</c> address to connect to on launch (a link click, or a redial), if any.</summary>
     public static string? LaunchUri { get; private set; }
 
@@ -31,7 +38,7 @@ internal static class Program
         LauncherPaths.EnsureDirectories();
 
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.ControlledBy(LevelSwitch)
             .WriteTo.Console()
             .WriteTo.File(Path.Combine(LauncherPaths.LogsDir, "launcher-.log"),
                 rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)

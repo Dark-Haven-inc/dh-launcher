@@ -41,7 +41,7 @@
                         <Button Classes="ghost" Content="Сайт" Command="{Binding OpenSiteCommand}" />
                         <Button Classes="ghost" Command="{Binding OpenAccountCommand}">
                             <TextBlock>
-                                <Run Text="{Binding AccountName, FallbackValue='Гость'}" />
+                                <Run Text="{Binding AccountName, TargetNullValue='Гость', FallbackValue='Гость'}" />
                             </TextBlock>
                         </Button>
                     </StackPanel>

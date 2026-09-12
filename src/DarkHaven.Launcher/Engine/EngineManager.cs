@@ -188,6 +188,13 @@ public sealed class EngineManager(
         if (pick.Key is null)
             throw new InvalidDataException($"No '{moduleName}' version for engine {engineVersion}");
 
+        // Same guard ResolveAsync already applies to main engine builds (see below) — a module
+        // marked insecure (e.g. a CEF build with a disclosed RCE) must fail closed here too. A valid
+        // signature only proves the file wasn't tampered with, it says nothing about whether the CDN
+        // has since flagged that exact build as unsafe to run.
+        if (pick.Value.Insecure)
+            throw new InvalidDataException($"Module {moduleName} {pick.Key} is marked insecure");
+
         var destDir = Path.Combine(modulesDir, moduleName, pick.Key);
         if (Directory.Exists(destDir) && Directory.EnumerateFileSystemEntries(destDir).Any())
         {

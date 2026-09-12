@@ -42,15 +42,21 @@ public partial class SettingsViewModel : ViewModelBase
         _regionsUrl = services.Settings.GetConfig("RegionsUrl") ?? "";
         _platformUrl = services.Settings.GetConfig("PlatformApiUrl") ?? "";
         _discordAppId = services.Settings.GetConfig("DiscordAppId") ?? "";
+        ApplyVerboseLog(_verboseLog);
         _ = LoadCacheSummaryAsync();
     }
 
     private bool Cfg(string key, bool dflt) =>
         _services.Settings.GetConfig(key) is { } v ? v == "true" : dflt;
 
+    // The setting was previously persisted but never actually read — the logger ran at Debug
+    // regardless of this checkbox. Apply it both at startup (here) and on every change (below).
+    private static void ApplyVerboseLog(bool verbose) =>
+        Program.LevelSwitch.MinimumLevel = verbose ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information;
+
     partial void OnAutoUpdateChanged(bool v) => _services.Settings.SetConfig("AutoUpdate", v ? "true" : "false");
     partial void OnMinimizeOnLaunchChanged(bool v) => _services.Settings.SetConfig("MinimizeOnLaunch", v ? "true" : "false");
-    partial void OnVerboseLogChanged(bool v) => _services.Settings.SetConfig("VerboseLog", v ? "true" : "false");
+    partial void OnVerboseLogChanged(bool v) { _services.Settings.SetConfig("VerboseLog", v ? "true" : "false"); ApplyVerboseLog(v); }
     partial void OnCompatModeChanged(bool v) => _services.Settings.SetConfig("CompatMode", v ? "true" : "false");
 
     partial void OnDownloadLimitChanged(string v)
