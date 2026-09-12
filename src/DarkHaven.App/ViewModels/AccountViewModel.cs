@@ -42,14 +42,8 @@ public partial class AccountViewModel : ViewModelBase
         _ = RefreshTokensAsync();
     }
 
-    [RelayCommand] private void OpenRegister() => OpenUrl("https://account.spacestation14.com/Identity/Account/Register");
-    [RelayCommand] private void OpenForgot() => OpenUrl("https://account.spacestation14.com/Identity/Account/ForgotPassword");
-
-    private static void OpenUrl(string url)
-    {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* ignore */ }
-    }
+    [RelayCommand] private void OpenRegister() => SafeUrl.Open("https://account.spacestation14.com/Identity/Account/Register");
+    [RelayCommand] private void OpenForgot() => SafeUrl.Open("https://account.spacestation14.com/Identity/Account/ForgotPassword");
 
     [RelayCommand]
     private async Task LoginAsync()

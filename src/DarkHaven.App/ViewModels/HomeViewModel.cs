@@ -99,12 +99,7 @@ public sealed partial class NewsItemViewModel(DhNewsItem item)
     }
 
     [RelayCommand]
-    private void Open()
-    {
-        if (item.Link is { } url)
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch { /* ignore */ }
-    }
+    private void Open() => SafeUrl.Open(item.Link);
 }
 
 /// <summary>НОВОСТИ — a static feed (bundled news.json + optional remote refresh). No backend.</summary>

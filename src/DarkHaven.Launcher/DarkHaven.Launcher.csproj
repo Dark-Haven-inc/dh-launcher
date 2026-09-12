@@ -17,6 +17,7 @@
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Velopack" />
     <PackageReference Include="Microsoft.Win32.Registry" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="DiscordRichPresence" />
   </ItemGroup>
 

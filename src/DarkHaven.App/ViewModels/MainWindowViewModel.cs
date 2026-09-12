@@ -178,14 +178,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand] private void Navigate(NavPage page) => Page = page;
     [RelayCommand] private void OpenAccount() => Page = NavPage.Profile;
-    [RelayCommand] private void OpenDiscord() => OpenUrl("https://discord.gg/");
-    [RelayCommand] private void OpenSite() => OpenUrl("https://spacestation14.com/");
-
-    private static void OpenUrl(string url)
-    {
-        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch { /* ignore */ }
-    }
+    [RelayCommand] private void OpenDiscord() => SafeUrl.Open("https://discord.gg/");
+    [RelayCommand] private void OpenSite() => SafeUrl.Open("https://spacestation14.com/");
 
     public void ConnectToAddress(string address) => Connect(new ServerEntry(address));
 
