@@ -68,7 +68,7 @@
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Список регионов (URL)" VerticalAlignment="Center" />
                         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding RegionsUrl}" Watermark="необязательно" />
 
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Платформа Dark Haven" VerticalAlignment="Center" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Платформа Frontier 15" VerticalAlignment="Center" />
                         <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding PlatformUrl}"
                                  Watermark="необязательно — https://api.darkhaven.games" />
                     </Grid>

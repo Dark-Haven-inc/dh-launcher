@@ -119,9 +119,9 @@
                     Command="{Binding ManageAccountsCommand}" />
 
             <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding IsPlatformConnected}"
-                       Text="🌐 Наигранное синхронизировано с сетью Dark Haven. Друзья и уведомления — следующий шаг." />
+                       Text="🌐 Наигранное синхронизировано с сетью Frontier 15. Друзья и уведомления — следующий шаг." />
             <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !IsPlatformConnected}"
-                       Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Dark Haven." />
+                       Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Frontier 15." />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

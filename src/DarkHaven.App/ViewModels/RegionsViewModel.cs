@@ -110,7 +110,7 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
         catch (Exception e)
         {
             Log.Warning(e, "Failed to load regions");
-            Error = "Не удалось загрузить сектор Dark Haven.";
+            Error = "Не удалось загрузить сектор Frontier 15.";
         }
         finally
         {

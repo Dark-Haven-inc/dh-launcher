@@ -638,7 +638,7 @@ public sealed class SectorMap : Control
 
     private void DrawLegend(DrawingContext ctx, Rect b)
     {
-        var title = Fmt("СЕКТОР DARK HAVEN", Dim, 9.5, true);
+        var title = Fmt("СЕКТОР FRONTIER 15", Dim, 9.5, true);
         ctx.DrawText(title, new Point(16, 14));
 
         var items = new (Color, string)[] { (Online, "онлайн"), (Offline, "офлайн"), (Warn, "карантин") };

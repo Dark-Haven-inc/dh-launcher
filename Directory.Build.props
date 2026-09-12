@@ -9,8 +9,8 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <Deterministic>true</Deterministic>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <Authors>Dark Haven</Authors>
-    <Product>Dark Haven Launcher</Product>
+    <Authors>Frontier 15</Authors>
+    <Product>Frontier 15 Launcher</Product>
   </PropertyGroup>
 
 </Project>

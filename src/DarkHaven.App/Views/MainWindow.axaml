@@ -4,7 +4,7 @@
         xmlns:views="using:DarkHaven.App.Views"
         x:Class="DarkHaven.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Title="Dark Haven Launcher" Width="1100" Height="720"
+        Title="Frontier 15 Launcher" Width="1100" Height="720"
         MinWidth="960" MinHeight="600"
         Icon="/Assets/icon.ico"
         Background="{StaticResource DhBgBrush}">
@@ -30,7 +30,7 @@
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <Image Source="/Assets/emblem.png" Width="32" Height="32" VerticalAlignment="Center" />
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="DARK HAVEN" FontWeight="Bold" FontSize="15" LetterSpacing="1"
+                            <TextBlock Text="FRONTIER 15" FontWeight="Bold" FontSize="15" LetterSpacing="1"
                                        Foreground="{StaticResource DhTextBrush}" />
                             <TextBlock Text="СЕТЬ СТАНЦИЙ" Classes="caps" />
                         </StackPanel>

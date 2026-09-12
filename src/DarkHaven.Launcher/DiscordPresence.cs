@@ -38,7 +38,7 @@ public sealed class DiscordPresence : IDisposable
     public void SetConnecting(string name) => Set("Подключается", Trim(name), _launchedAt);
 
     public void SetInGame(string name, bool isRegion) =>
-        Set(isRegion ? "В секторе Dark Haven" : "Играет на сервере SS14", Trim(name), DateTime.UtcNow);
+        Set(isRegion ? "В секторе Frontier 15" : "Играет на сервере SS14", Trim(name), DateTime.UtcNow);
 
     private void Set(string details, string state, DateTime start)
     {
@@ -52,7 +52,7 @@ public sealed class DiscordPresence : IDisposable
                 Details = details,
                 State = state,
                 Timestamps = new Timestamps { Start = start },
-                Assets = new Assets { LargeImageKey = "logo", LargeImageText = "Dark Haven" },
+                Assets = new Assets { LargeImageKey = "logo", LargeImageText = "Frontier 15" },
             });
         }
         catch (Exception e)

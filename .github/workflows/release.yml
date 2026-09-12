@@ -84,7 +84,7 @@ jobs:
           dotnet vpk upload github
           --repoUrl https://github.com/${{ github.repository }}
           --publish
-          --releaseName "Dark Haven Launcher ${{ steps.v.outputs.version }}"
+          --releaseName "Frontier 15 Launcher ${{ steps.v.outputs.version }}"
           --tag v${{ steps.v.outputs.version }}
           --channel win
           --token ${{ github.token }}

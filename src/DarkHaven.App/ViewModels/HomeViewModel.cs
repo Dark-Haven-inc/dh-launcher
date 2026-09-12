@@ -16,7 +16,7 @@ public partial class HomeViewModel(
     public ObservableCollection<FavoriteServerEntry> Favorites { get; } = [];
 
     public string Greeting =>
-        services.Accounts.Active is { } a ? $"С возвращением, {a.Username}" : "Dark Haven";
+        services.Accounts.Active is { } a ? $"С возвращением, {a.Username}" : "Frontier 15";
 
     public bool HasRecent => Recent.Count > 0;
     public bool HasFavorites => Favorites.Count > 0;

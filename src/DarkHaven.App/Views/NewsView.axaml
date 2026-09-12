@@ -9,7 +9,7 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="Новости" Classes="h1" />
-                <TextBlock Text="Обновления лаунчера и сети Dark Haven" Classes="dim" />
+                <TextBlock Text="Обновления лаунчера и сети Frontier 15" Classes="dim" />
             </StackPanel>
 
             <TextBlock Text="Загрузка…" Classes="dim" IsVisible="{Binding IsLoading}" />

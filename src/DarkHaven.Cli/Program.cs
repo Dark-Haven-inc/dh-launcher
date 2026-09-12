@@ -62,7 +62,7 @@ try
             await ShowPlatform(positional.ElementAtOrDefault(1));
             break;
         default:
-            Log.Information("Dark Haven Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
+            Log.Information("Frontier 15 Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
             Log.Information("  probe <ss14://addr> [--hub] [--via-hub]   fetch a server's /info");
             Log.Information("  update <ss14://addr>                      download that server's content + engine");
             Log.Information("  connect <ss14://addr> [--guest]           update, then launch the client");
@@ -70,7 +70,7 @@ try
             Log.Information("  accounts                                  list + refresh stored accounts");
             Log.Information("  logout <username>");
             Log.Information("  servers [--search X] [--rp low,med] [--lang en] [--no-empty]");
-            Log.Information("  regions                                   Dark Haven sector, live");
+            Log.Information("  regions                                   Frontier 15 sector, live");
             Log.Information("  platform <api-base-url>                   sign in to DarkHaven.Platform.Api with the active account, dump the profile");
             Log.Information("  -v for debug logging");
             break;
@@ -265,7 +265,7 @@ async Task ShowRegions()
     var regions = new DhRegions(http, LauncherPaths.RegionsJsonPath);
     await regions.LoadAsync();
     var entries = await regions.PollAsync();
-    Log.Information("Dark Haven Sector — {Count} region(s)", entries.Count);
+    Log.Information("Frontier 15 Sector — {Count} region(s)", entries.Count);
     foreach (var e in entries)
         Log.Information("  [{State,-7}] {P,3}p  {Name}  ({Addr})", e.Reachability, e.Players, e.DisplayName, e.Address);
 }

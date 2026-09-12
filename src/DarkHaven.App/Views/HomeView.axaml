@@ -10,7 +10,7 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Greeting}" Classes="h1" />
-                <TextBlock Text="Сеть станций Dark Haven" Classes="dim" />
+                <TextBlock Text="Сеть станций Frontier 15" Classes="dim" />
             </StackPanel>
 
             <!-- Continue -->
@@ -31,7 +31,7 @@
                 <StackPanel Spacing="12">
                     <TextBlock Text="КУДА ИГРАТЬ" Classes="caps" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Classes="primary" Content="СЕКТОР DARK HAVEN" Command="{Binding OpenRegionsCommand}" />
+                        <Button Classes="primary" Content="СЕКТОР FRONTIER 15" Command="{Binding OpenRegionsCommand}" />
                         <Button Classes="ghost" Content="Все серверы SS14" Command="{Binding OpenServersCommand}" />
                     </StackPanel>
                 </StackPanel>
@@ -84,7 +84,7 @@
             </StackPanel>
 
             <TextBlock Classes="dim" TextWrapping="Wrap"
-                       Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Dark Haven." />
+                       Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Frontier 15." />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

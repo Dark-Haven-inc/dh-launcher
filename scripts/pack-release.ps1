@@ -1,4 +1,4 @@
-# Builds a Dark Haven Launcher release: a Velopack installer (Setup.exe) plus a delta package,
+# Builds a Frontier 15 Launcher release: a Velopack installer (Setup.exe) plus a delta package,
 # ready to upload to GitHub Releases. Players run Setup.exe once; every later version arrives as
 # a small in-app delta.
 #
@@ -19,7 +19,7 @@ $repo = Split-Path -Parent $PSScriptRoot
 $pub  = Join-Path $repo "artifacts/publish"
 if (-not $OutputDir) { $OutputDir = Join-Path $repo "artifacts/releases" }
 
-Write-Host "== Dark Haven Launcher $Version ($Rid, channel '$Channel') ==" -ForegroundColor Cyan
+Write-Host "== Frontier 15 Launcher $Version ($Rid, channel '$Channel') ==" -ForegroundColor Cyan
 
 if (Test-Path $pub) { Remove-Item $pub -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $pub, $OutputDir | Out-Null
@@ -41,12 +41,12 @@ dotnet publish (Join-Path $repo "src/DarkHaven.Loader/DarkHaven.Loader.csproj") 
     -o (Join-Path $pub "loader")
 if ($LASTEXITCODE) { throw "loader publish failed" }
 
-# 3. Sanity: the forked engine must be bundled or nobody can connect to Dark Haven.
+# 3. Sanity: the forked engine must be bundled or nobody can connect to Frontier 15.
 #    Every version in manifest.json must have its file present with a matching SHA-256.
 $bundledDir = Join-Path $pub "bundled-engines"
 $manifestFile = Join-Path $bundledDir "manifest.json"
 if (-not (Test-Path $manifestFile)) {
-    Write-Warning "no bundled-engines/manifest.json in the publish output - the launcher will fall back to the public CDN and cannot connect to Dark Haven."
+    Write-Warning "no bundled-engines/manifest.json in the publish output - the launcher will fall back to the public CDN and cannot connect to Frontier 15."
 } else {
     $manifest = Get-Content $manifestFile -Raw | ConvertFrom-Json
     foreach ($ver in $manifest.PSObject.Properties) {
@@ -70,8 +70,8 @@ dotnet vpk pack `
     --packVersion $Version `
     --packDir $pub `
     --mainExe DarkHavenLauncher.exe `
-    --packTitle "Dark Haven Launcher" `
-    --packAuthors "Dark Haven" `
+    --packTitle "Frontier 15 Launcher" `
+    --packAuthors "Frontier 15" `
     --icon (Join-Path $repo "src/DarkHaven.App/Assets/icon.ico") `
     --channel $Channel `
     --outputDir $OutputDir

@@ -15,7 +15,7 @@
             <!-- Access gating -->
             <Border Classes="card" Padding="18" IsVisible="{Binding NotConnected}">
                 <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Платформа Dark Haven не настроена. Укажите адрес в Настройках → Подключение → «Платформа Dark Haven»." />
+                           Text="Платформа Frontier 15 не настроена. Укажите адрес в Настройках → Подключение → «Платформа Frontier 15»." />
             </Border>
             <Border Classes="card" Padding="18" IsVisible="{Binding NotSignedIn}">
                 <TextBlock Classes="dim" TextWrapping="Wrap"
