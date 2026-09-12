@@ -47,6 +47,9 @@ public sealed class SectorMap : Control
     private static readonly Color Offline = Color.Parse("#4E5F80");
     private static readonly Color Text = Color.Parse("#E4ECFA");
     private static readonly Color Dim = Color.Parse("#8395B8");
+    private static readonly Color FrontierRed = Color.Parse("#F0384C");
+    private static readonly double[] MainAxes = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+    private static readonly double[] DiagAxes = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
 
     private readonly DispatcherTimer _timer;
     private readonly Star[] _stars;
@@ -338,6 +341,8 @@ public sealed class SectorMap : Control
         foreach (var n in nodes)
             DrawLabel(ctx, n);
 
+        DrawClusterTitle(ctx, nodes);
+
         if (_hover is { } hv)
             DrawTooltip(ctx, hv);
 
@@ -523,24 +528,20 @@ public sealed class SectorMap : Control
         if (n.IsQuarantine)
             ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Warn, 0.6), 1.4) { DashStyle = new DashStyle([2, 3], _phase * 4) }, p, r + 6, r + 6);
 
-        // body — a lit sphere
-        var body = new RadialGradientBrush
-        {
-            Center = new RelativePoint(0.35, 0.32, RelativeUnit.Relative),
-            GradientOrigin = new RelativePoint(0.35, 0.32, RelativeUnit.Relative),
-            RadiusX = new RelativeScalar(0.75, RelativeUnit.Relative),
-            RadiusY = new RelativeScalar(0.75, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(Lerp(core, Colors.White, 0.55), 0),
-                new GradientStop(core, 0.45),
-                new GradientStop(Lerp(core, Bg, 0.55), 1),
-            },
-        };
-        ctx.DrawEllipse(body, new Pen(new SolidColorBrush(Lerp(core, Colors.White, 0.4), n.IsOffline ? 0.3 : 0.8), 1), p, r, r);
+        // body — a beacon, not a planet: a bright core + a 4-point sparkle flare (this is a region marker on a network map, not a celestial body)
+        var coreBright = Lerp(core, Colors.White, n.IsOffline ? 0.15 : 0.55);
+        var rayAlpha = n.IsOffline ? 0.35 : 0.85;
+        var rayLen = r * 1.4;
+        var rayW = r * 0.16;
+        foreach (var ang in MainAxes)
+            DrawSparkleRay(ctx, p, ang, rayLen, rayW, coreBright, rayAlpha);
+        foreach (var ang in DiagAxes)
+            DrawSparkleRay(ctx, p, ang, rayLen * 0.5, rayW * 0.65, core, rayAlpha * 0.7);
 
-        // rim light
-        ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Colors.White, n.IsOffline ? 0.1 : 0.35), 1), p.WithY(p.Y - 0.5), r - 1.5, r - 1.5);
+        ctx.DrawEllipse(
+            new SolidColorBrush(coreBright),
+            new Pen(new SolidColorBrush(Lerp(core, Colors.White, 0.3), n.IsOffline ? 0.35 : 0.9), 1),
+            p, r * 0.42, r * 0.42);
 
         // "you are here" bracket + tag
         if (n.IsCurrent)
@@ -574,6 +575,55 @@ public sealed class SectorMap : Control
             }
             ctx.DrawGeometry(null, new Pen(new SolidColorBrush(color, 0.55), 1.4) { LineCap = PenLineCap.Round }, g);
         }
+    }
+
+    /// <summary>One spike of a 4/8-point sparkle-flare marker: a tapered kite from the center out to a tip.</summary>
+    private static void DrawSparkleRay(DrawingContext ctx, Point c, double angle, double length, double width, Color color, double alpha)
+    {
+        var dir = new Point(Math.Cos(angle), Math.Sin(angle));
+        var perp = new Point(-dir.Y, dir.X);
+        var tip = new Point(c.X + dir.X * length, c.Y + dir.Y * length);
+        var back = new Point(c.X - dir.X * length * 0.18, c.Y - dir.Y * length * 0.18);
+        var baseA = new Point(c.X + perp.X * width, c.Y + perp.Y * width);
+        var baseB = new Point(c.X - perp.X * width, c.Y - perp.Y * width);
+
+        var g = new StreamGeometry();
+        using (var gc = g.Open())
+        {
+            gc.BeginFigure(tip, true);
+            gc.LineTo(baseA);
+            gc.LineTo(back);
+            gc.LineTo(baseB);
+            gc.EndFigure(true);
+        }
+        ctx.DrawGeometry(new SolidColorBrush(color, alpha), null, g);
+    }
+
+    private void DrawClusterTitle(DrawingContext ctx, IReadOnlyList<IMapNode> nodes)
+    {
+        if (nodes.Count == 0) return;
+
+        var minY = double.MaxValue;
+        var sumX = 0.0;
+        foreach (var n in nodes)
+        {
+            var s = ToScreen(n);
+            minY = Math.Min(minY, s.Y);
+            sumX += s.X;
+        }
+        var cx = sumX / nodes.Count;
+        var y = minY - 52;
+
+        var word = Fmt("FRONTIER", Lerp(Text, Colors.White, 0.25), 19, true);
+        var num = Fmt("15", FrontierRed, 19, true);
+        var gap = 8.0;
+        var totalW = word.Width + gap + num.Width;
+        var x = cx - totalW / 2;
+
+        var underline = new Rect(x, y + word.Height + 2, totalW, 2);
+        ctx.DrawRectangle(new SolidColorBrush(FrontierRed, 0.55), null, underline);
+        ctx.DrawText(word, new Point(x, y));
+        ctx.DrawText(num, new Point(x + word.Width + gap, y));
     }
 
     private static void DrawBrackets(DrawingContext ctx, Point c, double d, Color color, double s)
@@ -638,9 +688,6 @@ public sealed class SectorMap : Control
 
     private void DrawLegend(DrawingContext ctx, Rect b)
     {
-        var title = Fmt("СЕКТОР FRONTIER 15", Dim, 9.5, true);
-        ctx.DrawText(title, new Point(16, 14));
-
         var items = new (Color, string)[] { (Online, "онлайн"), (Offline, "офлайн"), (Warn, "карантин") };
         var x = 16.0;
         var y = b.Height - 24;
