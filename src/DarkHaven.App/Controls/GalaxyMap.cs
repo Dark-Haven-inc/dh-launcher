@@ -19,7 +19,7 @@ public interface IGalaxyNode
 }
 
 /// <summary>
-/// The public SS14 hub as a galaxy: every server a star, placed by a stable hash of its address so
+/// The РУхаб as a galaxy: every server a glowing beacon, placed by a stable hash of its address so
 /// positions don't jump between refreshes, sized by population, brighter when it's a favourite.
 /// Pan by dragging, zoom on the wheel, click a star to connect.
 /// </summary>
@@ -36,17 +36,21 @@ public sealed class GalaxyMap : Control
 
     public event EventHandler<object>? NodeInvoked;
 
-    private static readonly Color Bg = Color.Parse("#0A0F1C");
+    private static readonly Color Bg = Color.Parse("#070B14");
     private static readonly Color Accent = Color.Parse("#5AA0FF");
     private static readonly Color Online = Color.Parse("#4ADE80");
-    private static readonly Color Offline = Color.Parse("#5A6B8A");
+    private static readonly Color Offline = Color.Parse("#4E5F80");
     private static readonly Color Warn = Color.Parse("#F0B454");
     private static readonly Color Text = Color.Parse("#DCE6F5");
-    private static readonly Color Dim = Color.Parse("#7C8DB0");
+    private static readonly Color Dim = Color.Parse("#8395B8");
+    private static readonly Color FrontierRed = Color.Parse("#F0384C");
+    private static readonly Color[] NebColors = [Color.Parse("#1E3A8A"), Color.Parse("#5A2A7A"), Color.Parse("#0E5C6E"), Color.Parse("#7A1E3A")];
 
     private readonly DispatcherTimer _timer;
-    private readonly (double X, double Y, double R, double A)[] _stars;
+    private readonly Star[] _stars;
+    private readonly Nebula[] _nebulae;
     private readonly Typeface _face = new("Inter, Segoe UI, sans-serif");
+    private readonly Typeface _faceBold = new("Inter, Segoe UI, sans-serif", weight: FontWeight.Bold);
     private double _phase;
 
     private double _scale = 1.0;
@@ -57,17 +61,40 @@ public sealed class GalaxyMap : Control
     private IGalaxyNode? _hover;
     private Point _hoverAt;
 
+    private readonly struct Star(double x, double y, double r, double a, int layer)
+    {
+        public readonly double X = x, Y = y, R = r, A = a;
+        public readonly int Layer = layer;
+    }
+
+    private readonly struct Nebula(double x, double y, double r, Color c, double drift, double phase)
+    {
+        public readonly double X = x, Y = y, R = r, Drift = drift, Phase = phase;
+        public readonly Color C = c;
+    }
+
     public GalaxyMap()
     {
         ClipToBounds = true;
         var rng = new Random(0x6A1A);
-        _stars = new (double, double, double, double)[220];
-        for (var i = 0; i < _stars.Length; i++)
-            _stars[i] = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble() * 1.3 + 0.3, rng.NextDouble() * 0.45 + 0.12);
 
-        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(40), DispatcherPriority.Background, (_, _) =>
+        _stars = new Star[260];
+        for (var i = 0; i < _stars.Length; i++)
         {
-            _phase += 0.02;
+            var layer = i < 150 ? 0 : i < 230 ? 1 : 2;
+            var size = layer switch { 0 => rng.NextDouble() * 0.7 + 0.25, 1 => rng.NextDouble() * 1.1 + 0.5, _ => rng.NextDouble() * 1.6 + 0.8 };
+            var alpha = layer switch { 0 => rng.NextDouble() * 0.25 + 0.08, 1 => rng.NextDouble() * 0.4 + 0.15, _ => rng.NextDouble() * 0.5 + 0.28 };
+            _stars[i] = new Star(rng.NextDouble(), rng.NextDouble(), size, alpha, layer);
+        }
+
+        _nebulae = new Nebula[4];
+        for (var i = 0; i < _nebulae.Length; i++)
+            _nebulae[i] = new Nebula(rng.NextDouble(), rng.NextDouble(), rng.NextDouble() * 240 + 200,
+                NebColors[i % NebColors.Length], rng.NextDouble() * 0.5 + 0.15, rng.NextDouble() * 6.28);
+
+        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(35), DispatcherPriority.Background, (_, _) =>
+        {
+            _phase += 0.016;
             InvalidateVisual();
         });
     }
@@ -196,20 +223,15 @@ public sealed class GalaxyMap : Control
         return best;
     }
 
-    private static double NodeRadius(IGalaxyNode n) => 1.8 + Math.Min(7, Math.Sqrt(Math.Max(0, n.Players)) * 0.95);
+    private static double NodeRadius(IGalaxyNode n) => 2.2 + Math.Min(7, Math.Sqrt(Math.Max(0, n.Players)) * 0.95);
 
     public override void Render(DrawingContext ctx)
     {
         var b = Bounds;
         ctx.DrawRectangle(new SolidColorBrush(Bg), null, new Rect(b.Size));
 
-        foreach (var s in _stars)
-        {
-            var x = ((s.X * b.Width + _pan.X * 0.25) % b.Width + b.Width) % b.Width;
-            var y = ((s.Y * b.Height + _pan.Y * 0.25) % b.Height + b.Height) % b.Height;
-            var tw = 0.6 + 0.4 * Math.Sin(_phase * 0.6 + s.X * 30);
-            ctx.DrawEllipse(new SolidColorBrush(Text, s.A * tw), null, new Point(x, y), s.R, s.R);
-        }
+        DrawNebula(ctx, b);
+        DrawStarfield(ctx, b);
 
         var nodes = Nodes();
         if (nodes.Count == 0)
@@ -222,47 +244,172 @@ public sealed class GalaxyMap : Control
         foreach (var n in nodes)
         {
             var p = ToScreen(Placement(n.Address));
-            if (p.X < -20 || p.Y < -20 || p.X > b.Width + 20 || p.Y > b.Height + 20)
+            if (p.X < -24 || p.Y < -24 || p.X > b.Width + 24 || p.Y > b.Height + 24)
                 continue;
-
-            var r = NodeRadius(n);
-            var color = !n.IsOnline ? Offline : n.IsFavorite ? Warn : n.Players > 0 ? Online : Accent;
-
-            if (n.IsOnline && n.Players > 20)
-                ctx.DrawEllipse(new SolidColorBrush(color, 0.10), null, p, r + 4, r + 4);
-
-            ctx.DrawEllipse(new SolidColorBrush(color, n.IsOnline ? 1 : 0.5), null, p, r, r);
-            if (n.IsFavorite)
-                ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Warn, 0.8), 1), p, r + 3, r + 3);
+            DrawNode(ctx, n, p);
         }
 
         if (_hover is { } hv)
             DrawTooltip(ctx, hv);
 
-        var hint = Fmt($"{nodes.Count} серверов · тащить — двигать · колесо — масштаб", Dim, 10, false);
-        ctx.DrawText(hint, new Point(14, b.Height - hint.Height - 10));
+        DrawTitle(ctx);
+        DrawLegend(ctx, b, nodes.Count);
+    }
+
+    private void DrawNebula(DrawingContext ctx, Rect b)
+    {
+        foreach (var neb in _nebulae)
+        {
+            var cx = neb.X * b.Width + Math.Sin(_phase * neb.Drift * 0.25 + neb.Phase) * 36 + _pan.X * 0.04;
+            var cy = neb.Y * b.Height + Math.Cos(_phase * neb.Drift * 0.2 + neb.Phase) * 26 + _pan.Y * 0.04;
+            var pulse = 0.9 + 0.1 * Math.Sin(_phase * 0.4 + neb.Phase);
+            var brush = new RadialGradientBrush
+            {
+                Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+                RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(new Color(46, neb.C.R, neb.C.G, neb.C.B), 0),
+                    new GradientStop(new Color(16, neb.C.R, neb.C.G, neb.C.B), 0.5),
+                    new GradientStop(new Color(0, neb.C.R, neb.C.G, neb.C.B), 1),
+                },
+            };
+            var r = neb.R * pulse;
+            ctx.DrawEllipse(brush, null, new Point(cx, cy), r, r * 0.7);
+        }
+    }
+
+    private void DrawStarfield(DrawingContext ctx, Rect b)
+    {
+        foreach (var s in _stars)
+        {
+            var par = s.Layer switch { 0 => 0.05, 1 => 0.12, _ => 0.25 };
+            var x = ((s.X * b.Width + _pan.X * par) % b.Width + b.Width) % b.Width;
+            var y = ((s.Y * b.Height + _pan.Y * par) % b.Height + b.Height) % b.Height;
+            var tw = s.Layer == 0 ? 1 : 0.55 + 0.45 * Math.Sin(_phase * 1.1 + s.X * 55 + s.Y * 20);
+            ctx.DrawEllipse(new SolidColorBrush(Text, Math.Clamp(s.A * tw, 0, 1)), null, new Point(x, y), s.R, s.R);
+        }
+    }
+
+    private void DrawNode(DrawingContext ctx, IGalaxyNode n, Point p)
+    {
+        var r = NodeRadius(n);
+        var hovered = ReferenceEquals(n, _hover);
+        var color = !n.IsOnline ? Offline : n.IsFavorite ? Warn : n.Players > 0 ? Online : Accent;
+        var core = Lerp(color, Colors.White, n.IsOnline ? 0.5 : 0.15);
+
+        // soft glow, brighter for populated / favourite worlds
+        if (n.IsOnline)
+        {
+            var glow = new RadialGradientBrush
+            {
+                Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+                RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(new Color(80, color.R, color.G, color.B), 0),
+                    new GradientStop(new Color(0, color.R, color.G, color.B), 1),
+                },
+            };
+            var gr = r * (n.Players > 20 ? 3.6 : 2.4) * (hovered ? 1.25 : 1);
+            ctx.DrawEllipse(glow, null, p, gr, gr);
+        }
+
+        // a small sparkle flare instead of a flat dot — same visual language as СЕКТОР FRONTIER 15
+        var rayLen = r * (hovered ? 1.9 : 1.5);
+        var rayW = r * 0.16;
+        var rayAlpha = n.IsOnline ? 0.8 : 0.32;
+        DrawRay(ctx, p, 0, rayLen, rayW, core, rayAlpha);
+        DrawRay(ctx, p, Math.PI / 2, rayLen, rayW, core, rayAlpha);
+        DrawRay(ctx, p, Math.PI, rayLen, rayW, core, rayAlpha);
+        DrawRay(ctx, p, 3 * Math.PI / 2, rayLen, rayW, core, rayAlpha);
+
+        ctx.DrawEllipse(new SolidColorBrush(core), null, p, r * 0.55, r * 0.55);
+
+        if (n.IsFavorite)
+            ctx.DrawEllipse(null, new Pen(new SolidColorBrush(Warn, 0.85), 1.2), p, r + 4, r + 4);
+    }
+
+    private static void DrawRay(DrawingContext ctx, Point c, double angle, double length, double width, Color color, double alpha)
+    {
+        var dir = new Point(Math.Cos(angle), Math.Sin(angle));
+        var perp = new Point(-dir.Y, dir.X);
+        var tip = new Point(c.X + dir.X * length, c.Y + dir.Y * length);
+        var back = new Point(c.X - dir.X * length * 0.18, c.Y - dir.Y * length * 0.18);
+        var baseA = new Point(c.X + perp.X * width, c.Y + perp.Y * width);
+        var baseB = new Point(c.X - perp.X * width, c.Y - perp.Y * width);
+
+        var g = new StreamGeometry();
+        using (var gc = g.Open())
+        {
+            gc.BeginFigure(tip, true);
+            gc.LineTo(baseA);
+            gc.LineTo(back);
+            gc.LineTo(baseB);
+            gc.EndFigure(true);
+        }
+        ctx.DrawGeometry(new SolidColorBrush(color, alpha), null, g);
+    }
+
+    private void DrawTitle(DrawingContext ctx)
+    {
+        var word = Fmt("FRONTIER", Lerp(Text, Colors.White, 0.25), 17, true);
+        var num = Fmt("15", FrontierRed, 17, true);
+        var sub = Fmt("РУХАБ", Dim, 9.5, true);
+
+        const double x = 16;
+        const double y = 14;
+        ctx.DrawText(word, new Point(x, y));
+        ctx.DrawText(num, new Point(x + word.Width + 7, y));
+        ctx.DrawText(sub, new Point(x + 1, y + word.Height + 1));
+    }
+
+    private void DrawLegend(DrawingContext ctx, Rect b, int count)
+    {
+        var items = new (Color, string)[] { (Online, "онлайн"), (Warn, "избранное"), (Offline, "офлайн") };
+        var x = 16.0;
+        var y = b.Height - 24;
+        foreach (var (col, lbl) in items)
+        {
+            ctx.DrawEllipse(new SolidColorBrush(col), null, new Point(x + 4, y + 5), 3.5, 3.5);
+            var t = Fmt(lbl, Dim, 9.5, false);
+            ctx.DrawText(t, new Point(x + 13, y));
+            x += 13 + t.Width + 16;
+        }
+        var hint = Fmt($"{count} серверов · тащить — двигать · колесо — масштаб", Color.Parse("#5A6B8A"), 9, false);
+        ctx.DrawText(hint, new Point(b.Width - hint.Width - 14, b.Height - hint.Height - 12));
     }
 
     private void DrawTooltip(DrawingContext ctx, IGalaxyNode n)
     {
         const double w = 240;
-        var title = Fmt(n.Name, Text, 12, true);
-        title.MaxTextWidth = w - 20;
-        var sub = Fmt(n.IsOnline ? $"{n.Players} игроков · {n.Address}" : $"офлайн · {n.Address}", Dim, 10, false);
-        sub.MaxTextWidth = w - 20;
+        var title = Fmt(n.Name, Text, 12.5, true);
+        title.MaxTextWidth = w - 22;
+        var sub = Fmt(n.IsOnline ? $"◆ {n.Players} игроков · {n.Address}" : $"офлайн · {n.Address}",
+            n.IsOnline ? Online : Dim, 10, false);
+        sub.MaxTextWidth = w - 22;
 
-        var h = 12 + title.Height + 3 + sub.Height + 10;
-        var x = Math.Clamp(_hoverAt.X + 14, 6, Bounds.Width - w - 6);
-        var y = Math.Clamp(_hoverAt.Y + 14, 6, Bounds.Height - h - 6);
+        var h = 14 + title.Height + 5 + sub.Height + 12;
+        var x = Math.Clamp(_hoverAt.X + 16, 6, Bounds.Width - w - 6);
+        var y = Math.Clamp(_hoverAt.Y + 16, 6, Bounds.Height - h - 6);
         var rect = new Rect(x, y, w, h);
 
-        ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#111A2E"), 0.97), new Pen(new SolidColorBrush(Accent, 0.6), 1), rect, 6, 6);
-        ctx.DrawText(title, new Point(x + 10, y + 7));
-        ctx.DrawText(sub, new Point(x + 10, y + 7 + title.Height + 3));
+        ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#0B1322"), 0.98), new Pen(new SolidColorBrush(Accent, 0.7), 1), rect, 7, 7);
+        ctx.DrawRectangle(new SolidColorBrush(FrontierRed, 0.9), null, new Rect(x, y, 3, h), 2, 2);
+        ctx.DrawText(title, new Point(x + 12, y + 9));
+        ctx.DrawText(sub, new Point(x + 12, y + 9 + title.Height + 5));
     }
 
+    private static Color Lerp(Color a, Color b, double t) => new(
+        (byte)(a.A + (b.A - a.A) * t),
+        (byte)(a.R + (b.R - a.R) * t),
+        (byte)(a.G + (b.G - a.G) * t),
+        (byte)(a.B + (b.B - a.B) * t));
+
     private FormattedText Fmt(string text, Color color, double size, bool bold) =>
-        new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-            new Typeface(_face.FontFamily, weight: bold ? FontWeight.Bold : FontWeight.Normal),
-            size, new SolidColorBrush(color));
+        new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, bold ? _faceBold : _face, size, new SolidColorBrush(color));
 }
