@@ -30,6 +30,12 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
     [ObservableProperty] private int _favoritesCount;
     [ObservableProperty] private int _recentCount;
 
+    /// <summary>True once <see cref="LoadFromPlatformAsync"/> has actually pulled a profile from
+    /// DarkHaven.Platform.Api — playtime/ban fields below are only server-authoritative when this is set.</summary>
+    [ObservableProperty] private bool _isPlatformConnected;
+    [ObservableProperty] private bool _launcherBanned;
+    [ObservableProperty] private string? _launcherBanText;
+
     public ObservableCollection<PlaytimeRowViewModel> Servers { get; } = [];
 
     public string AccountName => services.Accounts.Active?.Username
@@ -79,6 +85,40 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
         OnPropertyChanged(nameof(NoPlaytime));
         OnPropertyChanged(nameof(FrameColors));
         OnPropertyChanged(nameof(HasAvatar));
+
+        IsPlatformConnected = false;
+        LauncherBanned = false;
+        LauncherBanText = null;
+        _ = LoadFromPlatformAsync();
+    }
+
+    /// <summary>Overlays server-authoritative fields once DarkHaven.Platform.Api is configured and
+    /// signed in — real playtime across DH servers, launcher-ban status. Local data above stays as
+    /// the fallback (and is what's shown while this is still in flight, or if the platform is
+    /// unreachable/not configured).</summary>
+    private async Task LoadFromPlatformAsync()
+    {
+        if (!services.Platform.IsSignedIn)
+            return;
+
+        try
+        {
+            var p = await services.Platform.GetProfileAsync();
+            if (p is null) return;
+
+            IsPlatformConnected = true;
+
+            if (p.PlaytimeSource == "game-server")
+                TotalPlaytime = p.TotalPlaytimeSeconds > 0 ? FormatDuration(p.TotalPlaytimeSeconds) : "ещё не играл";
+
+            MemberSince = p.MemberSince.ToLocalTime().ToString("d MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+
+            LauncherBanned = p.LauncherBanned;
+            LauncherBanText = !p.LauncherBanned ? null : p.LauncherBanExpires is { } exp
+                ? $"Бан на лаунчере до {exp.ToLocalTime():d MMMM yyyy} — {p.LauncherBanReason}"
+                : $"Бан на лаунчере навсегда — {p.LauncherBanReason}";
+        }
+        catch { /* platform unreachable — local data already shown, nothing more to do */ }
     }
 
     /// <summary>Called by the view after the user picks an image.</summary>

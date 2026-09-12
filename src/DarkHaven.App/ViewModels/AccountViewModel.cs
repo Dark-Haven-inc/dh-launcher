@@ -68,6 +68,7 @@ public partial class AccountViewModel : ViewModelBase
                 TfaCode = "";
                 NeedsTfa = false;
                 RefreshList();
+                _ = _services.SignInToPlatformAsync();
             }
             else
             {
@@ -90,6 +91,7 @@ public partial class AccountViewModel : ViewModelBase
     {
         _services.Accounts.Active = row.Account;
         RefreshList();
+        _ = _services.SignInToPlatformAsync();
     }
 
     [RelayCommand]
@@ -97,6 +99,7 @@ public partial class AccountViewModel : ViewModelBase
     {
         await _services.Accounts.LogoutAsync(row.Account);
         RefreshList();
+        _ = _services.SignInToPlatformAsync();
     }
 
     private async Task RefreshTokensAsync()

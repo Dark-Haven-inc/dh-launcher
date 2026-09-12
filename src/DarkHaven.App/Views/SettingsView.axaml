@@ -54,7 +54,7 @@
 
                 <StackPanel Spacing="12">
                     <TextBlock Text="ПОДКЛЮЧЕНИЕ" Classes="caps" />
-                    <Grid ColumnDefinitions="150,*,Auto" RowDefinitions="Auto,12,Auto,12,Auto">
+                    <Grid ColumnDefinitions="150,*,Auto" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto">
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Сервер авторизации" VerticalAlignment="Center" />
                         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AuthUrl}" />
                         <Button Grid.Row="0" Grid.Column="2" Classes="ghost" Content="По умолчанию" Margin="8,0,0,0"
@@ -67,6 +67,10 @@
 
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Список регионов (URL)" VerticalAlignment="Center" />
                         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding RegionsUrl}" Watermark="необязательно" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Платформа Dark Haven" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding PlatformUrl}"
+                                 Watermark="необязательно — https://api.darkhaven.games" />
                     </Grid>
                 </StackPanel>
 

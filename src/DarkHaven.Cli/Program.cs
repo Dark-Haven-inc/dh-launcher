@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using DarkHaven.ContentDb;
 using DarkHaven.Launcher;
@@ -57,6 +58,9 @@ try
         case "regions":
             await ShowRegions();
             break;
+        case "platform":
+            await ShowPlatform(positional.ElementAtOrDefault(1));
+            break;
         default:
             Log.Information("Dark Haven Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
             Log.Information("  probe <ss14://addr> [--hub] [--via-hub]   fetch a server's /info");
@@ -67,6 +71,7 @@ try
             Log.Information("  logout <username>");
             Log.Information("  servers [--search X] [--rp low,med] [--lang en] [--no-empty]");
             Log.Information("  regions                                   Dark Haven sector, live");
+            Log.Information("  platform <api-base-url>                   sign in to DarkHaven.Platform.Api with the active account, dump the profile");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -263,6 +268,38 @@ async Task ShowRegions()
     Log.Information("Dark Haven Sector — {Count} region(s)", entries.Count);
     foreach (var e in entries)
         Log.Information("  [{State,-7}] {P,3}p  {Name}  ({Addr})", e.Reachability, e.Players, e.DisplayName, e.Address);
+}
+
+async Task ShowPlatform(string? baseUrl)
+{
+    if (baseUrl is null) { Log.Error("usage: platform <api-base-url>"); return; }
+
+    var accounts = AccountManagerFromDisk();
+    accounts.Load();
+    var active = accounts.Active ?? accounts.Accounts.FirstOrDefault();
+    if (active is null) { Log.Error("No stored account — run: dhlauncher login <username>"); return; }
+
+    var game = await accounts.ToGameAccountAsync(active);
+    if (game is null) { Log.Error("Account {User} token expired — run: dhlauncher login {User}", active.Username, active.Username); return; }
+
+    var platform = new PlatformApi(http, baseUrl);
+    Log.Information("Signing in to {Url} as {User}...", baseUrl, game.Username);
+    if (!await platform.SignInAsync(game.UserId, game.Username, game.Token))
+    {
+        Log.Error("Platform sign-in failed — service unreachable, or it rejected the token.");
+        return;
+    }
+
+    Log.Information("Signed in. Roles: [{Roles}]", string.Join(", ", platform.Roles));
+
+    var profile = await platform.GetProfileAsync();
+    if (profile is null) { Log.Error("Signed in, but GET /api/profile/me failed."); return; }
+
+    Log.Information("Profile: {User} · member since {Since:u} · {Seconds}s playtime ({Source}) · banned={Banned}",
+        profile.Username, profile.MemberSince, profile.TotalPlaytimeSeconds, profile.PlaytimeSource, profile.LauncherBanned);
+
+    var news = await http.GetFromJsonAsync<JsonElement>($"{baseUrl.TrimEnd('/')}/api/news");
+    Log.Information("News: {Json}", news.ToString());
 }
 
 static string LocateSigningKey()

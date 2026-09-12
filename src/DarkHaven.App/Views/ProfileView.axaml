@@ -33,6 +33,16 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Launcher ban banner (server-authoritative, only known once the platform answers) -->
+            <Border Classes="card" Padding="14,12" IsVisible="{Binding LauncherBanned}"
+                    BorderBrush="{StaticResource DhDangerBrush}" BorderThickness="1">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="⛔ ДОСТУП ОГРАНИЧЕН" FontWeight="Bold" FontSize="12" LetterSpacing="1"
+                               Foreground="{StaticResource DhDangerBrush}" />
+                    <TextBlock Text="{Binding LauncherBanText}" Classes="dim" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
             <!-- Frame picker -->
             <StackPanel Spacing="8">
                 <TextBlock Text="РАМКА" Classes="caps" />
@@ -87,7 +97,9 @@
             <Button Classes="ghost" HorizontalAlignment="Left" Content="Управление аккаунтами"
                     Command="{Binding ManageAccountsCommand}" />
 
-            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11"
+            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding IsPlatformConnected}"
+                       Text="🌐 Наигранное синхронизировано с сетью Dark Haven. Друзья и уведомления — следующий шаг." />
+            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !IsPlatformConnected}"
                        Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Dark Haven." />
         </StackPanel>
     </ScrollViewer>

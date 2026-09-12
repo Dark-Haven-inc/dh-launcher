@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _authUrl;
     [ObservableProperty] private string _buildsUrl;
     [ObservableProperty] private string _regionsUrl;
+    [ObservableProperty] private string _platformUrl;
     [ObservableProperty] private string _discordAppId;
     [ObservableProperty] private string? _status;
     [ObservableProperty] private string _cacheSummary = "…";
@@ -39,6 +40,7 @@ public partial class SettingsViewModel : ViewModelBase
         _authUrl = services.Settings.GetConfig("AuthUrl") ?? AuthApi.DefaultBaseUrl;
         _buildsUrl = services.Settings.GetConfig("EngineBuildsUrl") ?? EngineManager.BuildsManifestUrl;
         _regionsUrl = services.Settings.GetConfig("RegionsUrl") ?? "";
+        _platformUrl = services.Settings.GetConfig("PlatformApiUrl") ?? "";
         _discordAppId = services.Settings.GetConfig("DiscordAppId") ?? "";
         _ = LoadCacheSummaryAsync();
     }
@@ -60,6 +62,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnAuthUrlChanged(string v) => _services.Settings.SetConfig("AuthUrl", Trim(v));
     partial void OnBuildsUrlChanged(string v) => _services.Settings.SetConfig("EngineBuildsUrl", Trim(v));
     partial void OnRegionsUrlChanged(string v) => _services.Settings.SetConfig("RegionsUrl", Trim(v));
+    partial void OnPlatformUrlChanged(string v) => _services.Settings.SetConfig("PlatformApiUrl", Trim(v));
     partial void OnDiscordAppIdChanged(string v) => _services.Settings.SetConfig("DiscordAppId", Trim(v));
 
     private static string? Trim(string v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();

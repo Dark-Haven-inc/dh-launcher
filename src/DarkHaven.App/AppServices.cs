@@ -25,6 +25,7 @@ public sealed class AppServices : IDisposable
     public DhRegions Regions { get; }
     public RegionWatcher RegionWatch { get; }
     public DhNews News { get; }
+    public PlatformApi Platform { get; }
     public ServerInfoApi ServerInfo { get; }
     public ContentUpdater Content { get; }
     public GameLauncher Game { get; }
@@ -61,6 +62,35 @@ public sealed class AppServices : IDisposable
         GameSessionChanged?.Invoke();
     }
 
+    /// <summary>
+    /// (Re)establishes the platform session for whichever account is active — call after login,
+    /// logout, or switching accounts. A no-op if no <c>PlatformApiUrl</c> is configured, no account
+    /// is active, or the platform is unreachable; <see cref="PlatformApi"/> degrades to signed-out.
+    /// </summary>
+    public event Action? PlatformSessionChanged;
+
+    public async Task SignInToPlatformAsync(CancellationToken cancel = default)
+    {
+        if (!Platform.IsConfigured)
+            return;
+
+        var active = Accounts.Active;
+        if (active is null)
+        {
+            Platform.SignOut();
+            PlatformSessionChanged?.Invoke();
+            return;
+        }
+
+        var game = await Accounts.ToGameAccountAsync(active, cancel);
+        if (game is null)
+            Platform.SignOut();
+        else
+            await Platform.SignInAsync(game.UserId, game.Username, game.Token, cancel);
+
+        PlatformSessionChanged?.Invoke();
+    }
+
     public AppServices()
     {
         Http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
@@ -89,7 +119,14 @@ public sealed class AppServices : IDisposable
         Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
         RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
         RegionWatch.EnsureRunning();
-        News = new DhNews(Http, LauncherPaths.NewsJsonPath, LauncherPaths.NewsCachePath, Settings.GetConfig("NewsUrl"));
+
+        var platformUrl = Settings.GetConfig("PlatformApiUrl");
+        Platform = new PlatformApi(Http, platformUrl);
+        // The platform's own /api/news is a drop-in for the bundled news.json (same shape) —
+        // default to it once a platform is configured, unless someone already set NewsUrl by hand.
+        var newsUrl = Settings.GetConfig("NewsUrl")
+                      ?? (string.IsNullOrWhiteSpace(platformUrl) ? null : $"{platformUrl.TrimEnd('/')}/api/news");
+        News = new DhNews(Http, LauncherPaths.NewsJsonPath, LauncherPaths.NewsCachePath, newsUrl);
 
         ServerInfo = new ServerInfoApi(Http);
         Content = new ContentUpdater(ContentDb, new ManifestDownloader(Http), Engines);
@@ -97,6 +134,8 @@ public sealed class AppServices : IDisposable
         Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
         Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
         Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
+
+        _ = SignInToPlatformAsync();
     }
 
     public void Dispose()
