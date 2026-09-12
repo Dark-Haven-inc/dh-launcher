@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Specialized;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -46,6 +47,20 @@ public sealed class SectorMap : Control
         set => SetValue(AutoRotateProperty, value);
     }
 
+    public static readonly StyledProperty<bool> PerspectiveProperty =
+        AvaloniaProperty.Register<SectorMap, bool>(nameof(Perspective), true);
+
+    /// <summary>Whether nodes get bigger/smaller and pulled toward/away from center by depth. Tuned
+    /// for a tight cluster near the middle (СЕКТОР FRONTIER 15's 5 regions) — spread nodes across
+    /// nearly the whole disk (the РУхаб network map) and the SAME depth curve instead crushes
+    /// far-from-center nodes together, undoing whatever layout spread them apart in the first place.
+    /// Off keeps the tilt (still reads as a 3D deck) without that position-dependent distortion.</summary>
+    public bool Perspective
+    {
+        get => GetValue(PerspectiveProperty);
+        set => SetValue(PerspectiveProperty, value);
+    }
+
     /// <summary>Raised with the clicked node (an <see cref="IMapNode"/>).</summary>
     public event EventHandler<object>? NodeInvoked;
 
@@ -91,6 +106,8 @@ public sealed class SectorMap : Control
     private IMapNode? _hover;
     private Point _hoverAt;
     private bool _needsFit = true;
+    private bool _userInteracted; // once true, a data refresh no longer snaps the view back to Fit()
+    private INotifyCollectionChanged? _subscribedItems;
 
     private object? _lastSelected;
     private double _selectPing;          // 0..1, expanding ring after a selection
@@ -182,7 +199,12 @@ public sealed class SectorMap : Control
     {
         base.OnPropertyChanged(change);
         if (change.Property == ItemsSourceProperty)
+        {
+            if (_subscribedItems is not null) _subscribedItems.CollectionChanged -= OnItemsCollectionChanged;
+            _subscribedItems = ItemsSource as INotifyCollectionChanged;
+            if (_subscribedItems is not null) _subscribedItems.CollectionChanged += OnItemsCollectionChanged;
             _needsFit = true;
+        }
         if (change.Property == SelectedItemProperty && !ReferenceEquals(SelectedItem, _lastSelected))
         {
             _lastSelected = SelectedItem;
@@ -191,6 +213,18 @@ public sealed class SectorMap : Control
         }
         if (change.Property == ItemsSourceProperty || change.Property == SelectedItemProperty || change.Property == BoundsProperty)
             InvalidateVisual();
+    }
+
+    /// <summary>ItemsSource is bound once and its contents refreshed in place (Clear+Add, not a new
+    /// collection instance), so ItemsSourceProperty itself never fires again after the first bind —
+    /// without this, Fit() would run exactly once, quite possibly against an empty list a moment
+    /// before the real data arrives, and lock in a nonsense zoom/pan forever. Re-fit on every refresh
+    /// UNTIL the player actually touches the map themselves — then their pan/zoom wins.</summary>
+    private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_userInteracted) return;
+        _needsFit = true;
+        InvalidateVisual();
     }
 
     private IReadOnlyList<IMapNode> Nodes()
@@ -231,7 +265,7 @@ public sealed class SectorMap : Control
         var sr = Math.Sin(rot);
         var dx = dx0 * cr - dz0 * sr;
         var dz = dx0 * sr + dz0 * cr;
-        var depth = 1.0 / (1.0 + dz * PerspectiveK);
+        var depth = Perspective ? 1.0 / (1.0 + dz * PerspectiveK) : 1.0;
         return new Point(dx * depth, dz * SinT * depth - height * CosT);
     }
 
@@ -250,7 +284,7 @@ public sealed class SectorMap : Control
         var dz0 = n.Y - 0.5;
         var rot = CurrentRotation;
         var dz = dx0 * Math.Sin(rot) + dz0 * Math.Cos(rot);
-        return 1.0 / (1.0 + dz * PerspectiveK);
+        return Perspective ? 1.0 / (1.0 + dz * PerspectiveK) : 1.0;
     }
 
     private void Fit(IReadOnlyList<IMapNode> nodes)
@@ -305,7 +339,7 @@ public sealed class SectorMap : Control
         if (_dragFrom is { } from)
         {
             var d = new Vector(now.X - from.X, now.Y - from.Y);
-            if (Math.Abs(d.X) + Math.Abs(d.Y) > 3) _dragged = true;
+            if (Math.Abs(d.X) + Math.Abs(d.Y) > 3) { _dragged = true; _userInteracted = true; }
             _pan = _dragPanStart + d;
             _hover = null;
             InvalidateVisual();
@@ -343,6 +377,7 @@ public sealed class SectorMap : Control
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
+        _userInteracted = true;
         var cursor = e.GetPosition(this);
         _zoomAnchorScreen = cursor;
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);

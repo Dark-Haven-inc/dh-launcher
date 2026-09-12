@@ -51,7 +51,8 @@
                             <Run Text="." />
                         </TextBlock>
                     </Border>
-                    <c:SectorMap x:Name="Map" ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedNetwork}" AutoRotate="False" />
+                    <c:SectorMap x:Name="Map" ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedNetwork}"
+                                 AutoRotate="False" Perspective="False" />
                 </DockPanel>
             </Border>
 
