@@ -103,18 +103,21 @@ public sealed class SectorMap : Control
         ClipToBounds = true;
         Focusable = true;
 
+        // Trimmed from 380 stars / 6 nebulae / 30ms ticks — this canvas repaints continuously by
+        // design (the holo-table keeps slowly rotating), so cutting the per-frame draw count and
+        // tick rate is real, ongoing CPU/GPU savings on lower-end machines, not a one-off cost.
         var rng = new Random(0x5EC7);
-        _stars = new Star[380];
+        _stars = new Star[220];
         for (var i = 0; i < _stars.Length; i++)
         {
-            var layer = i < 200 ? 0 : i < 320 ? 1 : 2;
+            var layer = i < 115 ? 0 : i < 185 ? 1 : 2;
             var size = layer switch { 0 => rng.NextDouble() * 0.7 + 0.25, 1 => rng.NextDouble() * 1.1 + 0.5, _ => rng.NextDouble() * 1.7 + 0.9 };
             var alpha = layer switch { 0 => rng.NextDouble() * 0.25 + 0.08, 1 => rng.NextDouble() * 0.4 + 0.15, _ => rng.NextDouble() * 0.55 + 0.3 };
             _stars[i] = new Star(rng.NextDouble(), rng.NextDouble(), size, alpha, layer);
         }
 
-        var nebColors = new[] { Color.Parse("#1E3A8A"), Color.Parse("#3B1E8A"), Color.Parse("#0E5C6E"), Color.Parse("#20306E"), Color.Parse("#5A2A7A") };
-        _nebulae = new Nebula[6];
+        var nebColors = new[] { Color.Parse("#1E3A8A"), Color.Parse("#3B1E8A"), Color.Parse("#0E5C6E"), Color.Parse("#5A2A7A") };
+        _nebulae = new Nebula[4];
         for (var i = 0; i < _nebulae.Length; i++)
             _nebulae[i] = new Nebula(
                 rng.NextDouble(), rng.NextDouble(),
@@ -123,9 +126,9 @@ public sealed class SectorMap : Control
                 rng.NextDouble() * 0.6 + 0.2,
                 rng.NextDouble() * 6.28);
 
-        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Background, (_, _) =>
+        _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(45), DispatcherPriority.Background, (_, _) =>
         {
-            _phase += 0.016;
+            _phase += 0.024;
 
             if (Math.Abs(_targetScale - _scale) > 0.0004)
             {
@@ -143,16 +146,16 @@ public sealed class SectorMap : Control
                 if ((_targetPan - _pan).Length < 0.5) { _pan = _targetPan; _hasTargetPan = false; }
             }
 
-            if (_selectPing is > 0 and < 1) _selectPing = Math.Min(1, _selectPing + 0.045);
+            if (_selectPing is > 0 and < 1) _selectPing = Math.Min(1, _selectPing + 0.0675);
 
             if (_shootT < 0)
             {
-                _shootNextIn -= 0.03;
+                _shootNextIn -= 0.045;
                 if (_shootNextIn <= 0) { _shootT = 0; _shootAngle = new Random().NextDouble() * Math.Tau; }
             }
             else
             {
-                _shootT += 0.03;
+                _shootT += 0.045;
                 if (_shootT >= 1) { _shootT = -1; _shootNextIn = new Random().Next(4, 11); }
             }
 
