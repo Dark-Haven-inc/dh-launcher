@@ -51,6 +51,14 @@ public sealed class SectorMap : Control
     private static readonly double[] MainAxes = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
     private static readonly double[] DiagAxes = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
 
+    // pseudo-3D "holo table": fixed camera tilt, slow auto-rotation, and a perspective depth scale —
+    // all folded into ToScreen so panning/zooming/hit-testing keep working unchanged on top of it.
+    private const double TiltDeg = 34.0;
+    private static readonly double SinT = Math.Sin(TiltDeg * Math.PI / 180);
+    private static readonly double CosT = Math.Cos(TiltDeg * Math.PI / 180);
+    private const double PerspectiveK = 1.15;
+    private const double RotSpeed = 0.08;
+
     private readonly DispatcherTimer _timer;
     private readonly Star[] _stars;
     private readonly Nebula[] _nebulae;
@@ -180,22 +188,67 @@ public sealed class SectorMap : Control
 
     private double BasePx => Math.Max(120, Math.Min(Bounds.Width, Bounds.Height) - 130);
 
-    private Point ToScreen(IMapNode n) => ToScreen(new Point(n.X, n.Y));
+    private Point ToScreen(IMapNode n) => ToScreen(new Point(n.X, n.Y), NodeHeight(n));
 
-    private Point ToScreen(Point map)
+    private Point ToScreen(Point map) => ToScreen(map, 0);
+
+    /// <summary>Projects a map-space point (plus a "floating height" above the holo deck) through
+    /// the tilt/rotation/perspective camera, then applies the existing pan+zoom exactly as before —
+    /// so dragging, wheel-zoom and hit-testing all keep working on top of the 3D look for free.</summary>
+    private Point ToScreen(Point map, double height)
     {
+        var local = Project(map.X, map.Y, height);
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
-        return new Point(
-            c.X + (map.X - 0.5) * BasePx * _scale + _pan.X,
-            c.Y + (map.Y - 0.5) * BasePx * _scale + _pan.Y);
+        return new Point(c.X + local.X * BasePx * _scale + _pan.X, c.Y + local.Y * BasePx * _scale + _pan.Y);
     }
 
+    private Point Project(double mapX, double mapY, double height)
+    {
+        var dx0 = mapX - 0.5;
+        var dz0 = mapY - 0.5;
+        var rot = _phase * RotSpeed;
+        var cr = Math.Cos(rot);
+        var sr = Math.Sin(rot);
+        var dx = dx0 * cr - dz0 * sr;
+        var dz = dx0 * sr + dz0 * cr;
+        var depth = 1.0 / (1.0 + dz * PerspectiveK);
+        return new Point(dx * depth, dz * SinT * depth - height * CosT);
+    }
+
+    /// <summary>Approximate inverse of <see cref="Project"/> (ignores the per-node perspective/height
+    /// terms) — good enough for "keep this spot under the cursor while zooming"; any drift is well
+    /// under a pixel over the ~0.3s the zoom animation takes.</summary>
     private Point ToMap(Point screen)
     {
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
-        return new Point(
-            (screen.X - c.X - _pan.X) / (BasePx * _scale) + 0.5,
-            (screen.Y - c.Y - _pan.Y) / (BasePx * _scale) + 0.5);
+        var lx = (screen.X - c.X - _pan.X) / (BasePx * _scale);
+        var ly = (screen.Y - c.Y - _pan.Y) / (BasePx * _scale);
+        var dz = ly / SinT;
+        var dx = lx;
+        var rot = _phase * RotSpeed;
+        var cr = Math.Cos(rot);
+        var sr = Math.Sin(rot);
+        var dx0 = dx * cr + dz * sr;
+        var dz0 = -dx * sr + dz * cr;
+        return new Point(dx0 + 0.5, dz0 + 0.5);
+    }
+
+    private double NodeHeight(IMapNode n)
+    {
+        var seed = (n.Name.GetHashCode() & 0xFFFF) / 65535.0 * Math.Tau;
+        var baseH = n.IsCentral ? 0.115 : 0.065;
+        return baseH + 0.018 * Math.Sin(_phase * 0.6 + seed);
+    }
+
+    /// <summary>How much bigger/smaller a node should render based on how "close to camera" the
+    /// rotating scene currently puts it — the other half of making this read as 3D, not just tilted.</summary>
+    private double DepthScale(IMapNode n)
+    {
+        var dx0 = n.X - 0.5;
+        var dz0 = n.Y - 0.5;
+        var rot = _phase * RotSpeed;
+        var dz = dx0 * Math.Sin(rot) + dz0 * Math.Cos(rot);
+        return 1.0 / (1.0 + dz * PerspectiveK);
     }
 
     private void Fit(IReadOnlyList<IMapNode> nodes)
@@ -213,7 +266,7 @@ public sealed class SectorMap : Control
         }
 
         var spanX = Math.Max(0.15, maxX - minX);
-        var spanY = Math.Max(0.15, maxY - minY);
+        var spanY = Math.Max(0.15, maxY - minY) * SinT; // the holo deck is tilted, so its screen footprint is squished
         _targetScale = _scale = Math.Clamp(0.74 / Math.Max(spanX, spanY), 0.6, 2.0);
 
         var mid = ToScreen(new Point((minX + maxX) / 2, (minY + maxY) / 2));
@@ -420,13 +473,13 @@ public sealed class SectorMap : Control
             {
                 DashStyle = new DashStyle([1, 6], _phase * (i % 2 == 0 ? 2 : -2)),
             };
-            ctx.DrawEllipse(null, pen, c, rr, rr);
+            ctx.DrawEllipse(null, pen, c, rr, rr * SinT); // squished into an ellipse — a tilted holo deck, not a flat circle
         }
         for (var k = 0; k < 12; k++)
         {
             var ang = k / 12.0 * Math.Tau + _phase * 0.02;
-            var p1 = new Point(c.X + Math.Cos(ang) * basis * 0.16, c.Y + Math.Sin(ang) * basis * 0.16);
-            var p2 = new Point(c.X + Math.Cos(ang) * basis * 0.66, c.Y + Math.Sin(ang) * basis * 0.66);
+            var p1 = new Point(c.X + Math.Cos(ang) * basis * 0.16, c.Y + Math.Sin(ang) * basis * 0.16 * SinT);
+            var p2 = new Point(c.X + Math.Cos(ang) * basis * 0.66, c.Y + Math.Sin(ang) * basis * 0.66 * SinT);
             ctx.DrawLine(new Pen(new SolidColorBrush(Cyan, 0.04), 1), p1, p2);
         }
     }
@@ -489,9 +542,17 @@ public sealed class SectorMap : Control
         var hovered = ReferenceEquals(n, _hover);
         // the central station reads as Dark Haven blue even when the server is down
         var core = n.IsQuarantine ? Warn : n.IsOnline ? Online : n.IsCentral ? Accent : n.IsOffline ? Offline : Dim;
-        var baseR = (n.IsCentral ? 16.0 : 9.0) * (hovered ? 1.12 : 1);
+        var depthScale = DepthScale(n);
+        var baseR = (n.IsCentral ? 16.0 : 9.0) * (hovered ? 1.12 : 1) * depthScale;
         var pulse = (n.IsOnline || n.IsCentral) ? 1 + 0.09 * Math.Sin(_phase * 2.4 + n.X * 10) : 1;
         var r = baseR * pulse;
+
+        // tether + ground shadow — the beacon floats above the tilted holo deck, this is what pins it there
+        var ground = ToScreen(new Point(n.X, n.Y));
+        var tetherPen = new Pen(new SolidColorBrush(core, 0.28), 1) { DashStyle = new DashStyle([1, 2], 0) };
+        ctx.DrawLine(tetherPen, ground, p);
+        ctx.DrawEllipse(new SolidColorBrush(core, 0.16), new Pen(new SolidColorBrush(core, 0.32), 1),
+            ground, Math.Max(3, r * 0.55), Math.Max(2, r * 0.55 * SinT));
 
         // atmospheric glow
         var glowCol = selected ? AccentBright : n.IsCurrent ? Online : n.IsCentral ? AccentBright : core;
