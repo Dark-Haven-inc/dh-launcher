@@ -21,18 +21,31 @@ public sealed class AdminBanRowViewModel(PlatformBan b)
     public string Reason => b.Reason;
     public bool Active => b.Active;
     public string ExpiryText => b.ExpiresAt is { } e ? $"до {e.ToLocalTime():d MMM yyyy}" : "навсегда";
+    public string IssuedText => $"выдал {b.IssuedByUsername} · {b.IssuedAt.ToLocalTime():d MMM yyyy}";
 }
 
-/// <summary>АДМИН — news CRUD, launcher bans, warnings. Everything here needs an "admin"/"owner"
-/// (or "news" for the news actions) role on DarkHaven.Platform.Api; role management itself
-/// ("owner" only) isn't exposed here yet — grant those directly against the platform DB for now.</summary>
-public partial class AdminViewModel(AppServices services) : ViewModelBase
+public sealed class AdminRoleRowViewModel(PlatformRole r)
 {
+    public Guid UserId => r.UserId;
+    public string Username => r.Username;
+    public string Role => r.Role;
+}
+
+/// <summary>АДМИН — news CRUD, launcher bans, warnings, player lookup, role management (owner-only).
+/// Everything here needs an "admin"/"owner" (or "news" for the news actions) role on
+/// DarkHaven.Platform.Api. The nav tab itself is hidden for anyone without a role — see
+/// MainWindowViewModel/MainWindow.axaml binding to <see cref="CanAdmin"/> — this VM's own gating is
+/// defence in depth (and covers the moment between window-open and the platform sign-in landing).</summary>
+public partial class AdminViewModel : ViewModelBase
+{
+    private readonly AppServices _services;
+
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _status;
 
     [ObservableProperty] private string _newsTitle = "";
     [ObservableProperty] private string _newsBody = "";
+    [ObservableProperty] private AdminNewsRowViewModel? _editingNews;
 
     [ObservableProperty] private string _banUsername = "";
     [ObservableProperty] private string _banReason = "";
@@ -41,36 +54,68 @@ public partial class AdminViewModel(AppServices services) : ViewModelBase
     [ObservableProperty] private string _warnUsername = "";
     [ObservableProperty] private string _warnText = "";
 
+    [ObservableProperty] private string _searchUsername = "";
+    [ObservableProperty] private PlatformPlayerInfo? _searchResult;
+    [ObservableProperty] private bool _searchNotFound;
+
+    [ObservableProperty] private string _roleUsername = "";
+    [ObservableProperty] private string _roleToGrant = "admin";
+
     public ObservableCollection<AdminNewsRowViewModel> News { get; } = [];
     public ObservableCollection<AdminBanRowViewModel> Bans { get; } = [];
+    public ObservableCollection<AdminRoleRowViewModel> Roles { get; } = [];
 
-    public bool NotConnected => !services.Platform.IsConfigured;
-    public bool NotSignedIn => services.Platform.IsConfigured && !services.Platform.IsSignedIn;
-    public bool CanAdmin => services.Platform.CanAdmin;
-    public bool NoAccess => services.Platform.IsSignedIn && !CanAdmin;
+    public bool NotConnected => !_services.Platform.IsConfigured;
+    public bool NotSignedIn => _services.Platform.IsConfigured && !_services.Platform.IsSignedIn;
+    public bool CanAdmin => _services.Platform.CanAdmin;
+    public bool IsOwner => _services.Platform.Roles.Contains("owner");
+    public bool NoAccess => _services.Platform.IsSignedIn && !CanAdmin;
+    public bool IsEditingNews => EditingNews is not null;
+    public string NewsSubmitLabel => IsEditingNews ? "Сохранить" : "Опубликовать";
 
-    public async Task ReloadAsync()
+    public AdminViewModel(AppServices services)
+    {
+        _services = services;
+        // The platform sign-in resolves async after the window opens — re-check gating (and, via
+        // MainWindow's binding to CanAdmin, show/hide the nav tab itself) whenever it changes.
+        services.PlatformSessionChanged += OnPlatformSessionChanged;
+    }
+
+    private void OnPlatformSessionChanged()
     {
         OnPropertyChanged(nameof(NotConnected));
         OnPropertyChanged(nameof(NotSignedIn));
         OnPropertyChanged(nameof(CanAdmin));
+        OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(NoAccess));
+    }
 
+    public async Task ReloadAsync()
+    {
+        OnPlatformSessionChanged();
         if (!CanAdmin)
             return;
 
         IsLoading = true;
         try
         {
-            var news = await services.Platform.GetAllNewsAsync();
+            var news = await _services.Platform.GetAllNewsAsync();
             News.Clear();
             foreach (var n in news)
                 News.Add(new AdminNewsRowViewModel(n));
 
-            var bans = await services.Platform.GetLauncherBansAsync();
+            var bans = await _services.Platform.GetLauncherBansAsync();
             Bans.Clear();
             foreach (var b in bans)
                 Bans.Add(new AdminBanRowViewModel(b));
+
+            if (IsOwner)
+            {
+                var roles = await _services.Platform.GetRolesAsync();
+                Roles.Clear();
+                foreach (var r in roles)
+                    Roles.Add(new AdminRoleRowViewModel(r));
+            }
         }
         catch { /* Status stays as-is; the page still shows whatever loaded last time */ }
         finally
@@ -79,36 +124,67 @@ public partial class AdminViewModel(AppServices services) : ViewModelBase
         }
     }
 
+    // --- News ---
+
     [RelayCommand]
     private async Task PostNews()
     {
         if (NewsTitle.Length == 0 || NewsBody.Length == 0) return;
-        Status = "Публикую…";
-        var ok = await services.Platform.PostNewsAsync(NewsTitle, NewsBody, null, draft: false);
-        Status = ok ? "Опубликовано." : "Не удалось опубликовать.";
+        Status = IsEditingNews ? "Сохраняю…" : "Публикую…";
+
+        var ok = IsEditingNews
+            ? await _services.Platform.EditNewsAsync(EditingNews!.Id, NewsTitle, NewsBody, null, draft: false)
+            : await _services.Platform.PostNewsAsync(NewsTitle, NewsBody, null, draft: false);
+
+        Status = ok ? "Готово." : "Не удалось сохранить.";
         if (ok)
         {
             NewsTitle = "";
             NewsBody = "";
+            EditingNews = null;
+            OnPropertyChanged(nameof(IsEditingNews));
+            OnPropertyChanged(nameof(NewsSubmitLabel));
             await ReloadAsync();
         }
     }
 
     [RelayCommand]
+    private void EditNews(AdminNewsRowViewModel row)
+    {
+        EditingNews = row;
+        NewsTitle = row.Title;
+        NewsBody = row.Body;
+        OnPropertyChanged(nameof(IsEditingNews));
+        OnPropertyChanged(nameof(NewsSubmitLabel));
+    }
+
+    [RelayCommand]
+    private void CancelEditNews()
+    {
+        EditingNews = null;
+        NewsTitle = "";
+        NewsBody = "";
+        OnPropertyChanged(nameof(IsEditingNews));
+        OnPropertyChanged(nameof(NewsSubmitLabel));
+    }
+
+    [RelayCommand]
     private async Task DeleteNews(AdminNewsRowViewModel row)
     {
-        if (await services.Platform.DeleteNewsAsync(row.Id))
+        if (await _services.Platform.DeleteNewsAsync(row.Id))
             News.Remove(row);
         else
             Status = "Не удалось удалить.";
     }
+
+    // --- Bans ---
 
     [RelayCommand]
     private async Task IssueBan()
     {
         if (BanUsername.Length == 0 || BanReason.Length == 0) return;
 
-        var who = await services.Platform.LookupUserAsync(BanUsername.Trim());
+        var who = await _services.Platform.GetPlayerAsync(BanUsername.Trim());
         if (who is null)
         {
             Status = $"Игрок «{BanUsername}» не найден — он ещё ни разу не открывал ПРОФИЛЬ с этим лаунчером.";
@@ -119,7 +195,7 @@ public partial class AdminViewModel(AppServices services) : ViewModelBase
         if (int.TryParse(BanDays, out var days) && days > 0)
             expires = DateTimeOffset.UtcNow.AddDays(days);
 
-        var ok = await services.Platform.IssueLauncherBanAsync(who.UserId, BanReason.Trim(), expires);
+        var ok = await _services.Platform.IssueLauncherBanAsync(who.UserId, BanReason.Trim(), expires);
         Status = ok ? $"{who.Username} забанен на лаунчере." : "Не удалось выдать бан.";
         if (ok)
         {
@@ -133,30 +209,83 @@ public partial class AdminViewModel(AppServices services) : ViewModelBase
     [RelayCommand]
     private async Task RevokeBan(AdminBanRowViewModel row)
     {
-        if (await services.Platform.RevokeLauncherBanAsync(row.Id))
+        if (await _services.Platform.RevokeLauncherBanAsync(row.Id))
             Bans.Remove(row);
         else
             Status = "Не удалось снять бан.";
     }
+
+    // --- Warnings ---
 
     [RelayCommand]
     private async Task SendWarning()
     {
         if (WarnUsername.Length == 0 || WarnText.Length == 0) return;
 
-        var who = await services.Platform.LookupUserAsync(WarnUsername.Trim());
+        var who = await _services.Platform.GetPlayerAsync(WarnUsername.Trim());
         if (who is null)
         {
             Status = $"Игрок «{WarnUsername}» не найден.";
             return;
         }
 
-        var ok = await services.Platform.SendWarningAsync(who.UserId, WarnText.Trim());
+        var ok = await _services.Platform.SendWarningAsync(who.UserId, WarnText.Trim());
         Status = ok ? $"Предупреждение отправлено {who.Username}." : "Не удалось отправить.";
         if (ok)
         {
             WarnUsername = "";
             WarnText = "";
         }
+    }
+
+    // --- Player search: look someone up before deciding what to do about them ---
+
+    [RelayCommand]
+    private async Task SearchPlayer()
+    {
+        if (SearchUsername.Length == 0) return;
+        SearchResult = null;
+        SearchNotFound = false;
+
+        var who = await _services.Platform.GetPlayerAsync(SearchUsername.Trim());
+        if (who is null)
+            SearchNotFound = true;
+        else
+            SearchResult = who;
+    }
+
+    // --- Roles (owner only — the view hides this section for plain admins) ---
+
+    [RelayCommand]
+    private void SetRoleToGrant(string role) => RoleToGrant = role;
+
+    [RelayCommand]
+    private async Task GrantRole()
+    {
+        if (RoleUsername.Length == 0) return;
+
+        var who = await _services.Platform.GetPlayerAsync(RoleUsername.Trim());
+        if (who is null)
+        {
+            Status = $"Игрок «{RoleUsername}» не найден.";
+            return;
+        }
+
+        var ok = await _services.Platform.SetRoleAsync(who.UserId, RoleToGrant);
+        Status = ok ? $"{who.Username} теперь {RoleToGrant}." : "Не удалось выдать роль.";
+        if (ok)
+        {
+            RoleUsername = "";
+            await ReloadAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task RevokeRole(AdminRoleRowViewModel row)
+    {
+        if (await _services.Platform.RemoveRoleAsync(row.UserId))
+            Roles.Remove(row);
+        else
+            Status = "Не удалось снять роль.";
     }
 }

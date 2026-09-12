@@ -99,10 +99,11 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public Task<IReadOnlyList<PlatformBan>> GetLauncherBansAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformBan>("/api/admin/launcher-bans", cancel);
 
-    /// <summary>Resolves a username to a UserId — only finds players who've signed in to the
-    /// platform at least once (i.e. opened ПРОФИЛЬ with an account).</summary>
-    public Task<PlatformLookup?> LookupUserAsync(string username, CancellationToken cancel = default) =>
-        GetAuthed<PlatformLookup>($"/api/admin/lookup?username={Uri.EscapeDataString(username)}", cancel);
+    /// <summary>Full standing on a player, by typed username — roles, ban status, playtime — so an
+    /// admin can look before acting. Only finds players who've signed in to the platform at least
+    /// once (i.e. opened ПРОФИЛЬ with an account).</summary>
+    public Task<PlatformPlayerInfo?> GetPlayerAsync(string username, CancellationToken cancel = default) =>
+        GetAuthed<PlatformPlayerInfo>($"/api/admin/player?username={Uri.EscapeDataString(username)}", cancel);
 
     public async Task<bool> IssueLauncherBanAsync(Guid userId, string reason, DateTimeOffset? expiresAt, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/launcher-ban", new { userId, reason, expiresAt }, cancel);
@@ -113,11 +114,25 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> PostNewsAsync(string title, string bodyMarkdown, string? imageUrl, bool draft, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/news", new { title, bodyMarkdown, imageUrl, draft }, cancel);
 
+    public async Task<bool> EditNewsAsync(int id, string title, string bodyMarkdown, string? imageUrl, bool draft, CancellationToken cancel = default) =>
+        await PutAuthed($"/api/admin/news/{id}", new { title, bodyMarkdown, imageUrl, draft }, cancel);
+
     public async Task<bool> DeleteNewsAsync(int id, CancellationToken cancel = default) =>
         await DeleteAuthed($"/api/admin/news/{id}", cancel);
 
     public async Task<bool> SendWarningAsync(Guid userId, string text, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/warning", new { userId, text }, cancel);
+
+    // --- Roles (owner-only to grant/revoke — enforced server-side too) ---
+
+    public Task<IReadOnlyList<PlatformRole>> GetRolesAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformRole>("/api/admin/roles", cancel);
+
+    public async Task<bool> SetRoleAsync(Guid userId, string role, CancellationToken cancel = default) =>
+        await PostAuthed("/api/admin/roles", new { userId, role }, cancel);
+
+    public async Task<bool> RemoveRoleAsync(Guid userId, CancellationToken cancel = default) =>
+        await DeleteAuthed($"/api/admin/roles/{userId}", cancel);
 
     private async Task<bool> PostAuthed(string path, object body, CancellationToken cancel)
     {
@@ -135,6 +150,26 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
         catch (Exception e)
         {
             Log.Debug(e, "Platform admin POST {Path} failed", path);
+            return false;
+        }
+    }
+
+    private async Task<bool> PutAuthed(string path, object body, CancellationToken cancel)
+    {
+        if (_jwt is null) return false;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Put, Url(path))
+            {
+                Content = JsonContent.Create(body, options: LauncherJson.Options),
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            var res = await http.SendAsync(req, cancel);
+            return res.IsSuccessStatusCode;
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Platform admin PUT {Path} failed", path);
             return false;
         }
     }
@@ -197,6 +232,12 @@ public sealed record PlatformNotification(int Id, Guid UserId, string Kind, stri
 
 public sealed record PlatformNewsAdmin(int Id, string Title, string BodyMarkdown, string? ImageUrl, Guid AuthorId, DateTimeOffset PublishedAt, bool Draft);
 
-public sealed record PlatformBan(int Id, Guid UserId, string Username, string Reason, DateTimeOffset IssuedAt, DateTimeOffset? ExpiresAt, bool Active);
+public sealed record PlatformBan(
+    int Id, Guid UserId, string Username, string Reason,
+    DateTimeOffset IssuedAt, string IssuedByUsername, DateTimeOffset? ExpiresAt, bool Active);
 
-public sealed record PlatformLookup(Guid UserId, string Username);
+public sealed record PlatformPlayerInfo(
+    Guid UserId, string Username, DateTimeOffset MemberSince, DateTimeOffset LastSeen, string? Role,
+    long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
+
+public sealed record PlatformRole(Guid UserId, string Username, string Role);
