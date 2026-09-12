@@ -16,6 +16,11 @@ public interface IGalaxyNode
     int Players { get; }
     bool IsOnline { get; }
     bool IsFavorite { get; }
+
+    /// <summary>Which network/operator this server belongs to (e.g. "Corvax") — servers sharing a
+    /// label are placed near each other and get a shared label on the map instead of scattering
+    /// independently. Empty/unclustered servers place individually.</summary>
+    string NetworkLabel { get; }
 }
 
 /// <summary>
@@ -120,16 +125,36 @@ public sealed class GalaxyMap : Control
 
     private double BasePx => Math.Max(160, Math.Min(Bounds.Width, Bounds.Height) - 60);
 
-    /// <summary>Stable position in the unit disc from the server address.</summary>
-    private static Point Placement(string address)
+    private static uint Hash(string s)
     {
         uint h = 2166136261;
-        foreach (var c in address)
-            h = (h ^ c) * 16777619;
+        foreach (var c in s) h = (h ^ c) * 16777619;
+        return h;
+    }
 
+    /// <summary>Stable position in the unit disc, purely from a hash — used both for a network's
+    /// shared cluster center and, for anything not part of a real network, the server's own address.</summary>
+    private static Point DiscPoint(string seed, double minR, double maxR)
+    {
+        var h = Hash(seed);
         var angle = (h & 0xFFFF) / 65535.0 * Math.Tau;
-        var radius = 0.10 + 0.90 * Math.Sqrt(((h >> 16) & 0xFFFF) / 65535.0);
+        var radius = minR + (maxR - minR) * Math.Sqrt(((h >> 16) & 0xFFFF) / 65535.0);
         return new Point(0.5 + Math.Cos(angle) * radius * 0.62, 0.5 + Math.Sin(angle) * radius * 0.62);
+    }
+
+    private const string MiscLabel = "Другие сервера";
+
+    /// <summary>Servers sharing a real (2+ member) network label cluster tightly around a point
+    /// derived from that label, with a small per-server jitter so they don't fully overlap — the map
+    /// reads as a handful of recognizable networks instead of one undifferentiated starfield.</summary>
+    private static Point Placement(IGalaxyNode n)
+    {
+        if (string.IsNullOrEmpty(n.NetworkLabel) || n.NetworkLabel == MiscLabel)
+            return DiscPoint(n.Address, 0.10, 1.0);
+
+        var center = DiscPoint(n.NetworkLabel, 0.10, 0.85);
+        var jitter = DiscPoint(n.Address, 0, 0.09);
+        return new Point(center.X + (jitter.X - 0.5), center.Y + (jitter.Y - 0.5));
     }
 
     private Point ToScreen(Point unit)
@@ -215,7 +240,7 @@ public sealed class GalaxyMap : Control
         var bestD = double.MaxValue;
         foreach (var n in Nodes())
         {
-            var s = ToScreen(Placement(n.Address));
+            var s = ToScreen(Placement(n));
             var d = Math.Sqrt((s.X - screen.X) * (s.X - screen.X) + (s.Y - screen.Y) * (s.Y - screen.Y));
             var r = NodeRadius(n) + 6;
             if (d < r && d < bestD) { bestD = d; best = n; }
@@ -241,13 +266,23 @@ public sealed class GalaxyMap : Control
             return;
         }
 
+        var clusterCentroids = new Dictionary<string, (double SumX, double SumY, int Count)>();
         foreach (var n in nodes)
         {
-            var p = ToScreen(Placement(n.Address));
+            var p = ToScreen(Placement(n));
+            if (!string.IsNullOrEmpty(n.NetworkLabel) && n.NetworkLabel != MiscLabel)
+            {
+                clusterCentroids.TryGetValue(n.NetworkLabel, out var acc);
+                clusterCentroids[n.NetworkLabel] = (acc.SumX + p.X, acc.SumY + p.Y, acc.Count + 1);
+            }
+
             if (p.X < -24 || p.Y < -24 || p.X > b.Width + 24 || p.Y > b.Height + 24)
                 continue;
             DrawNode(ctx, n, p);
         }
+
+        foreach (var (label, acc) in clusterCentroids)
+            DrawClusterLabel(ctx, b, label, new Point(acc.SumX / acc.Count, acc.SumY / acc.Count));
 
         if (_hover is { } hv)
             DrawTooltip(ctx, hv);
@@ -355,6 +390,20 @@ public sealed class GalaxyMap : Control
         ctx.DrawGeometry(new SolidColorBrush(color, alpha), null, g);
     }
 
+    private void DrawClusterLabel(DrawingContext ctx, Rect b, string label, Point centroid)
+    {
+        var t = Fmt(label, Lerp(Text, Colors.White, 0.2), 12.5, true);
+        var x = Math.Clamp(centroid.X - t.Width / 2, 6, Math.Max(6, b.Width - t.Width - 6));
+        var y = centroid.Y - 30;
+        if (y < 30) y = centroid.Y + 22; // flip below the cluster if there's no room above
+
+        // a soft plate so the name stays legible over the starfield
+        var pad = 5.0;
+        ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#0B1322"), 0.55), null,
+            new Rect(x - pad, y - 2, t.Width + pad * 2, t.Height + 4), 4, 4);
+        ctx.DrawText(t, new Point(x, y));
+    }
+
     private void DrawTitle(DrawingContext ctx)
     {
         var word = Fmt("FRONTIER", Lerp(Text, Colors.White, 0.25), 17, true);
@@ -394,8 +443,8 @@ public sealed class GalaxyMap : Control
         sub.MaxTextWidth = w - 22;
 
         var h = 14 + title.Height + 5 + sub.Height + 12;
-        var x = Math.Clamp(_hoverAt.X + 16, 6, Bounds.Width - w - 6);
-        var y = Math.Clamp(_hoverAt.Y + 16, 6, Bounds.Height - h - 6);
+        var x = Math.Clamp(_hoverAt.X + 16, 6, Math.Max(6, Bounds.Width - w - 6));
+        var y = Math.Clamp(_hoverAt.Y + 16, 6, Math.Max(6, Bounds.Height - h - 6));
         var rect = new Rect(x, y, w, h);
 
         ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#0B1322"), 0.98), new Pen(new SolidColorBrush(Accent, 0.7), 1), rect, 7, 7);

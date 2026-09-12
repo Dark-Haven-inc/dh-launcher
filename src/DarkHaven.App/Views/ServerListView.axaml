@@ -44,40 +44,56 @@
         </Border>
 
         <ScrollViewer IsVisible="{Binding !MapView}">
-            <ItemsControl ItemsSource="{Binding Servers}">
+            <ItemsControl ItemsSource="{Binding Groups}">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                    <ItemsPanelTemplate><StackPanel Spacing="16" /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ServerRowViewModel">
-                        <Border Classes="card" Padding="14,10">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                                <Button Grid.Column="0" Classes="ghost" BorderThickness="0" Padding="6,2" Margin="0,0,8,0"
-                                        VerticalAlignment="Center" Command="{Binding ToggleFavoriteCommand}"
-                                        Content="{Binding IsFavorite, Converter={x:Static vm:FavGlyph.Instance}}"
-                                        Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.AccentText}}" />
-                                <StackPanel Grid.Column="1" Spacing="2">
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                    <ItemsControl ItemsSource="{Binding VisibleTags}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Background="{StaticResource DhBgHoverBrush}" CornerRadius="4" Padding="6,1">
-                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
-                                                </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                                <TextBlock Grid.Column="2" Text="{Binding PingText}" VerticalAlignment="Center"
-                                           Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
-                                <TextBlock Grid.Column="3" Text="{Binding Population}" VerticalAlignment="Center"
-                                           Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
-                                <Button Grid.Column="4" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
+                    <DataTemplate x:DataType="vm:ServerGroupViewModel">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="Bold" FontSize="14"
+                                           Foreground="{Binding IsMisc, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                <TextBlock Grid.Column="1" Text="{Binding SummaryLine}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
                             </Grid>
-                        </Border>
+                            <ItemsControl ItemsSource="{Binding Servers}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ServerRowViewModel">
+                                        <Border Classes="card" Padding="14,10">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                                <Button Grid.Column="0" Classes="ghost" BorderThickness="0" Padding="6,2" Margin="0,0,8,0"
+                                                        VerticalAlignment="Center" Command="{Binding ToggleFavoriteCommand}"
+                                                        Content="{Binding IsFavorite, Converter={x:Static vm:FavGlyph.Instance}}"
+                                                        Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.AccentText}}" />
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <ItemsControl ItemsSource="{Binding VisibleTags}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{StaticResource DhBgHoverBrush}" CornerRadius="4" Padding="6,1">
+                                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding PingText}" VerticalAlignment="Center"
+                                                           Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Population}" VerticalAlignment="Center"
+                                                           Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
+                                                <Button Grid.Column="4" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

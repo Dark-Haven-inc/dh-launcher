@@ -10,15 +10,19 @@ public partial class ServerRowViewModel : ViewModelBase, IGalaxyNode
     private readonly AppServices _services;
     private readonly Action<ServerEntry> _connect;
 
-    public ServerRowViewModel(AppServices services, ServerEntry entry, Action<ServerEntry> connect)
+    public ServerRowViewModel(AppServices services, ServerEntry entry, Action<ServerEntry> connect, string networkLabel = "")
     {
         _services = services;
         _connect = connect;
         Entry = entry;
+        NetworkLabel = networkLabel;
         _isFavorite = TryIsFavorite(services, entry.Address);
     }
 
     public ServerEntry Entry { get; }
+
+    /// <summary>Which network/operator this server was clustered into — see <see cref="Servers.NetworkGrouping"/>.</summary>
+    public string NetworkLabel { get; }
 
     public string Name => Entry.DisplayName;
     public string Address => Entry.Address;
