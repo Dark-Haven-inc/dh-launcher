@@ -723,8 +723,8 @@ public sealed class SectorMap : Control
             CultureInfo.CurrentCulture, FlowDirection.LeftToRight, _face, 11, new SolidColorBrush(Dim)) { MaxTextWidth = w - 22 };
 
         var h = 14 + title.Height + 5 + body.Height + 12;
-        var x = Math.Clamp(_hoverAt.X + 18, 6, Bounds.Width - w - 6);
-        var y = Math.Clamp(_hoverAt.Y + 18, 6, Bounds.Height - h - 6);
+        var x = Math.Clamp(_hoverAt.X + 18, 6, Math.Max(6, Bounds.Width - w - 6));
+        var y = Math.Clamp(_hoverAt.Y + 18, 6, Math.Max(6, Bounds.Height - h - 6));
         var rect = new Rect(x, y, w, h);
 
         ctx.DrawRectangle(new SolidColorBrush(Color.Parse("#0B1322"), 0.98), new Pen(new SolidColorBrush(Accent, 0.7), 1), rect, 7, 7);
