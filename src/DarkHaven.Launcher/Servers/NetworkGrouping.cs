@@ -35,25 +35,48 @@ public static class NetworkGrouping
             list.Add(s);
         }
 
-        var groups = new List<ServerNetworkGroup>();
+        var groups = new List<(string Label, List<ServerEntry> Members)>();
         var misc = new List<ServerEntry>();
         foreach (var (key, members) in byKey)
         {
             if (members.Count < MinNetworkSize || IsIp(key))
                 misc.AddRange(members);
             else
-                groups.Add(new ServerNetworkGroup(LabelFor(key, members), members));
+                groups.Add((LabelFor(key, members), members));
         }
 
-        groups = groups
+        // A network's own name is a stronger signal than hosting domain — an operator running one
+        // shard on a partner's domain, a bare IP, or a backup host still brands it the same as their
+        // main cluster (this is exactly how "МЁРТВЫЙ КОСМОС 🌌 Луна - Frontier" on luacorp.ru, and a
+        // couple of "Corvax —" shards, ended up stranded in misc even though every player would
+        // recognize them as the same network). A misc server whose cleaned name starts with an
+        // already-established group's label joins that group instead.
+        if (misc.Count > 0 && groups.Count > 0)
+        {
+            var stillMisc = new List<ServerEntry>();
+            foreach (var s in misc)
+            {
+                var cleaned = CleanName(s.DisplayName);
+                var match = groups.FirstOrDefault(g =>
+                    cleaned.Length > 0 && cleaned.StartsWith(g.Label, StringComparison.OrdinalIgnoreCase));
+                if (match.Members is not null)
+                    match.Members.Add(s);
+                else
+                    stillMisc.Add(s);
+            }
+            misc = stillMisc;
+        }
+
+        var result = groups
+            .Select(g => new ServerNetworkGroup(g.Label, g.Members))
             .OrderByDescending(g => g.Servers.Sum(s => s.Players))
             .ThenByDescending(g => g.Servers.Count)
             .ToList();
 
         if (misc.Count > 0)
-            groups.Add(new ServerNetworkGroup(MiscLabel, misc.OrderByDescending(s => s.Players).ToList()));
+            result.Add(new ServerNetworkGroup(MiscLabel, misc.OrderByDescending(s => s.Players).ToList()));
 
-        return groups;
+        return result;
     }
 
     /// <summary>The domain (last two labels) a server's address resolves to, or the bare IP if it's
