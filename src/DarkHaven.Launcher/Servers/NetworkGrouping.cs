@@ -11,10 +11,18 @@ public sealed record ServerNetworkGroup(string Label, IReadOnlyList<ServerEntry>
 /// e.g. "CorvaxGoob — Люмен" and "Corvax — Вайтлист" both start with "Corvax", so the group becomes
 /// "Corvax". When names share nothing (a hosting platform running several unrelated projects), the
 /// label falls back to the domain itself. Servers that don't share a domain with anyone else land in
-/// one "Другие сервера" bucket instead of each getting a pointless one-member "group".
+/// one "Другие сервера" bucket instead of each getting a pointless one-member "group". The floor is
+/// 4 servers, not 2 or 3 — measured empirically against the real hub: at 3+ there were still ~8
+/// domains competing for map space, which is more labeled beacons than a single panel can fit without
+/// their name plates overlapping regardless of how they're arranged; at 4+ it's the 4 domains a player
+/// would actually recognize by name (station14.ru, deadspace14.net, ss14.org, shizainc.com), each with
+/// real room on the map. Smaller domains still show up individually in the plain list — this floor
+/// only decides who gets their own permanent map beacon vs. joining "Другие сервера" there.
 /// </summary>
 public static class NetworkGrouping
 {
+    private const int MinNetworkSize = 4;
+
     public static IReadOnlyList<ServerNetworkGroup> Group(IEnumerable<ServerEntry> servers)
     {
         var byKey = new Dictionary<string, List<ServerEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -30,7 +38,7 @@ public static class NetworkGrouping
         var misc = new List<ServerEntry>();
         foreach (var (key, members) in byKey)
         {
-            if (members.Count < 2 || IsIp(key))
+            if (members.Count < MinNetworkSize || IsIp(key))
                 misc.AddRange(members);
             else
                 groups.Add(new ServerNetworkGroup(LabelFor(key, members), members));

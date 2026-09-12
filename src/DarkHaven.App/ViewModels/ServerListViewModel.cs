@@ -116,34 +116,71 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         }
 
         // The biggest real network anchors the map's centre (like ХЕЙВЕН does for our own sector);
-        // everything else — including the "Другие сервера" catch-all — scatters by a stable hash of
-        // its own label, so a given network sits in the same spot between refreshes.
-        var real = Groups.Where(g => !g.IsMisc).ToList();
-        var central = real.OrderByDescending(g => g.TotalPlayers).FirstOrDefault();
-        foreach (var g in Groups)
+        // everything else — including the "Другие сервера" catch-all — fills the rest of the disk in
+        // a sunflower/phyllotaxis spiral (the classic "N points, evenly spread, no crowding" layout —
+        // seed-heads use it for the same reason). A plain ring only spends the circle's rim, so with
+        // ~15 networks each one only gets rim-length/N of separation; spreading through the whole
+        // area instead gives each one roughly area/N, which stays roomy even after the map auto-fits
+        // to the view (Fit() rescales the whole layout, but can't change how well IT packed to begin
+        // with). Sorted by label (not player count) so the layout doesn't reshuffle just because
+        // population moved a bit between refreshes.
+        var central = Groups.Where(g => !g.IsMisc).OrderByDescending(g => g.TotalPlayers).FirstOrDefault();
+        var ring = Groups.Where(g => !ReferenceEquals(g, central))
+                          .OrderBy(g => g.Label, StringComparer.OrdinalIgnoreCase)
+                          .ToList();
+        const double innerR = 0.14; // keeps everyone clear of the (bigger) central beacon
+        const double outerR = 0.48;
+        const double goldenAngle = 2.39996323; // ~137.5°, the phyllotaxis constant
+        for (var i = 0; i < ring.Count; i++)
         {
-            if (ReferenceEquals(g, central))
+            var r = innerR + (outerR - innerR) * Math.Sqrt((i + 0.5) / ring.Count);
+            var angle = i * goldenAngle;
+            ring[i].X = 0.5 + Math.Cos(angle) * r;
+            ring[i].Y = 0.5 + Math.Sin(angle) * r;
+        }
+
+        // The spiral spreads well on average, but doesn't *guarantee* a minimum gap between any one
+        // pair — a few relaxation passes (push apart anything still too close, then clamp back inside
+        // the disk) turns "spread well on average" into "never actually crowded".
+        const double minGap = 0.34;
+        const double maxR = 0.58;
+        for (var pass = 0; pass < 60; pass++)
+        {
+            var moved = false;
+            for (var i = 0; i < ring.Count; i++)
+            for (var j = i + 1; j < ring.Count; j++)
             {
-                g.IsCentral = true;
-                g.X = 0.5;
-                g.Y = 0.5;
+                var dx = ring[j].X - ring[i].X;
+                var dy = ring[j].Y - ring[i].Y;
+                var d = Math.Sqrt(dx * dx + dy * dy);
+                if (d >= minGap || d < 1e-6) continue;
+                var push = (minGap - d) / 2;
+                var ux = dx / d;
+                var uy = dy / d;
+                ring[i].X -= ux * push; ring[i].Y -= uy * push;
+                ring[j].X += ux * push; ring[j].Y += uy * push;
+                moved = true;
             }
-            else
-            {
-                (g.X, g.Y) = HashPosition(g.Label);
-            }
+            if (!moved) break;
+        }
+        foreach (var g in ring)
+        {
+            var dx = g.X - 0.5;
+            var dy = g.Y - 0.5;
+            var r = Math.Sqrt(dx * dx + dy * dy);
+            if (r <= maxR) continue;
+            g.X = 0.5 + dx / r * maxR;
+            g.Y = 0.5 + dy / r * maxR;
+        }
+
+        if (central is not null)
+        {
+            central.IsCentral = true;
+            central.X = 0.5;
+            central.Y = 0.5;
         }
 
         SelectedNetwork = Groups.FirstOrDefault(g => g.Label == keepSelected) ?? central ?? Groups.FirstOrDefault();
-    }
-
-    private static (double X, double Y) HashPosition(string seed)
-    {
-        uint h = 2166136261;
-        foreach (var c in seed) h = (h ^ c) * 16777619;
-        var angle = (h & 0xFFFF) / 65535.0 * Math.Tau;
-        var radius = 0.22 + 0.26 * Math.Sqrt(((h >> 16) & 0xFFFF) / 65535.0);
-        return (0.5 + Math.Cos(angle) * radius, 0.5 + Math.Sin(angle) * radius);
     }
 }
 
