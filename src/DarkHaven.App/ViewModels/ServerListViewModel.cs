@@ -8,7 +8,9 @@ namespace DarkHaven.App.ViewModels;
 
 public partial class ServerListViewModel(AppServices services, Action<ServerEntry> connect) : ViewModelBase
 {
-    private readonly ServerFilter _filter = new();
+    // Hide18Plus starts true on both sides (the filter object AND the bound property below) — a
+    // field initializer doesn't run the OnHide18PlusChanged handler that normally keeps them in sync.
+    private readonly ServerFilter _filter = new() { Hide18Plus = true };
     private HashSet<string> _favorites = new(StringComparer.OrdinalIgnoreCase);
 
     [ObservableProperty] private bool _isLoading;
@@ -16,7 +18,10 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private string _search = "";
     [ObservableProperty] private bool _hideEmpty;
     [ObservableProperty] private bool _hideFull;
-    [ObservableProperty] private bool _hide18Plus;
+    // Defaults on for every player, every launch — a new/first-time player shouldn't see 18+ tags
+    // in their face before they've even chosen to. Not persisted like the other filters (see the
+    // On*Changed handlers below): there's no "remember this was off" case worth keeping.
+    [ObservableProperty] private bool _hide18Plus = true;
     [ObservableProperty] private bool _favoritesOnly;
     [ObservableProperty] private bool _sortByName;
     [ObservableProperty] private bool _mapView;
