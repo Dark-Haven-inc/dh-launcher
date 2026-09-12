@@ -34,6 +34,18 @@ public sealed class SectorMap : Control
         set => SetValue(SelectedItemProperty, value);
     }
 
+    public static readonly StyledProperty<bool> AutoRotateProperty =
+        AvaloniaProperty.Register<SectorMap, bool>(nameof(AutoRotate), true);
+
+    /// <summary>Whether the holo-table keeps slowly spinning. On for the small, decorative СЕКТОР
+    /// FRONTIER 15 map; off for anything meant to be searched/scanned (e.g. the РУхаб network map) —
+    /// a moving target is the wrong call when the point is finding and clicking a specific thing.</summary>
+    public bool AutoRotate
+    {
+        get => GetValue(AutoRotateProperty);
+        set => SetValue(AutoRotateProperty, value);
+    }
+
     /// <summary>Raised with the clicked node (an <see cref="IMapNode"/>).</summary>
     public event EventHandler<object>? NodeInvoked;
 
@@ -208,11 +220,13 @@ public sealed class SectorMap : Control
         return new Point(c.X + local.X * BasePx * _scale + _pan.X, c.Y + local.Y * BasePx * _scale + _pan.Y);
     }
 
+    private double CurrentRotation => AutoRotate ? _phase * RotSpeed : 0.0;
+
     private Point Project(double mapX, double mapY, double height)
     {
         var dx0 = mapX - 0.5;
         var dz0 = mapY - 0.5;
-        var rot = _phase * RotSpeed;
+        var rot = CurrentRotation;
         var cr = Math.Cos(rot);
         var sr = Math.Sin(rot);
         var dx = dx0 * cr - dz0 * sr;
@@ -234,7 +248,7 @@ public sealed class SectorMap : Control
     {
         var dx0 = n.X - 0.5;
         var dz0 = n.Y - 0.5;
-        var rot = _phase * RotSpeed;
+        var rot = CurrentRotation;
         var dz = dx0 * Math.Sin(rot) + dz0 * Math.Cos(rot);
         return 1.0 / (1.0 + dz * PerspectiveK);
     }
