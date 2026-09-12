@@ -137,10 +137,3 @@ public partial class NewsViewModel(AppServices services) : ViewModelBase
         }
     }
 }
-
-/// <summary>АДМИН — needs a DH platform API (roles, launcher bans, per-region server control).</summary>
-public sealed class AdminViewModel : ViewModelBase
-{
-    public string Message =>
-        "Админ-панель лаунчера (роли, бан на лаунчер, управление регионами) требует API платформы Dark Haven.";
-}

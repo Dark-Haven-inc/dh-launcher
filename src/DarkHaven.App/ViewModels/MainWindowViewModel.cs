@@ -48,7 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Account = new AccountViewModel(services);
         Profile = new ProfileViewModel(services, () => Page = NavPage.Account);
         Settings = new SettingsViewModel(services);
-        Admin = new AdminViewModel();
+        Admin = new AdminViewModel(services);
 
         _services.RegionWatch.CameOnline += (name, address) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -159,6 +159,8 @@ public partial class MainWindowViewModel : ViewModelBase
             Profile.Reload();
         else if (value == NavPage.News)
             _ = News.LoadAsync();
+        else if (value == NavPage.Admin)
+            _ = Admin.ReloadAsync();
 
         Current = value switch
         {

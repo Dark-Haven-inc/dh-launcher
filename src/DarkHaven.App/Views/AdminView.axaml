@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.AdminView"
+             x:DataType="vm:AdminViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="40,36" Spacing="22" MaxWidth="720" HorizontalAlignment="Left">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Админ" Classes="h1" />
+                <TextBlock Text="Новости, баны на лаунчер, предупреждения" Classes="dim" />
+            </StackPanel>
+
+            <!-- Access gating -->
+            <Border Classes="card" Padding="18" IsVisible="{Binding NotConnected}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Платформа Dark Haven не настроена. Укажите адрес в Настройках → Подключение → «Платформа Dark Haven»." />
+            </Border>
+            <Border Classes="card" Padding="18" IsVisible="{Binding NotSignedIn}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Не удалось войти в платформу этим аккаунтом — проверьте, что вы вошли в Space Station 14 и платформа доступна." />
+            </Border>
+            <Border Classes="card" Padding="18" IsVisible="{Binding NoAccess}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="У вашего аккаунта нет прав администратора на платформе." />
+            </Border>
+
+            <TextBlock Text="{Binding Status}" Classes="dim" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <StackPanel Spacing="22" IsVisible="{Binding CanAdmin}">
+
+                <!-- News -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="НОВОСТИ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding NewsTitle}" Watermark="Заголовок" />
+                            <TextBox Text="{Binding NewsBody}" Watermark="Текст" AcceptsReturn="True" TextWrapping="Wrap" Height="80" />
+                            <Button Classes="primary" Content="Опубликовать" HorizontalAlignment="Left"
+                                    Command="{Binding PostNewsCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding News}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminNewsRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="черновик" Classes="dim" FontSize="10" IsVisible="{Binding Draft}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DateText}" Classes="dim" FontSize="11" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" Content="Удалить" VerticalAlignment="Center"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).DeleteNewsCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Launcher bans -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="БАНЫ НА ЛАУНЧЕР" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding BanUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding BanReason}" Watermark="Причина" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Grid.Column="0" Text="{Binding BanDays}" Watermark="Дней (пусто — навсегда)" />
+                            </Grid>
+                            <Button Classes="primary" Content="Выдать бан" HorizontalAlignment="Left"
+                                    Command="{Binding IssueBanCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Bans}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminBanRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                <TextBlock Text="снят" Classes="dim" FontSize="10" IsVisible="{Binding !Active}" />
+                                            </StackPanel>
+                                            <TextBlock Classes="dim" FontSize="11">
+                                                <Run Text="{Binding Reason}" /><Run Text=" · " /><Run Text="{Binding ExpiryText}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" Content="Снять" VerticalAlignment="Center"
+                                                IsVisible="{Binding Active}"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeBanCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Warnings -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ПРЕДУПРЕЖДЕНИЕ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding WarnUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding WarnText}" Watermark="Текст предупреждения" />
+                            <Button Classes="ghost" Content="Отправить" HorizontalAlignment="Left"
+                                    Command="{Binding SendWarningCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11"
+                           Text="Выдача ролей admin/owner/news пока делается напрямую в базе платформы — экрана для этого ещё нет." />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

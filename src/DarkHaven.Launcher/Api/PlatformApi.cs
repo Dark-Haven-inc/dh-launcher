@@ -93,6 +93,17 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
     // --- Admin (only meaningful when CanAdmin) ---
 
+    public Task<IReadOnlyList<PlatformNewsAdmin>> GetAllNewsAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformNewsAdmin>("/api/admin/news", cancel);
+
+    public Task<IReadOnlyList<PlatformBan>> GetLauncherBansAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformBan>("/api/admin/launcher-bans", cancel);
+
+    /// <summary>Resolves a username to a UserId — only finds players who've signed in to the
+    /// platform at least once (i.e. opened ПРОФИЛЬ with an account).</summary>
+    public Task<PlatformLookup?> LookupUserAsync(string username, CancellationToken cancel = default) =>
+        GetAuthed<PlatformLookup>($"/api/admin/lookup?username={Uri.EscapeDataString(username)}", cancel);
+
     public async Task<bool> IssueLauncherBanAsync(Guid userId, string reason, DateTimeOffset? expiresAt, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/launcher-ban", new { userId, reason, expiresAt }, cancel);
 
@@ -101,6 +112,12 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
     public async Task<bool> PostNewsAsync(string title, string bodyMarkdown, string? imageUrl, bool draft, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/news", new { title, bodyMarkdown, imageUrl, draft }, cancel);
+
+    public async Task<bool> DeleteNewsAsync(int id, CancellationToken cancel = default) =>
+        await DeleteAuthed($"/api/admin/news/{id}", cancel);
+
+    public async Task<bool> SendWarningAsync(Guid userId, string text, CancellationToken cancel = default) =>
+        await PostAuthed("/api/admin/warning", new { userId, text }, cancel);
 
     private async Task<bool> PostAuthed(string path, object body, CancellationToken cancel)
     {
@@ -177,3 +194,9 @@ public sealed record PlatformProfile(
     bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
 
 public sealed record PlatformNotification(int Id, Guid UserId, string Kind, string Text, DateTimeOffset CreatedAt, bool Read);
+
+public sealed record PlatformNewsAdmin(int Id, string Title, string BodyMarkdown, string? ImageUrl, Guid AuthorId, DateTimeOffset PublishedAt, bool Draft);
+
+public sealed record PlatformBan(int Id, Guid UserId, string Username, string Reason, DateTimeOffset IssuedAt, DateTimeOffset? ExpiresAt, bool Active);
+
+public sealed record PlatformLookup(Guid UserId, string Username);
