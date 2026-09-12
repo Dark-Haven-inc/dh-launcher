@@ -24,7 +24,6 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
     [ObservableProperty] private ServerGroupViewModel? _selectedNetwork;
-    [ObservableProperty] private bool _canQuickPlay;
 
     /// <summary>Flat list — every row, for counts and favourites lookups.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
@@ -77,15 +76,6 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         var addr = DirectAddress.Trim();
         if (addr.Length > 0)
             connect(new ServerEntry(addr));
-    }
-
-    /// <summary>The "just play something" button — no map, no networks, no choices: jump straight
-    /// into whichever RU-hub server currently has the most people in it.</summary>
-    [RelayCommand]
-    private void QuickPlay()
-    {
-        var best = Servers.Where(s => s.IsOnline).OrderByDescending(s => s.Players).FirstOrDefault();
-        if (best is not null) connect(best.Entry);
     }
 
     /// <summary>Called by the map when a network beacon is clicked.</summary>
@@ -145,7 +135,6 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         }
 
         SelectedNetwork = Groups.FirstOrDefault(g => g.Label == keepSelected) ?? central ?? Groups.FirstOrDefault();
-        CanQuickPlay = Servers.Any(s => s.IsOnline);
     }
 
     private static (double X, double Y) HashPosition(string seed)
@@ -178,9 +167,36 @@ public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowVi
 
     // --- IMapNode ---
     public string Name => Label;
-    public string Blurb => IsMisc
-        ? "Разные серверы без общей сети — каждый сам по себе."
-        : Count == 1 ? "Один сервер." : $"{Count} серверов этой сети.";
+
+    /// <summary>Shown both as the map's hover tooltip and atop the side panel — since the tooltip is
+    /// the only info a player gets before actually clicking, it lists the busiest servers by name and
+    /// player count directly, not just a one-line summary.</summary>
+    public string Blurb
+    {
+        get
+        {
+            var head = IsMisc
+                ? $"{Count} {Decl(Count, "сервер", "сервера", "серверов")} без общей сети."
+                : $"{Count} {Decl(Count, "сервер", "сервера", "серверов")} · {TotalPlayers} {Decl(TotalPlayers, "игрок", "игрока", "игроков")} онлайн.";
+
+            const int shown = 5;
+            var top = Servers.OrderByDescending(s => s.Players).Take(shown).ToList();
+            if (top.Count == 0) return head;
+
+            var lines = top.Select(s => $"{(s.IsOnline ? s.Population : "офлайн")} — {s.Name}");
+            var rest = Servers.Count - top.Count;
+            var tail = rest > 0 ? $"\n…и ещё {rest} {Decl(rest, "сервер", "сервера", "серверов")}" : "";
+            return head + "\n" + string.Join("\n", lines) + tail;
+        }
+    }
+
+    private static string Decl(int n, string one, string few, string many)
+    {
+        var m = Math.Abs(n) % 100;
+        if (m is >= 11 and <= 14) return many;
+        return (m % 10) switch { 1 => one, 2 or 3 or 4 => few, _ => many };
+    }
+
     public double X { get; set; }
     public double Y { get; set; }
     public bool IsCentral { get; set; }
