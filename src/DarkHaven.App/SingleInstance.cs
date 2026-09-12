@@ -11,8 +11,8 @@ namespace DarkHaven.App;
 /// </summary>
 public static class SingleInstance
 {
-    private const string MutexName = @"Local\DarkHavenLauncher.SingleInstance";
-    private const string PipeName = "DarkHavenLauncher.ipc";
+    private const string MutexName = @"Local\Frontier15Launcher.SingleInstance";
+    private const string PipeName = "Frontier15Launcher.ipc";
 
     private static Mutex? _mutex;
 

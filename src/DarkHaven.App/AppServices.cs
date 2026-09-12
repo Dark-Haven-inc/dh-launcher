@@ -94,7 +94,7 @@ public sealed class AppServices : IDisposable
     public AppServices()
     {
         Http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
-        Http.DefaultRequestHeaders.Add("User-Agent", "DarkHavenLauncher/0.1");
+        Http.DefaultRequestHeaders.Add("User-Agent", "Frontier15Launcher/0.2");
 
         Settings = new SettingsDatabase(LauncherPaths.SettingsDbPath);
         Settings.Initialize();

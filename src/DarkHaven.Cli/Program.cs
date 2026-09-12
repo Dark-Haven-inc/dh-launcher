@@ -25,7 +25,7 @@ Log.Logger = new LoggerConfiguration()
 using var http = new HttpClient
 {
     Timeout = TimeSpan.FromMinutes(10),
-    DefaultRequestHeaders = { { "User-Agent", "DarkHavenLauncher/0.0 (dev cli)" } },
+    DefaultRequestHeaders = { { "User-Agent", "Frontier15Launcher/0.0 (dev cli)" } },
 };
 
 var jsonDump = new JsonSerializerOptions { WriteIndented = true };

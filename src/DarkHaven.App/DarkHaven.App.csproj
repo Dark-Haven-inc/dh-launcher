@@ -3,14 +3,14 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>DarkHaven.App</RootNamespace>
-    <AssemblyName>DarkHavenLauncher</AssemblyName>
+    <AssemblyName>Frontier15Launcher</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
     <!-- Launcher version. Release builds override this from the git tag (see scripts/pack-release.ps1). -->
-    <Version>0.1.9</Version>
+    <Version>0.2.0</Version>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 

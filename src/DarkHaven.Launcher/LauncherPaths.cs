@@ -55,6 +55,12 @@ public static class LauncherPaths
                    ?? Path.Combine(
                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
 
+        // Deliberately NOT renamed to match the 0.2.0 Frontier15Launcher rebrand (AssemblyName,
+        // Velopack packId, exe name) — this is where existing players' settings.db, favourites,
+        // playtime history and content cache already live. Since the app identity change means
+        // existing installs can't auto-update and need a manual reinstall anyway, keeping this
+        // folder name is what lets that manual reinstall find their old data instead of starting
+        // everyone over from scratch.
         var name = "DarkHavenLauncher";
         var suffix = Environment.GetEnvironmentVariable("SS14_LAUNCHER_APPDATA_NAME");
         if (!string.IsNullOrWhiteSpace(suffix))

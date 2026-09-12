@@ -66,10 +66,10 @@ if (-not (Test-Path $manifestFile)) {
 Write-Host "-- vpk pack" -ForegroundColor DarkCyan
 dotnet tool restore | Out-Null
 dotnet vpk pack `
-    --packId DarkHavenLauncher `
+    --packId Frontier15Launcher `
     --packVersion $Version `
     --packDir $pub `
-    --mainExe DarkHavenLauncher.exe `
+    --mainExe Frontier15Launcher.exe `
     --packTitle "Frontier 15 Launcher" `
     --packAuthors "Frontier 15" `
     --icon (Join-Path $repo "src/DarkHaven.App/Assets/icon.ico") `
