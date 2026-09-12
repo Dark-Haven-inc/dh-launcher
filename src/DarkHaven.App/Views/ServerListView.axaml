@@ -28,6 +28,14 @@
             <CheckBox Content="Сортировать по имени" IsChecked="{Binding SortByName}" />
         </StackPanel>
 
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
+            <TextBlock Text="RP:" Classes="dim" VerticalAlignment="Center" />
+            <CheckBox Content="без RP" IsChecked="{Binding RpNone}" />
+            <CheckBox Content="лёгкий" IsChecked="{Binding RpLow}" />
+            <CheckBox Content="средний" IsChecked="{Binding RpMed}" />
+            <CheckBox Content="высокий" IsChecked="{Binding RpHigh}" />
+        </StackPanel>
+
         <Grid DockPanel.Dock="Top" Margin="0,10,0,0" ColumnDefinitions="*,Auto">
             <TextBox Grid.Column="0" Watermark="ss14://адрес — прямое подключение" Text="{Binding DirectAddress}" />
             <Button Grid.Column="1" Classes="nav" Margin="8,0,0,0" Content="Подключиться" Command="{Binding ConnectDirectCommand}" />

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher.Servers;
@@ -6,24 +7,30 @@ using Serilog;
 
 namespace DarkHaven.App.ViewModels;
 
-public partial class ServerListViewModel(AppServices services, Action<ServerEntry> connect) : ViewModelBase
+public partial class ServerListViewModel : ViewModelBase
 {
-    // Hide18Plus starts true on both sides (the filter object AND the bound property below) — a
-    // field initializer doesn't run the OnHide18PlusChanged handler that normally keeps them in sync.
-    private readonly ServerFilter _filter = new() { Hide18Plus = true };
+    private readonly AppServices _services;
+    private readonly Action<ServerEntry> _connect;
+    private readonly ServerFilter _filter = new();
     private HashSet<string> _favorites = new(StringComparer.OrdinalIgnoreCase);
+
+    // Typing re-filters the whole list and rebuilds the map layout — worth waiting for a short
+    // pause in typing instead of doing that on every keystroke (same idea as the reference SS14
+    // launcher's own search throttle).
+    private readonly DispatcherTimer _searchDebounce = new() { Interval = TimeSpan.FromMilliseconds(200) };
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _error;
     [ObservableProperty] private string _search = "";
     [ObservableProperty] private bool _hideEmpty;
     [ObservableProperty] private bool _hideFull;
-    // Defaults on for every player, every launch — a new/first-time player shouldn't see 18+ tags
-    // in their face before they've even chosen to. Not persisted like the other filters (see the
-    // On*Changed handlers below): there's no "remember this was off" case worth keeping.
-    [ObservableProperty] private bool _hide18Plus = true;
+    [ObservableProperty] private bool _hide18Plus;
     [ObservableProperty] private bool _favoritesOnly;
     [ObservableProperty] private bool _sortByName;
+    [ObservableProperty] private bool _rpNone;
+    [ObservableProperty] private bool _rpLow;
+    [ObservableProperty] private bool _rpMed;
+    [ObservableProperty] private bool _rpHigh;
     [ObservableProperty] private bool _mapView;
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
@@ -40,14 +47,64 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     /// server, connected to its siblings, clustered under its network's floating name.</summary>
     public ObservableCollection<ServerRowViewModel> MapNodes { get; } = [];
 
-    partial void OnSearchChanged(string value) => ApplyFilter();
-    partial void OnHideEmptyChanged(bool value) { _filter.HideEmpty = value; ApplyFilter(); }
-    partial void OnHideFullChanged(bool value) { _filter.HideFull = value; ApplyFilter(); }
-    partial void OnHide18PlusChanged(bool value) { _filter.Hide18Plus = value; ApplyFilter(); }
-    partial void OnFavoritesOnlyChanged(bool value) => ApplyFilter();
+    public ServerListViewModel(AppServices services, Action<ServerEntry> connect)
+    {
+        _services = services;
+        _connect = connect;
+
+        _searchDebounce.Tick += (_, _) => { _searchDebounce.Stop(); ApplyFilter(); };
+
+        // Every filter below sticks across launches — a player's own choices shouldn't reset every
+        // time they reopen the launcher. Hide18Plus is the one with a non-off default: new/regular
+        // players shouldn't see 18+ tags before they've actively chosen to, but if someone explicitly
+        // turns it off, that choice is remembered too, same as all the others.
+        _hideEmpty = Cfg("HideEmpty", false);
+        _hideFull = Cfg("HideFull", false);
+        _hide18Plus = Cfg("Hide18Plus", true);
+        _favoritesOnly = Cfg("FavoritesOnly", false);
+        _sortByName = Cfg("SortByName", false);
+        _rpNone = Cfg("RpNone", false);
+        _rpLow = Cfg("RpLow", false);
+        _rpMed = Cfg("RpMed", false);
+        _rpHigh = Cfg("RpHigh", false);
+
+        _filter.HideEmpty = _hideEmpty;
+        _filter.HideFull = _hideFull;
+        _filter.Hide18Plus = _hide18Plus;
+        _filter.Sort = _sortByName ? ServerSort.Name : ServerSort.Players;
+        SyncRolePlaySet();
+    }
+
+    private bool Cfg(string key, bool dflt) => _services.Settings.GetConfig(key) is { } v ? v == "true" : dflt;
+    private void SetCfg(string key, bool v) => _services.Settings.SetConfig(key, v ? "true" : "false");
+
+    partial void OnSearchChanged(string value) { _searchDebounce.Stop(); _searchDebounce.Start(); }
+    partial void OnHideEmptyChanged(bool value) { _filter.HideEmpty = value; SetCfg("HideEmpty", value); ApplyFilter(); }
+    partial void OnHideFullChanged(bool value) { _filter.HideFull = value; SetCfg("HideFull", value); ApplyFilter(); }
+    partial void OnHide18PlusChanged(bool value) { _filter.Hide18Plus = value; SetCfg("Hide18Plus", value); ApplyFilter(); }
+    partial void OnFavoritesOnlyChanged(bool value) { SetCfg("FavoritesOnly", value); ApplyFilter(); }
     partial void OnSortByNameChanged(bool value)
     {
         _filter.Sort = value ? ServerSort.Name : ServerSort.Players;
+        SetCfg("SortByName", value);
+        ApplyFilter();
+    }
+    partial void OnRpNoneChanged(bool value) { SetCfg("RpNone", value); SyncRolePlaySet(); }
+    partial void OnRpLowChanged(bool value) { SetCfg("RpLow", value); SyncRolePlaySet(); }
+    partial void OnRpMedChanged(bool value) { SetCfg("RpMed", value); SyncRolePlaySet(); }
+    partial void OnRpHighChanged(bool value) { SetCfg("RpHigh", value); SyncRolePlaySet(); }
+
+    /// <summary>Empty = no RP filtering at all (show every level) — same "off by default, only
+    /// narrows once picked" shape as every other filter here. ServerFilter.RolePlay already existed
+    /// and already matched against each server's "rp:none/low/med/high" tag; only the UI to drive it
+    /// was missing.</summary>
+    private void SyncRolePlaySet()
+    {
+        _filter.RolePlay.Clear();
+        if (RpNone) _filter.RolePlay.Add("none");
+        if (RpLow) _filter.RolePlay.Add("low");
+        if (RpMed) _filter.RolePlay.Add("med");
+        if (RpHigh) _filter.RolePlay.Add("high");
         ApplyFilter();
     }
 
@@ -60,9 +117,9 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
         try
         {
             LoadFavorites();
-            await services.ServerList.RefreshAsync();
-            TotalCount = services.ServerList.Servers.Count;
-            Error = services.ServerList.StaleSince is { } t
+            await _services.ServerList.RefreshAsync();
+            TotalCount = _services.ServerList.Servers.Count;
+            Error = _services.ServerList.StaleSince is { } t
                 ? $"Хаб недоступен — список от {t.ToLocalTime():dd.MM HH:mm}."
                 : null;
             ApplyFilter();
@@ -83,7 +140,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
     {
         var addr = DirectAddress.Trim();
         if (addr.Length > 0)
-            connect(new ServerEntry(addr));
+            _connect(new ServerEntry(addr));
     }
 
     /// <summary>Called by the map when a server dot is clicked.</summary>
@@ -91,13 +148,13 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
 
     private void LoadFavorites()
     {
-        try { _favorites = services.Settings.GetFavorites().Select(f => f.Address).ToHashSet(StringComparer.OrdinalIgnoreCase); }
+        try { _favorites = _services.Settings.GetFavorites().Select(f => f.Address).ToHashSet(StringComparer.OrdinalIgnoreCase); }
         catch { _favorites = new(StringComparer.OrdinalIgnoreCase); }
     }
 
     private void ApplyFilter()
     {
-        var hardFiltered = _filter.Apply(services.ServerList.Servers);
+        var hardFiltered = _filter.Apply(_services.ServerList.Servers);
         if (FavoritesOnly)
             hardFiltered = hardFiltered.Where(s => _favorites.Contains(s.Address));
 
@@ -119,7 +176,7 @@ public partial class ServerListViewModel(AppServices services, Action<ServerEntr
                 members = members.Where(s => s.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)
                                              || s.Address.Contains(search, StringComparison.OrdinalIgnoreCase));
 
-            var rows = members.Select(e => new ServerRowViewModel(services, e, connect)).ToList();
+            var rows = members.Select(e => new ServerRowViewModel(_services, e, _connect)).ToList();
             if (rows.Count == 0) continue;
 
             Groups.Add(new ServerGroupViewModel(g.Label, rows));
