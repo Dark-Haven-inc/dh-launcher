@@ -69,7 +69,7 @@ public sealed class SectorMap : Control
     private double _scale = 1.0;
     private double _targetScale = 1.0;
     private Point _zoomAnchorScreen;
-    private Point _zoomAnchorMap;
+    private Point _zoomAnchorLocal;
     private Vector _pan;
     private Vector _targetPan;
     private bool _hasTargetPan;
@@ -130,8 +130,11 @@ public sealed class SectorMap : Control
             if (Math.Abs(_targetScale - _scale) > 0.0004)
             {
                 _scale += (_targetScale - _scale) * 0.22;
-                var a = ToScreen(_zoomAnchorMap);
-                _pan += new Vector(_zoomAnchorScreen.X - a.X, _zoomAnchorScreen.Y - a.Y);
+                // re-derive screen position of the same LOCAL (post-projection) point at the new scale —
+                // exact, no need to invert the rotating 3D projection, so it can't blow up mid-spin
+                var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
+                var cur = new Point(c.X + _zoomAnchorLocal.X * BasePx * _scale + _pan.X, c.Y + _zoomAnchorLocal.Y * BasePx * _scale + _pan.Y);
+                _pan += new Vector(_zoomAnchorScreen.X - cur.X, _zoomAnchorScreen.Y - cur.Y);
             }
 
             if (_hasTargetPan)
@@ -213,24 +216,6 @@ public sealed class SectorMap : Control
         var dz = dx0 * sr + dz0 * cr;
         var depth = 1.0 / (1.0 + dz * PerspectiveK);
         return new Point(dx * depth, dz * SinT * depth - height * CosT);
-    }
-
-    /// <summary>Approximate inverse of <see cref="Project"/> (ignores the per-node perspective/height
-    /// terms) — good enough for "keep this spot under the cursor while zooming"; any drift is well
-    /// under a pixel over the ~0.3s the zoom animation takes.</summary>
-    private Point ToMap(Point screen)
-    {
-        var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
-        var lx = (screen.X - c.X - _pan.X) / (BasePx * _scale);
-        var ly = (screen.Y - c.Y - _pan.Y) / (BasePx * _scale);
-        var dz = ly / SinT;
-        var dx = lx;
-        var rot = _phase * RotSpeed;
-        var cr = Math.Cos(rot);
-        var sr = Math.Sin(rot);
-        var dx0 = dx * cr + dz * sr;
-        var dz0 = -dx * sr + dz * cr;
-        return new Point(dx0 + 0.5, dz0 + 0.5);
     }
 
     private double NodeHeight(IMapNode n)
@@ -343,7 +328,8 @@ public sealed class SectorMap : Control
         base.OnPointerWheelChanged(e);
         var cursor = e.GetPosition(this);
         _zoomAnchorScreen = cursor;
-        _zoomAnchorMap = ToMap(cursor);
+        var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
+        _zoomAnchorLocal = new Point((cursor.X - c.X - _pan.X) / (BasePx * _scale), (cursor.Y - c.Y - _pan.Y) / (BasePx * _scale));
         _targetScale = Math.Clamp(_targetScale * (e.Delta.Y > 0 ? 1.16 : 1 / 1.16), 0.5, 4.0);
         e.Handled = true;
     }
