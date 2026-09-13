@@ -179,7 +179,8 @@ public partial class ServerListViewModel : ViewModelBase
             var rows = members.Select(e => new ServerRowViewModel(_services, e, _connect)).ToList();
             if (rows.Count == 0) continue;
 
-            Groups.Add(new ServerGroupViewModel(g.Label, rows));
+            var info = _services.Networks.TryGet(g.Label, out var found) ? found : null;
+            Groups.Add(new ServerGroupViewModel(g.Label, rows, info));
             foreach (var r in rows) Servers.Add(r);
 
             // A network with dozens of members (mainly "Другие сервера") would just be noise as dots —
@@ -264,16 +265,39 @@ public partial class ServerListViewModel : ViewModelBase
     }
 }
 
-/// <summary>One network section in the grouped РУхаб list — e.g. "Corvax" with its shards underneath.</summary>
-public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers)
+/// <summary>One network section in the grouped РУхаб list — e.g. "Corvax" with its shards underneath.
+/// Collapsible ("выпадающее меню"), and when <c>dh-networks.json</c> has an entry for this Label, shows
+/// a short description plus a button to that network's own Discord.</summary>
+public sealed partial class ServerGroupViewModel : ViewModelBase
 {
-    public string Label { get; } = label;
-    public IReadOnlyList<ServerRowViewModel> Servers { get; } = servers;
+    public string Label { get; }
+    public IReadOnlyList<ServerRowViewModel> Servers { get; }
+    public string? Description { get; }
+    public string? DiscordUrl { get; }
+
+    [ObservableProperty] private bool _isExpanded = true;
+
     public int Count => Servers.Count;
     public int TotalPlayers => Servers.Sum(s => s.Players);
     public bool IsMisc => Label == NetworkGrouping.MiscLabel;
+    public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
+    public bool HasDiscordUrl => !string.IsNullOrWhiteSpace(DiscordUrl);
+    public string ExpandGlyph => IsExpanded ? "▾" : "▸";
 
     public string SummaryLine => TotalPlayers > 0
         ? $"{Count} · {TotalPlayers} игроков"
         : $"{Count}";
+
+    public ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers, NetworkInfo? info)
+    {
+        Label = label;
+        Servers = servers;
+        Description = info?.Description;
+        DiscordUrl = info?.DiscordUrl;
+    }
+
+    partial void OnIsExpandedChanged(bool value) => OnPropertyChanged(nameof(ExpandGlyph));
+
+    [RelayCommand] private void ToggleExpanded() => IsExpanded = !IsExpanded;
+    [RelayCommand] private void OpenDiscord() { if (HasDiscordUrl) SafeUrl.Open(DiscordUrl!); }
 }

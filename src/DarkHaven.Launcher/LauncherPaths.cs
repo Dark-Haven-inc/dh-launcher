@@ -25,6 +25,11 @@ public static class LauncherPaths
     public static string RegionsJsonPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "dh-regions.json");
 
+    /// <summary>Hand-curated per-network extras (description, Discord invite) for the РУхаб grouped
+    /// list — see <see cref="DarkHaven.Launcher.Servers.NetworkDirectory"/>.</summary>
+    public static string NetworksJsonPath =>
+        Path.Combine(AppContext.BaseDirectory, "Assets", "dh-networks.json");
+
     /// <summary>Bundled fallback news feed.</summary>
     public static string NewsJsonPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "news.json");

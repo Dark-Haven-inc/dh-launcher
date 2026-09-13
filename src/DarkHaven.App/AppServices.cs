@@ -22,6 +22,7 @@ public sealed class AppServices : IDisposable
     public EngineManager Engines { get; }
     public HubApi Hub { get; }
     public ServerListManager ServerList { get; }
+    public NetworkDirectory Networks { get; }
     public DhRegions Regions { get; }
     public RegionWatcher RegionWatch { get; }
     public DhNews News { get; }
@@ -122,6 +123,7 @@ public sealed class AppServices : IDisposable
 
         Hub = new HubApi(Http, LauncherPaths.HubCachePath);
         ServerList = new ServerListManager(Hub);
+        Networks = new NetworkDirectory(LauncherPaths.NetworksJsonPath);
         Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
         RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
         RegionWatch.EnsureRunning();

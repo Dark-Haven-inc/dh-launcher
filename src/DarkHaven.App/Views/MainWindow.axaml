@@ -30,8 +30,9 @@
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                         <Image Source="/Assets/emblem.png" Width="32" Height="32" VerticalAlignment="Center" />
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="FRONTIER 15" FontWeight="Bold" FontSize="15" LetterSpacing="1"
-                                       Foreground="{StaticResource DhTextBrush}" />
+                            <TextBlock FontWeight="Bold" FontSize="15" LetterSpacing="1">
+                                <Run Text="FRONTIER" Foreground="{StaticResource DhTextBrush}" /><Run Text=" 15" Foreground="{StaticResource DhFrontierRedBrush}" />
+                            </TextBlock>
                             <TextBlock Text="СЕТЬ СТАНЦИЙ" Classes="caps" />
                         </StackPanel>
                     </StackPanel>

@@ -128,12 +128,23 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ServerGroupViewModel">
                         <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="Bold" FontSize="14"
-                                           Foreground="{Binding IsMisc, Converter={x:Static vm:BoolBrush.DimText}}" />
-                                <TextBlock Grid.Column="1" Text="{Binding SummaryLine}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                <Button Grid.Column="0" Classes="ghost" BorderThickness="0" Padding="4,0" Margin="0,0,6,0"
+                                        VerticalAlignment="Center" FontSize="12" Content="{Binding ExpandGlyph}"
+                                        Command="{Binding ToggleExpandedCommand}" />
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="{Binding Label}" FontWeight="Bold" FontSize="14"
+                                               Foreground="{Binding IsMisc, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Text="{Binding Description}" Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasDescription}" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="ghost" Content="Discord" FontSize="11" Padding="8,3" Margin="8,0,0,0"
+                                        VerticalAlignment="Center" IsVisible="{Binding HasDiscordUrl}"
+                                        Command="{Binding OpenDiscordCommand}" />
+                                <TextBlock Grid.Column="3" Text="{Binding SummaryLine}" Classes="dim" FontSize="11"
+                                           Margin="12,0,0,0" VerticalAlignment="Center" />
                             </Grid>
-                            <ItemsControl ItemsSource="{Binding Servers}">
+                            <ItemsControl IsVisible="{Binding IsExpanded}" ItemsSource="{Binding Servers}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
