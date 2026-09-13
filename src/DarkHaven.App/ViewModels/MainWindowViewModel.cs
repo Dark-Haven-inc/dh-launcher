@@ -58,6 +58,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 App.AlertUser();
             });
 
+        // AccountName is a plain computed getter (Accounts.Active isn't observable on its own), so the
+        // top bar would otherwise keep showing whatever it first bound to (usually "Гость") forever —
+        // even after a real login — unless something explicitly tells the binding to re-read it.
+        // PlatformSessionChanged already fires on every login/logout/account-switch (see
+        // AppServices.SignInToPlatformAsync), so it doubles as "the active account may have changed".
+        _services.PlatformSessionChanged += () => OnPropertyChanged(nameof(AccountName));
+
         // First run with no saved account: land on the login screen instead of the map.
         if (services.Settings.GetConfig("SeenWelcome") != "true")
         {

@@ -43,6 +43,7 @@ public partial class HomeViewModel(
         OnPropertyChanged(nameof(HasRecent));
         OnPropertyChanged(nameof(HasFavorites));
         OnPropertyChanged(nameof(HasContinue));
+        OnPropertyChanged(nameof(Greeting));
     }
 
     partial void OnContinueServerChanged(RecentServer? value) => OnPropertyChanged(nameof(HasContinue));

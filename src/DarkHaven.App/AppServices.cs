@@ -72,7 +72,13 @@ public sealed class AppServices : IDisposable
     public async Task SignInToPlatformAsync(CancellationToken cancel = default)
     {
         if (!Platform.IsConfigured)
+        {
+            // Still a real state transition (e.g. an account just logged in/out) — the top bar's
+            // account name and other account-driven bindings need to hear about it even when there's
+            // no platform to actually sign in to.
+            PlatformSessionChanged?.Invoke();
             return;
+        }
 
         var active = Accounts.Active;
         if (active is null)
