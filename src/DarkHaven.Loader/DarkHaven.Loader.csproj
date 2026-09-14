@@ -6,6 +6,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>DarkHaven.Loader</RootNamespace>
     <AssemblyName>DarkHaven.Loader</AssemblyName>
+    <!-- Release builds pass LauncherVersion, never a bare -p:Version — see DarkHaven.App.csproj. -->
+    <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
     <!-- The engine needs real ICU cultures (system font manager, localization). -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <!-- Keep this project's dependency surface tiny: it loads the engine into the default

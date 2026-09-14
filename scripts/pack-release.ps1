@@ -28,7 +28,7 @@ New-Item -ItemType Directory -Force -Path $pub, $OutputDir | Out-Null
 Write-Host "-- publish DarkHaven.App" -ForegroundColor DarkCyan
 dotnet publish (Join-Path $repo "src/DarkHaven.App/DarkHaven.App.csproj") `
     -c Release -r $Rid --self-contained true `
-    -p:Version=$Version -p:PublishSingleFile=false `
+    -p:LauncherVersion=$Version -p:PublishSingleFile=false `
     -o $pub
 if ($LASTEXITCODE) { throw "app publish failed" }
 
@@ -37,7 +37,7 @@ if ($LASTEXITCODE) { throw "app publish failed" }
 Write-Host "-- publish DarkHaven.Loader into loader/" -ForegroundColor DarkCyan
 dotnet publish (Join-Path $repo "src/DarkHaven.Loader/DarkHaven.Loader.csproj") `
     -c Release -r $Rid --self-contained true `
-    -p:Version=$Version `
+    -p:LauncherVersion=$Version `
     -o (Join-Path $pub "loader")
 if ($LASTEXITCODE) { throw "loader publish failed" }
 

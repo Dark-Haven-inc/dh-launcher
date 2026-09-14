@@ -9,8 +9,12 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 
-    <!-- Launcher version. Release builds override this from the git tag (see scripts/pack-release.ps1). -->
-    <Version>0.2.2</Version>
+    <!-- Launcher version. Release builds pass it as LauncherVersion (see scripts/pack-release.ps1);
+         this is the dev fallback. It is deliberately NOT plain -p:Version, because that would flow
+         through the whole project graph and restamp Robust.LoaderApi, whose identity has to stay
+         1.0.0.0 to match the engine builds — otherwise the loader can't start the game at all. -->
+    <Version Condition="'$(LauncherVersion)' == ''">0.2.2</Version>
+    <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
