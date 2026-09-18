@@ -33,6 +33,7 @@ public sealed class AppServices : IDisposable
     public LaunchCoordinator Launch { get; }
     public LauncherUpdater Updater { get; }
     public DiscordPresence Discord { get; }
+    public SlotWatcher SlotWatch { get; }
 
     /// <summary>The <c>ss14://</c> address of the server the player is currently in, or null.</summary>
     public string? CurrentGameAddress { get; private set; }
@@ -143,6 +144,7 @@ public sealed class AppServices : IDisposable
         Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
         Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
         Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
+        SlotWatch = new SlotWatcher(Http);
 
         StartPresenceHeartbeat();
         _ = SignInToPlatformAsync();
@@ -198,6 +200,7 @@ public sealed class AppServices : IDisposable
         }
 
         RegionWatch.Dispose();
+        SlotWatch.Dispose();
         Discord.Dispose();
         Http.Dispose();
     }

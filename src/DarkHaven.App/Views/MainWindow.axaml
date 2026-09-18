@@ -101,6 +101,19 @@
                 </Grid>
             </Border>
 
+            <!-- Waiting for a free slot on a full server -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrightBrush}" BorderThickness="0,0,0,2" Padding="20,8"
+                    IsVisible="{Binding ShowSlotWaitBanner}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding SlotWaitBannerText}" FontWeight="SemiBold" FontSize="12"
+                               VerticalAlignment="Center" Foreground="{StaticResource DhTextBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Classes="ghost" Content="Не ждать" Padding="10,4" FontSize="12"
+                            Command="{Binding CancelSlotWaitCommand}" />
+                </Grid>
+            </Border>
+
             <!-- Bottom tab bar -->
             <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgElevatedBrush}"
                     BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Height="52">

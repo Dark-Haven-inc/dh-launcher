@@ -20,6 +20,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty] private string? _regionOnlineName;
     private string? _regionOnlineAddress;
+    // The same banner also says "a slot opened" when that happens mid-game (see SlotFreed below).
+    private bool _regionBannerIsSlot;
+
+    [ObservableProperty] private string? _slotWaitName;
 
     public HomeViewModel Home { get; }
     public RegionsViewModel Regions { get; }
@@ -56,8 +60,38 @@ public partial class MainWindowViewModel : ViewModelBase
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 _regionOnlineAddress = address;
+                _regionBannerIsSlot = false;
                 RegionOnlineName = name;
                 App.AlertUser();
+            });
+
+        // "Ждать свободного места": keep the banner and the button on whichever screen is open in step.
+        _services.SlotWatch.Changed += () =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                SlotWaitName = _services.SlotWatch.IsWatching ? _services.SlotWatch.Name : null;
+                Regions.Selected?.RefreshSlot();
+                Servers.SelectedServer?.RefreshSlot();
+            });
+
+        // A slot opened. Take it straight away — on a busy server it's gone again in seconds, long
+        // before anyone notices a blinking taskbar. Unless the player is already in a game or halfway
+        // into another connect: then just say so, and let them decide.
+        _services.SlotWatch.SlotFreed += (name, address) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                App.AlertUser();
+                if (_services.CurrentGameAddress is null && Connecting is null)
+                {
+                    Connect(new ServerEntry(address) { Name = name });
+                }
+                else
+                {
+                    _regionOnlineAddress = address;
+                    _regionBannerIsSlot = true;
+                    RegionOnlineName = name;
+                    OnPropertyChanged(nameof(RegionBannerText));
+                }
             });
 
         // AccountName is a plain computed getter (Accounts.Active isn't observable on its own), so the
@@ -100,9 +134,31 @@ public partial class MainWindowViewModel : ViewModelBase
     // --- "watched region is back online" banner ---
 
     public bool ShowRegionBanner => RegionOnlineName is not null;
-    public string RegionBannerText => $"🟢  {RegionOnlineName} снова онлайн";
+    public string RegionBannerText => _regionBannerIsSlot
+        ? $"🟢  На {RegionOnlineName} освободилось место"
+        : $"🟢  {RegionOnlineName} снова онлайн";
 
-    partial void OnRegionOnlineNameChanged(string? value) => OnPropertyChanged(nameof(ShowRegionBanner));
+    // RegionBannerText too: it's computed, and without this the banner kept whatever it first read —
+    // "🟢   снова онлайн", with no region name in it.
+    partial void OnRegionOnlineNameChanged(string? value)
+    {
+        OnPropertyChanged(nameof(ShowRegionBanner));
+        OnPropertyChanged(nameof(RegionBannerText));
+    }
+
+    // --- "waiting for a free slot" banner ---
+
+    public bool ShowSlotWaitBanner => SlotWaitName is not null;
+    public string SlotWaitBannerText => $"⏳  Ждём место на {SlotWaitName} — подключим сами, как только освободится";
+
+    partial void OnSlotWaitNameChanged(string? value)
+    {
+        OnPropertyChanged(nameof(ShowSlotWaitBanner));
+        OnPropertyChanged(nameof(SlotWaitBannerText));
+    }
+
+    [RelayCommand]
+    private void CancelSlotWait() => _services.SlotWatch.Stop();
 
     [RelayCommand]
     private void ConnectOnlineRegion()

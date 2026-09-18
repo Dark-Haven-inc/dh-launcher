@@ -66,6 +66,30 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
         _ => "",
     };
 
+
+    /// <summary>Full by its own soft cap — offer to wait for a slot instead of bouncing off it.</summary>
+    public bool IsFull => IsOnline && SlotWatcher.IsFull(Entry.Players, Entry.SoftMaxPlayers);
+    public bool IsWaitingForSlot => services.SlotWatch.IsWatchingAddress(Address);
+    public bool CanWaitForSlot => IsFull || IsWaitingForSlot;
+    public string SlotLabel => IsWaitingForSlot ? "⏳ Ждём место — отменить" : "Ждать свободного места";
+
+    [RelayCommand]
+    private void WaitForSlot()
+    {
+        if (IsWaitingForSlot)
+            services.SlotWatch.Stop();
+        else
+            services.SlotWatch.Watch(Address, Name);
+        RefreshSlot();
+    }
+
+    public void RefreshSlot()
+    {
+        OnPropertyChanged(nameof(IsWaitingForSlot));
+        OnPropertyChanged(nameof(CanWaitForSlot));
+        OnPropertyChanged(nameof(SlotLabel));
+    }
+
     [RelayCommand] private void Select() => select(this);
 }
 

@@ -136,7 +136,7 @@ public partial class ConnectingViewModel : ViewModelBase
             IsBusy = false;
             var active = Steps.FirstOrDefault(s => s.State == StepState.Active);
             if (active is not null) active.State = StepState.Failed;
-            ErrorText = e.Message;
+            ErrorText = LaunchErrors.Describe(e);
         }
     }
 

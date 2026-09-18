@@ -110,6 +110,11 @@
 
                     <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="{Binding SelectedServer.SlotLabel}" Command="{Binding SelectedServer.WaitForSlotCommand}"
+                            IsVisible="{Binding SelectedServer.CanWaitForSlot}" />
+
+                    <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                             Command="{Binding SelectedServer.ToggleFavoriteCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding SelectedServer.IsFavorite, Converter={x:Static vm:FavGlyph.Instance}}" />
