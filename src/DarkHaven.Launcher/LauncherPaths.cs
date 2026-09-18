@@ -17,6 +17,12 @@ public static class LauncherPaths
     public static string HubCachePath => Path.Combine(DataDir, "hub-cache.json");
     public static string NewsCachePath => Path.Combine(DataDir, "news-cache.json");
 
+    /// <summary>The game client's stdout/stderr from the latest launch (see <see cref="Update.ClientLog"/>).</summary>
+    public static string ClientLogPath => Path.Combine(LogsDir, "client.log");
+
+    /// <summary>The launch before that — kept so a retry doesn't wipe the log of the run that failed.</summary>
+    public static string PreviousClientLogPath => Path.Combine(LogsDir, "client.prev.log");
+
     /// <summary>The SS14 engine signing public key, shipped next to the launcher assembly.</summary>
     public static string SigningKeyPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "signing_key");

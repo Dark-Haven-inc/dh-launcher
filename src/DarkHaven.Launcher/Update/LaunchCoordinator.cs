@@ -37,6 +37,7 @@ public sealed class LaunchCoordinator(
         bool compatMode,
         IProgress<LaunchProgress>? progress = null,
         Action<ResolvedServerInfo>? onResolved = null,
+        ClientLog? clientLog = null,
         CancellationToken cancel = default)
     {
         void Step(LaunchStep s, StepState st, string d, double? f = null, double? bps = null, TimeSpan? eta = null)
@@ -108,7 +109,8 @@ public sealed class LaunchCoordinator(
 
         // 4 — start
         Step(LaunchStep.Start, StepState.Active, "");
-        var proc = game.Start(resolved, launch, account, compatMode);
+        var proc = game.Start(resolved, launch, account, compatMode, redirectOutput: clientLog is not null);
+        clientLog?.Attach(proc);
         Step(LaunchStep.Start, StepState.Done, "клиент запущен");
 
         return proc;

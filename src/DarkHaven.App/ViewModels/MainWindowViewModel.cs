@@ -196,7 +196,16 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var vm = new ConnectingViewModel(_services, server);
-        vm.Finished += () => Connecting = null;
+        // Guarded: a card that closes late must not take down a newer connection's overlay.
+        vm.Finished += () => { if (Connecting == vm) Connecting = null; };
+        // The game died right after launch, after this card had already stepped aside — bring it
+        // back with the reason, unless the player is already busy connecting somewhere else.
+        vm.Reopen += () =>
+        {
+            if (Connecting is null)
+                Connecting = vm;
+            App.AlertUser();
+        };
         Connecting = vm;
         vm.Start();
     }

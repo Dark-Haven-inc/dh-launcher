@@ -84,6 +84,12 @@ public partial class App : Application
         }
     }
 
+    public static async Task CopyToClipboardAsync(string text)
+    {
+        if (MainWindow()?.Clipboard is { } clipboard)
+            await clipboard.SetTextAsync(text);
+    }
+
     /// <summary>Draw attention to the launcher when something happens while it's in the background
     /// (a watched region came online). Flashes the taskbar button on Windows; elsewhere just
     /// un-minimises so the in-window banner is visible.</summary>

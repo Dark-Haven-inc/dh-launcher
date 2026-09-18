@@ -41,6 +41,17 @@ dotnet publish (Join-Path $repo "src/DarkHaven.Loader/DarkHaven.Loader.csproj") 
     -o (Join-Path $pub "loader")
 if ($LASTEXITCODE) { throw "loader publish failed" }
 
+# 2b. Guard: Robust.LoaderApi is the ABI shared with the engine, and Robust.Client binds to exactly
+#     1.0.0.0. 0.2.2 and 0.2.3 shipped it restamped to the launcher version (a bare -p:Version flows
+#     into the submodule) and the game could not start for anyone. Never again: fail the build.
+$loaderApi = Join-Path $pub "loader/Robust.LoaderApi.dll"
+if (-not (Test-Path $loaderApi)) { throw "loader/Robust.LoaderApi.dll is missing from the publish output" }
+$loaderApiVersion = [System.Reflection.AssemblyName]::GetAssemblyName($loaderApi).Version
+if ($loaderApiVersion -ne [version]"1.0.0.0") {
+    throw "Robust.LoaderApi is $loaderApiVersion, the engine needs 1.0.0.0 - something passed a bare -p:Version again (use -p:LauncherVersion)"
+}
+Write-Host "-- Robust.LoaderApi $loaderApiVersion OK" -ForegroundColor DarkGreen
+
 # 3. Sanity: the forked engine must be bundled or nobody can connect to Frontier 15.
 #    Every version in manifest.json must have its file present with a matching SHA-256.
 $bundledDir = Join-Path $pub "bundled-engines"

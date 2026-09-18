@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.Launcher;
 using DarkHaven.Launcher.Servers;
 using DarkHaven.Launcher.Update;
 using Serilog;
@@ -22,20 +23,30 @@ public partial class ChecklistStepViewModel(LaunchStep step, string title) : Vie
     public bool IsActive => State == StepState.Active;
     public bool IsDone => State == StepState.Done;
     public bool IsPending => State == StepState.Pending;
+    public bool IsFailed => State == StepState.Failed;
 
     partial void OnStateChanged(StepState value)
     {
         OnPropertyChanged(nameof(IsActive));
         OnPropertyChanged(nameof(IsDone));
         OnPropertyChanged(nameof(IsPending));
+        OnPropertyChanged(nameof(IsFailed));
     }
 }
 
 public partial class ConnectingViewModel : ViewModelBase
 {
+    /// <summary>
+    /// A non-zero exit within this long of launch means "the game didn't start" rather than "the
+    /// player quit", and brings this card back with the client's own output.
+    /// </summary>
+    private static readonly TimeSpan EarlyExitWindow = TimeSpan.FromSeconds(60);
+
     private readonly AppServices _services;
     private readonly ServerEntry _server;
     private readonly CancellationTokenSource _cts = new();
+    private ClientLog? _clientLog;
+    private bool _shown = true;
 
     [ObservableProperty] private string _title;
     [ObservableProperty] private string _subtitle = "";
@@ -48,6 +59,13 @@ public partial class ConnectingViewModel : ViewModelBase
     public bool HasError => ErrorText is not null;
     partial void OnErrorTextChanged(string? value) => OnPropertyChanged(nameof(HasError));
 
+    /// <summary>The client's last output lines, shown when the game dies right after launch.</summary>
+    [ObservableProperty] private string? _logTail;
+    [ObservableProperty] private string _copyLabel = "Скопировать лог";
+
+    public bool HasLogTail => LogTail is not null;
+    partial void OnLogTailChanged(string? value) => OnPropertyChanged(nameof(HasLogTail));
+
     public ObservableCollection<ChecklistStepViewModel> Steps { get; } =
     [
         new(LaunchStep.Engine, "Версия движка"),
@@ -57,6 +75,11 @@ public partial class ConnectingViewModel : ViewModelBase
     ];
 
     public event Action? Finished;
+
+    /// <summary>
+    /// The game died early after this card had already closed — the owner should show it again.
+    /// </summary>
+    public event Action? Reopen;
 
     public ConnectingViewModel(AppServices services, ServerEntry server)
     {
@@ -71,6 +94,11 @@ public partial class ConnectingViewModel : ViewModelBase
         var progress = new Progress<LaunchProgress>(p => Dispatcher.UIThread.Post(() => Apply(p)));
         _services.Discord.SetConnecting(_server.DisplayName);
 
+        // A fresh log per attempt; the previous one moves to client.prev.log, so a retry doesn't
+        // wipe the output of the run that actually failed.
+        _clientLog?.Dispose();
+        _clientLog = new ClientLog(LauncherPaths.ClientLogPath, LauncherPaths.PreviousClientLogPath);
+
         try
         {
             var compat = _services.Settings.GetConfig("CompatMode") == "true";
@@ -83,6 +111,7 @@ public partial class ConnectingViewModel : ViewModelBase
                     if (!_server.IsDarkHavenRegion && r.Info.Desc is null && _server.ServerName is { Length: > 0 } sn)
                         Title = sn;
                 }),
+                clientLog: _clientLog,
                 cancel: _cts.Token);
 
             try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
@@ -148,29 +177,74 @@ public partial class ConnectingViewModel : ViewModelBase
 
     private async Task WatchProcessAsync(Process proc)
     {
+        var sinceLaunch = Stopwatch.StartNew();
         var exited = proc.WaitForExitAsync();
+
+        // Give the client a moment; once it's clearly up, get out of the way. Watching continues —
+        // the 0.2.2 loader failure took a few seconds to surface, well after this card had closed.
         await Task.WhenAny(exited, Task.Delay(1500));
+        if (!proc.HasExited)
+            Dispatcher.UIThread.Post(Close);
+
+        // WaitForExitAsync also waits for the redirected output to drain, so the tail is complete.
+        await exited;
+        var code = proc.ExitCode;
+        var elapsed = sinceLaunch.Elapsed;
 
         Dispatcher.UIThread.Post(() =>
-        {
-            if (proc.HasExited && proc.ExitCode != 0)
-            {
-                _services.Discord.SetIdle();
-                IsBusy = false;
-                ErrorText = $"Клиент завершился с ошибкой (код {proc.ExitCode}). Смотрите лог лаунчера.";
-            }
-            else
-            {
-                Close();
-            }
-        });
-
-        _ = exited.ContinueWith(_ => Dispatcher.UIThread.Post(() =>
         {
             _services.Discord.SetIdle();
             _services.SetGameSession(null);
             App.SetGameRunning(false);
-        }), TaskScheduler.Default);
+
+            if (code != 0 && elapsed < EarlyExitWindow)
+            {
+                Log.Error("Game client exited {Code} after {Seconds:0.0}s, see {Log}",
+                    ClientLog.FormatExitCode(code), elapsed.TotalSeconds, _clientLog?.Path);
+                ShowEarlyExit(code, elapsed);
+            }
+            else if (_shown)
+            {
+                Close();
+            }
+
+            _clientLog?.Dispose();
+        });
+    }
+
+    private void ShowEarlyExit(int code, TimeSpan elapsed)
+    {
+        IsBusy = false;
+        SpeedEta = "";
+
+        var start = Steps.First(s => s.Step == LaunchStep.Start);
+        start.State = StepState.Failed;
+        start.Detail = "игра закрылась";
+
+        ErrorText = $"Игра закрылась через {Math.Max(1, (int)elapsed.TotalSeconds)} с после запуска: " +
+                    $"код {ClientLog.FormatExitCode(code)}, {ClientLog.DescribeExitCode(code)}.";
+        LogTail = _clientLog?.Tail() is { Length: > 0 } tail
+            ? tail
+            : "Игра ничего не вывела перед закрытием.";
+
+        if (!_shown)
+        {
+            _shown = true;
+            Reopen?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private async Task CopyLog()
+    {
+        var text = $"Frontier 15 Launcher {LauncherInfo.Version}{Environment.NewLine}" +
+                   $"Сервер: {_server.DisplayName} ({_server.Address}){Environment.NewLine}" +
+                   $"{ErrorText}{Environment.NewLine}{Environment.NewLine}{LogTail}";
+        await App.CopyToClipboardAsync(text);
+
+        CopyLabel = "Скопировано";
+        await Task.Delay(2000);
+        CopyLabel = "Скопировать лог";
     }
 
     [RelayCommand]
@@ -181,12 +255,17 @@ public partial class ConnectingViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Close() => Finished?.Invoke();
+    private void Close()
+    {
+        _shown = false;
+        Finished?.Invoke();
+    }
 
     [RelayCommand]
     private void Retry()
     {
         ErrorText = null;
+        LogTail = null;
         foreach (var s in Steps) { s.State = StepState.Pending; s.Detail = ""; s.ShowBar = false; }
         SpeedEta = "";
         IsBusy = true;
