@@ -21,6 +21,11 @@
             <Color x:Key="DhWarn">#F0B454</Color>
             <Color x:Key="DhDanger">#C6402E</Color>
             <Color x:Key="DhOffline">#5A6B8A</Color>
+            <!-- The Frontier 15 wordmark: silver "FRONTIER", red "15". Same values SectorMap.cs draws
+                 on its canvas (Lerp(Text, White, 0.25) and FrontierRed) — kept in sync by hand, since
+                 that one is painted in code rather than styled from XAML. -->
+            <Color x:Key="DhFrontierSilver">#E5ECF8</Color>
+            <Color x:Key="DhFrontierRed">#F0384C</Color>
 
             <SolidColorBrush x:Key="DhBgBrush" Color="{StaticResource DhBg}" />
             <SolidColorBrush x:Key="DhBgElevatedBrush" Color="{StaticResource DhBgElevated}" />
@@ -37,6 +42,8 @@
             <SolidColorBrush x:Key="DhWarnBrush" Color="{StaticResource DhWarn}" />
             <SolidColorBrush x:Key="DhDangerBrush" Color="{StaticResource DhDanger}" />
             <SolidColorBrush x:Key="DhOfflineBrush" Color="{StaticResource DhOffline}" />
+            <SolidColorBrush x:Key="DhFrontierSilverBrush" Color="{StaticResource DhFrontierSilver}" />
+            <SolidColorBrush x:Key="DhFrontierRedBrush" Color="{StaticResource DhFrontierRed}" />
 
             <FontFamily x:Key="DhMono">Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace</FontFamily>
         </ResourceDictionary>
