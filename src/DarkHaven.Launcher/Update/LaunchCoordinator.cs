@@ -86,7 +86,7 @@ public sealed class LaunchCoordinator(
             var remaining = bps > 1 && done > 0
                 ? TimeSpan.FromSeconds((total - done) * ((sw.Elapsed.TotalSeconds) / done))
                 : (TimeSpan?)null;
-            Step(LaunchStep.Content, StepState.Active, $"{done:N0} / {total:N0} файлов", frac, bps > 1 ? bps : null, remaining);
+            Step(LaunchStep.Content, StepState.Active, $"{RuText.Number(done)} / {RuText.Number(total)} файлов", frac, bps > 1 ? bps : null, remaining);
         }
 
         var launch = await content.UpdateAsync(build, OnDownload, cancel);

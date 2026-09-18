@@ -12,7 +12,10 @@
                 <Border Grid.Column="0" Width="92" Height="92" CornerRadius="46"
                         Background="{Binding FrameColors.FillBrush}"
                         BorderBrush="{Binding FrameColors.RingBrush}" BorderThickness="3">
-                    <Panel>
+                    <!-- A Border's CornerRadius only draws round; it doesn't clip what's inside, so a
+                         UniformToFill picture poked its square corners out of the ring. 86 = 92 - 2*3. -->
+                    <Panel Width="86" Height="86">
+                        <Panel.Clip><EllipseGeometry Rect="0,0,86,86" /></Panel.Clip>
                         <Image Source="{Binding Avatar}" IsVisible="{Binding HasAvatar}" Stretch="UniformToFill" />
                         <Image Source="/Assets/emblem.png" Margin="20" IsVisible="{Binding !HasAvatar}" />
                     </Panel>
@@ -70,6 +73,35 @@
                 </Border>
             </Grid>
 
+            <!-- Characters from the game DB, with Frontier bank balance (platform only) -->
+            <StackPanel Spacing="10" IsVisible="{Binding IsPlatformConnected}">
+                <TextBlock Text="ПЕРСОНАЖИ" Classes="caps" />
+                <TextBlock Text="{Binding CharactersNote}" Classes="dim" TextWrapping="Wrap"
+                           IsVisible="{Binding CharactersNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <ItemsControl ItemsSource="{Binding Characters}" IsVisible="{Binding HasCharacters}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CharacterRowViewModel">
+                            <Border Classes="card" Padding="14,10">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="ВЫБРАН" Classes="caps" FontSize="9" VerticalAlignment="Center"
+                                                       Foreground="{StaticResource DhOnlineBrush}" IsVisible="{Binding Selected}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Slot}" Classes="dim" FontSize="11" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding Balance}" FontSize="16" FontWeight="Bold"
+                                               VerticalAlignment="Center" FontFamily="{StaticResource DhMono}"
+                                               Foreground="{StaticResource DhWarnBrush}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
             <!-- Per-server playtime -->
             <StackPanel Spacing="10">
                 <TextBlock Text="ВРЕМЯ ПО СЕРВЕРАМ" Classes="caps" />
@@ -119,7 +151,7 @@
                     Command="{Binding ManageAccountsCommand}" />
 
             <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding IsPlatformConnected}"
-                       Text="🌐 Наигранное синхронизировано с сетью Frontier 15. Друзья и уведомления — следующий шаг." />
+                       Text="🌐 Наигранное и персонажи — с сервера Frontier 15. Друзья — на главной, уведомления — под колокольчиком вверху." />
             <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !IsPlatformConnected}"
                        Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Frontier 15." />
         </StackPanel>

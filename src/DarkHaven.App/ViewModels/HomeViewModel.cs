@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher.Data;
 using DarkHaven.Launcher.Servers;
+using DarkHaven.Launcher;
 
 namespace DarkHaven.App.ViewModels;
 
@@ -11,6 +12,8 @@ public partial class HomeViewModel(
     AppServices services, Action<ServerEntry> connect, Action goRegions, Action goServers) : ViewModelBase
 {
     [ObservableProperty] private RecentServer? _continueServer;
+
+    public FriendsViewModel Friends { get; } = new(services, connect);
 
     public ObservableCollection<RecentServer> Recent { get; } = [];
     public ObservableCollection<FavoriteServerEntry> Favorites { get; } = [];
@@ -94,7 +97,7 @@ public sealed partial class NewsItemViewModel(DhNewsItem item)
                 1 => "вчера",
                 < 7 => $"{days} дн. назад",
                 < 31 => $"{days / 7} нед. назад",
-                _ => d.ToString("d MMMM yyyy"),
+                _ => RuText.Date(d),
             };
         }
     }

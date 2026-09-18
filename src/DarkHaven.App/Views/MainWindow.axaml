@@ -38,6 +38,25 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="ghost" Padding="10,6" ToolTip.Tip="Уведомления"
+                                IsVisible="{Binding Notifications.IsAvailable}">
+                            <Panel>
+                                <PathIcon Data="{StaticResource DhBellGeometry}" Width="15" Height="15"
+                                          Foreground="{StaticResource DhTextBrush}" />
+                                <Border Background="{StaticResource DhDangerBrush}" CornerRadius="7"
+                                        MinWidth="14" Height="14" Padding="3,0" Margin="0,-7,-9,0"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        IsVisible="{Binding Notifications.HasUnread}">
+                                    <TextBlock Text="{Binding Notifications.BadgeText}" FontSize="9" FontWeight="Bold"
+                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Panel>
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="dh">
+                                    <views:NotificationsPanel DataContext="{Binding Notifications}" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
                         <Button Classes="ghost" Content="Discord" Command="{Binding OpenDiscordCommand}" />
                         <Button Classes="ghost" Content="Сайт" Command="{Binding OpenSiteCommand}" />
                         <Button Classes="ghost" Command="{Binding OpenAccountCommand}">

@@ -3,6 +3,7 @@ using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher.Api;
+using DarkHaven.Launcher;
 
 namespace DarkHaven.App.ViewModels;
 
@@ -12,7 +13,7 @@ public sealed class AdminNewsRowViewModel(PlatformNewsAdmin n)
     public string Title => n.Title;
     public string Body => n.BodyMarkdown;
     public bool Draft => n.Draft;
-    public string DateText => n.PublishedAt.ToLocalTime().ToString("d MMM yyyy");
+    public string DateText => RuText.ShortDate(n.PublishedAt.ToLocalTime());
 }
 
 public sealed class AdminBanRowViewModel(PlatformBan b)
@@ -21,8 +22,8 @@ public sealed class AdminBanRowViewModel(PlatformBan b)
     public string Username => b.Username;
     public string Reason => b.Reason;
     public bool Active => b.Active;
-    public string ExpiryText => b.ExpiresAt is { } e ? $"до {e.ToLocalTime():d MMM yyyy}" : "навсегда";
-    public string IssuedText => $"выдал {b.IssuedByUsername} · {b.IssuedAt.ToLocalTime():d MMM yyyy}";
+    public string ExpiryText => b.ExpiresAt is { } e ? $"до {RuText.ShortDate(e.ToLocalTime())}" : "навсегда";
+    public string IssuedText => $"выдал {b.IssuedByUsername} · {RuText.ShortDate(b.IssuedAt.ToLocalTime())}";
 }
 
 public sealed class AdminRoleRowViewModel(PlatformRole r)
@@ -38,7 +39,7 @@ public sealed class AdminAuditRowViewModel(PlatformAuditEntry a)
     public string Action => a.Action;
     public string? TargetUsername => a.TargetUsername;
     public string Details => a.Details;
-    public string WhenText => a.At.ToLocalTime().ToString("d MMM yyyy HH:mm");
+    public string WhenText => RuText.ShortDateTime(a.At.ToLocalTime());
 }
 
 public sealed class AdminChatMessageViewModel(PlatformChatMessage m)

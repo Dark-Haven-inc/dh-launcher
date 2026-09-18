@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using System.Net.Http;
 using DarkHaven.ContentDb;
 using DarkHaven.Launcher;
@@ -35,6 +36,7 @@ public sealed class AppServices : IDisposable
 
     /// <summary>The <c>ss14://</c> address of the server the player is currently in, or null.</summary>
     public string? CurrentGameAddress { get; private set; }
+    public string? CurrentGameName { get; private set; }
     public event Action? GameSessionChanged;
 
     private long _playSessionId;
@@ -59,6 +61,7 @@ public sealed class AppServices : IDisposable
         }
 
         CurrentGameAddress = address;
+        CurrentGameName = address is null ? null : name;
         GameSessionChanged?.Invoke();
     }
 
@@ -141,11 +144,59 @@ public sealed class AppServices : IDisposable
         Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
         Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
 
+        StartPresenceHeartbeat();
         _ = SignInToPlatformAsync();
     }
 
+    // --- Presence heartbeat: tells friends "running, and playing here" (see dh-platform's PresenceController) ---
+
+    private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// The platform JWT lives an hour; re-sign-in comfortably before that, or a launcher left open
+    /// would silently drop off friends' lists and stop receiving notifications.
+    /// </summary>
+    private static readonly TimeSpan PlatformSessionRenewAfter = TimeSpan.FromMinutes(45);
+
+    private DispatcherTimer? _heartbeat;
+
+    /// <summary>
+    /// A DispatcherTimer rather than a thread-pool one on purpose: re-signing in raises
+    /// PlatformSessionChanged, whose handlers touch bound view-model properties.
+    /// </summary>
+    private void StartPresenceHeartbeat()
+    {
+        PlatformSessionChanged += () => _ = SendPresenceAsync();
+        GameSessionChanged += () => _ = SendPresenceAsync();
+
+        _heartbeat = new DispatcherTimer { Interval = HeartbeatInterval };
+        _heartbeat.Tick += async (_, _) =>
+        {
+            if (Platform.IsSignedIn && Platform.SignedInAt is { } at && DateTimeOffset.UtcNow - at > PlatformSessionRenewAfter)
+                await SignInToPlatformAsync(); // raises PlatformSessionChanged, which sends presence
+            else
+                await SendPresenceAsync();
+        };
+        _heartbeat.Start();
+    }
+
+    private Task SendPresenceAsync() =>
+        Platform.IsSignedIn
+            ? Platform.UpdatePresenceAsync(CurrentGameAddress, CurrentGameName)
+            : Task.CompletedTask;
+
     public void Dispose()
     {
+        _heartbeat?.Stop();
+        if (Platform.IsSignedIn)
+        {
+            // Drop off friends' lists now rather than after the platform's 5-minute window. Off the
+            // UI thread, so the shutdown wait can't deadlock on the dispatcher; capped so a dead
+            // platform can't hold up closing the launcher.
+            try { Task.Run(() => Platform.ClearPresenceAsync()).Wait(TimeSpan.FromSeconds(2)); }
+            catch { /* best effort */ }
+        }
+
         RegionWatch.Dispose();
         Discord.Dispose();
         Http.Dispose();

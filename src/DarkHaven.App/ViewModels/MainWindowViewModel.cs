@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ProfileViewModel Profile { get; }
     public SettingsViewModel Settings { get; }
     public AdminViewModel Admin { get; }
+    public NotificationsViewModel Notifications { get; }
 
     /// <summary>Signed-in account name for the top bar, or null.</summary>
     public string? AccountName => _services.Accounts.Active?.Username ?? _services.Accounts.Accounts.FirstOrDefault()?.Username;
@@ -49,6 +50,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Profile = new ProfileViewModel(services, () => Page = NavPage.Account);
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel(services);
+        Notifications = new NotificationsViewModel(services);
 
         _services.RegionWatch.CameOnline += (name, address) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>

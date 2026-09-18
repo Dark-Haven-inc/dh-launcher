@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DarkHaven.Launcher;
+using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Data;
 
 namespace DarkHaven.App.ViewModels;
@@ -19,6 +20,15 @@ public sealed class PlaytimeRowViewModel(PlaytimeEntry e, long max)
 
 /// <summary>ПРОФИЛЬ — a local player card: avatar/frame, total + per-server playtime, favourites.
 /// Everything here is tracked by the launcher itself; server-synced data waits on the DH backend.</summary>
+public sealed class CharacterRowViewModel(PlatformCharacter c)
+{
+    public string Name => c.Name;
+    public string Slot => $"слот {c.Slot + 1}";
+    public bool Selected => c.Selected;
+    /// <summary>Frontier's spesos, written the way the game's own bank UI does: a dollar sign.</summary>
+    public string Balance => "$" + RuText.Number(c.BankBalance);
+}
+
 public partial class ProfileViewModel(AppServices services, Action openAccounts) : ViewModelBase
 {
     private static readonly string[] Frames = ["none", "blue", "gold", "cyan"];
@@ -41,6 +51,11 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
     [ObservableProperty] private bool _discordLinkRequesting;
 
     public ObservableCollection<PlaytimeRowViewModel> Servers { get; } = [];
+
+    /// <summary>The player's characters from the game DB, with bank balance — platform only.</summary>
+    public ObservableCollection<CharacterRowViewModel> Characters { get; } = [];
+    [ObservableProperty] private string? _charactersNote;
+    public bool HasCharacters => Characters.Count > 0;
 
     public string AccountName => services.Accounts.Active?.Username
                                  ?? services.Accounts.Accounts.FirstOrDefault()?.Username
@@ -69,7 +84,7 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
             var total = services.Settings.GetTotalPlaytimeSeconds();
             TotalPlaytime = total > 0 ? FormatDuration(total) : "ещё не играл";
             MemberSince = services.Settings.GetFirstPlayed() is { } d
-                ? d.ToLocalTime().ToString("d MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"))
+                ? RuText.Date(d.ToLocalTime())
                 : "—";
 
             var by = services.Settings.GetPlaytimeByServer();
@@ -115,12 +130,26 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
             if (p.PlaytimeSource == "game-server")
                 TotalPlaytime = p.TotalPlaytimeSeconds > 0 ? FormatDuration(p.TotalPlaytimeSeconds) : "ещё не играл";
 
-            MemberSince = p.MemberSince.ToLocalTime().ToString("d MMMM yyyy", new System.Globalization.CultureInfo("ru-RU"));
+            MemberSince = RuText.Date(p.MemberSince.ToLocalTime());
 
             LauncherBanned = p.LauncherBanned;
             LauncherBanText = !p.LauncherBanned ? null : p.LauncherBanExpires is { } exp
-                ? $"Бан на лаунчере до {exp.ToLocalTime():d MMMM yyyy} — {p.LauncherBanReason}"
+                ? $"Бан на лаунчере до {RuText.Date(exp.ToLocalTime())} — {p.LauncherBanReason}"
                 : $"Бан на лаунчере навсегда — {p.LauncherBanReason}";
+
+            var chars = await services.Platform.GetCharactersAsync();
+            Characters.Clear();
+            if (chars is { Source: "game-server" })
+            {
+                foreach (var c in chars.Characters)
+                    Characters.Add(new CharacterRowViewModel(c));
+                CharactersNote = Characters.Count == 0 ? "На сервере у вас пока нет персонажей." : null;
+            }
+            else
+            {
+                CharactersNote = "Персонажи и их баланс появятся, когда платформа подключится к игровой базе.";
+            }
+            OnPropertyChanged(nameof(HasCharacters));
         }
         catch { /* platform unreachable — local data already shown, nothing more to do */ }
     }

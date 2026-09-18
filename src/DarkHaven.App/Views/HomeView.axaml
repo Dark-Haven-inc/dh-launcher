@@ -2,11 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:data="using:DarkHaven.Launcher.Data"
+             xmlns:views="using:DarkHaven.App.Views"
              x:Class="DarkHaven.App.Views.HomeView"
              x:DataType="vm:HomeViewModel">
 
     <ScrollViewer>
-        <StackPanel Margin="40,36" Spacing="22" MaxWidth="680" HorizontalAlignment="Left">
+      <!-- Friends sit in their own column on the right, only once the platform is there. -->
+      <Grid Margin="40,36" ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="22" MaxWidth="680" HorizontalAlignment="Left">
 
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Greeting}" Classes="h1" />
@@ -18,7 +21,8 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
                         <TextBlock Text="ПРОДОЛЖИТЬ" Classes="caps" />
-                        <TextBlock Text="{Binding ContinueServer.Name}" FontSize="18" FontWeight="Bold" />
+                        <TextBlock Text="{Binding ContinueServer.Name}" FontSize="18" FontWeight="Bold"
+                                   TextTrimming="CharacterEllipsis" Margin="0,0,16,0" />
                         <TextBlock Text="{Binding ContinueServer.Address}" Classes="dim mono" FontSize="11" />
                     </StackPanel>
                     <Button Grid.Column="1" Classes="primary" Content="ПОДКЛЮЧИТЬСЯ" VerticalAlignment="Center"
@@ -83,8 +87,14 @@
                 </ItemsControl>
             </StackPanel>
 
-            <TextBlock Classes="dim" TextWrapping="Wrap"
+            <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding !Friends.IsAvailable}"
                        Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Frontier 15." />
         </StackPanel>
+
+        <Panel Grid.Column="1" Width="310" Margin="28,0,0,0" VerticalAlignment="Top"
+               IsVisible="{Binding Friends.IsAvailable}">
+            <views:FriendsPanel DataContext="{Binding Friends}" />
+        </Panel>
+      </Grid>
     </ScrollViewer>
 </UserControl>

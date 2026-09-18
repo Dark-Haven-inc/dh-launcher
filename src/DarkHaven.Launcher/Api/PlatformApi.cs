@@ -14,6 +14,12 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 {
     public bool IsConfigured => !string.IsNullOrWhiteSpace(baseUrl);
     public bool IsSignedIn => _jwt is not null;
+
+    /// <summary>
+    /// When the current platform JWT was issued. It lives an hour (the platform's JwtHelper.Lifetime),
+    /// so a launcher left open longer has to sign in again — see AppServices' heartbeat.
+    /// </summary>
+    public DateTimeOffset? SignedInAt { get; private set; }
     public IReadOnlyList<string> Roles { get; private set; } = [];
     public bool CanAdmin => Roles.Contains("admin") || Roles.Contains("owner");
     public bool CanModerate => CanAdmin || Roles.Contains("moderator");
@@ -51,6 +57,7 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
             var body = await res.Content.ReadFromJsonAsync<SessionResponse>(LauncherJson.Options, cancel);
             _jwt = body?.Token;
             Roles = body?.Roles ?? [];
+            SignedInAt = _jwt is null ? null : DateTimeOffset.UtcNow;
             return _jwt is not null;
         }
         catch (Exception e)
@@ -64,13 +71,72 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     {
         _jwt = null;
         Roles = [];
+        SignedInAt = null;
     }
+
+    // --- Friends & presence ---
+
+    public Task<PlatformFriends?> GetFriendsAsync(CancellationToken cancel = default) =>
+        GetAuthed<PlatformFriends>("/api/friends", cancel);
+
+    /// <summary>
+    /// Sends a friend request by SS14 username. Returns the platform's own message on failure
+    /// ("no such player", "already friends", …) so the UI can show it as-is.
+    /// </summary>
+    public async Task<(bool Ok, string Message)> SendFriendRequestAsync(string username, CancellationToken cancel = default)
+    {
+        if (_jwt is null) return (false, "Нет связи с платформой Frontier 15.");
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/friends/request"))
+            {
+                Content = JsonContent.Create(new { username }, options: LauncherJson.Options),
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            var res = await http.SendAsync(req, cancel);
+
+            FriendRequestResult? body = null;
+            try { body = await res.Content.ReadFromJsonAsync<FriendRequestResult>(LauncherJson.Options, cancel); }
+            catch (Exception) { /* not every error response has a JSON body */ }
+
+            if (res.IsSuccessStatusCode)
+                return (true, body?.Status == "accepted" ? "Вы теперь друзья." : "Заявка отправлена.");
+            return (false, body?.Error ?? $"Не получилось (код {(int)res.StatusCode}).");
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Friend request failed");
+            return (false, "Нет связи с платформой Frontier 15.");
+        }
+    }
+
+    public async Task<bool> AcceptFriendAsync(int friendshipId, CancellationToken cancel = default) =>
+        await PostAuthed($"/api/friends/{friendshipId}/accept", new { }, cancel);
+
+    /// <summary>Unfriend, decline an incoming request, or cancel an outgoing one.</summary>
+    public async Task<bool> RemoveFriendAsync(int friendshipId, CancellationToken cancel = default) =>
+        await DeleteAuthed($"/api/friends/{friendshipId}", cancel);
+
+    /// <summary>Heartbeat: running, and playing on <paramref name="serverAddress"/> if not null.</summary>
+    public async Task<bool> UpdatePresenceAsync(string? serverAddress, string? serverName, CancellationToken cancel = default) =>
+        await PutAuthed("/api/presence", new { serverAddress, serverName }, cancel);
+
+    public async Task<bool> ClearPresenceAsync(CancellationToken cancel = default) =>
+        await DeleteAuthed("/api/presence", cancel);
+
+    /// <summary>The player's own characters and their Frontier bank balance, from the game DB.</summary>
+    public Task<PlatformCharacters?> GetCharactersAsync(CancellationToken cancel = default) =>
+        GetAuthed<PlatformCharacters>("/api/profile/me/characters", cancel);
 
     public Task<PlatformProfile?> GetProfileAsync(CancellationToken cancel = default) =>
         GetAuthed<PlatformProfile>("/api/profile/me", cancel);
 
+    /// <summary>Unread notifications only (bans, warnings, admin announcements), newest first.</summary>
     public Task<IReadOnlyList<PlatformNotification>> GetNotificationsAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformNotification>("/api/notifications", cancel);
+
+    public async Task<bool> MarkNotificationReadAsync(int id, CancellationToken cancel = default) =>
+        await PostAuthed($"/api/notifications/{id}/read", new { }, cancel);
 
     public async Task<bool> UpdateProfileAsync(string? frame, string? title, string? avatarUrl, CancellationToken cancel = default)
     {
@@ -287,6 +353,19 @@ public sealed record PlatformProfile(
     string? DiscordId, string? DiscordAvatar, DateTimeOffset MemberSince,
     long TotalPlaytimeSeconds, string PlaytimeSource,
     bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
+
+public sealed record PlatformFriend(
+    int Id, Guid UserId, string Username, string Frame, bool Online, string? ServerName, string? ServerAddress);
+
+public sealed record PlatformFriends(
+    PlatformFriend[] Friends, PlatformFriend[] IncomingRequests, PlatformFriend[] OutgoingRequests);
+
+internal sealed record FriendRequestResult(string? Status, string? Error);
+
+public sealed record PlatformCharacter(int Slot, string Name, int BankBalance, bool Selected);
+
+/// <summary><c>Source</c> is "game-server", or "unavailable" when the platform has no game DB access.</summary>
+public sealed record PlatformCharacters(string Source, PlatformCharacter[] Characters);
 
 public sealed record PlatformNotification(int Id, Guid UserId, string Kind, string Text, DateTimeOffset CreatedAt, bool Read);
 
