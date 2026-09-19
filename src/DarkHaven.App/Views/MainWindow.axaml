@@ -13,6 +13,7 @@
         <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
         <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
         <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
         <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
@@ -118,7 +119,7 @@
             <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgElevatedBrush}"
                     BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Height="52">
                 <Grid Margin="20,0" ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding VersionLine}" Classes="mono dim"
+                    <TextBlock Grid.Column="0" Text="{Binding VersionLine}" Classes="mono dim" TextTrimming="CharacterEllipsis"
                                VerticalAlignment="Center" FontSize="10" />
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Button Classes="tab" Content="ГЛАВНАЯ" Command="{Binding NavigateCommand}"
@@ -130,6 +131,9 @@
                         <Button Classes="tab" Content="СЕРВЕРЫ" Command="{Binding NavigateCommand}"
                                 CommandParameter="{x:Static vm:NavPage.Servers}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}" />
+                        <Button Classes="tab" Content="МОНИТОРИНГ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Monitoring}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}" />
                         <Button Classes="tab" Content="НОВОСТИ" Command="{Binding NavigateCommand}"
                                 CommandParameter="{x:Static vm:NavPage.News}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}" />

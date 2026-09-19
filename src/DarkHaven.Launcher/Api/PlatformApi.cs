@@ -74,6 +74,32 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
         SignedInAt = null;
     }
 
+    // --- МОНИТОРИНГ (public — works without an account) ---
+
+    public async Task<IReadOnlyList<MonitoredServer>> GetMonitoredServersAsync(CancellationToken cancel = default) =>
+        await GetPublic<MonitoredServer[]>("/api/monitoring", cancel) ?? [];
+
+    /// <summary><paramref name="range"/>: "24h", "7d" or "30d".</summary>
+    public Task<OnlineHistory?> GetOnlineHistoryAsync(string region, string range, CancellationToken cancel = default) =>
+        GetPublic<OnlineHistory>($"/api/monitoring/{Uri.EscapeDataString(region)}/history?range={Uri.EscapeDataString(range)}", cancel);
+
+    private async Task<T?> GetPublic<T>(string path, CancellationToken cancel)
+    {
+        if (!IsConfigured) return default;
+        try
+        {
+            using var res = await http.GetAsync(Url(path), cancel);
+            return res.IsSuccessStatusCode
+                ? await res.Content.ReadFromJsonAsync<T>(LauncherJson.Options, cancel)
+                : default;
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Platform GET {Path} failed", path);
+            return default;
+        }
+    }
+
     // --- Friends & presence ---
 
     public Task<PlatformFriends?> GetFriendsAsync(CancellationToken cancel = default) =>
@@ -443,6 +469,18 @@ public sealed record PlatformPublicProfile(
     string Frame, string? Title, DateTimeOffset MemberSince);
 
 internal sealed record UploadResult(string? Url);
+
+/// <summary>A monitored region and its last recorded minute (all null before the first sample).</summary>
+public sealed record MonitoredServer(
+    string Region, string Address, bool? Online, int? Players, int? MaxPlayers,
+    string? Map, string? Preset, int? RoundId, DateTimeOffset? At);
+
+/// <summary>One bucket: average/peak over the minutes the server was up (null = down or no data).</summary>
+public sealed record OnlinePoint(DateTimeOffset At, double? Average, int? Peak, double? Uptime);
+
+public sealed record OnlineSummary(int? Peak, DateTimeOffset? PeakAt, double? Average, double? UptimePercent, int Samples);
+
+public sealed record OnlineHistory(string Region, string Range, int BucketMinutes, OnlinePoint[] Points, OnlineSummary Summary);
 
 public sealed record PlatformFriend(
     int Id, Guid UserId, string Username, string Frame, bool Online, string? ServerName, string? ServerAddress,

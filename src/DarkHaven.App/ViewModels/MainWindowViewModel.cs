@@ -5,7 +5,7 @@ using DarkHaven.Launcher.Update;
 
 namespace DarkHaven.App.ViewModels;
 
-public enum NavPage { Home, Regions, Servers, News, Settings, Admin, Account, Profile }
+public enum NavPage { Home, Regions, Servers, Monitoring, News, Settings, Admin, Account, Profile }
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -34,6 +34,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public SettingsViewModel Settings { get; }
     public AdminViewModel Admin { get; }
     public NotificationsViewModel Notifications { get; }
+    public MonitoringViewModel Monitoring { get; }
 
     /// <summary>Signed-in account name for the top bar, or null.</summary>
     public string? AccountName => _services.Accounts.Active?.Username ?? _services.Accounts.Accounts.FirstOrDefault()?.Username;
@@ -55,6 +56,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel(services);
         Notifications = new NotificationsViewModel(services);
+        Monitoring = new MonitoringViewModel(services, Connect);
 
         _services.RegionWatch.CameOnline += (name, address) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -218,6 +220,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnPageChanged(NavPage value)
     {
+        // МОНИТОРИНГ polls servers every few seconds — only while it's on screen.
+        if (value == NavPage.Monitoring)
+            Monitoring.Activate();
+        else
+            Monitoring.Deactivate();
+
         if (value == NavPage.Home)
             Home.Reload();
         else if (value == NavPage.Profile)
@@ -232,6 +240,7 @@ public partial class MainWindowViewModel : ViewModelBase
             NavPage.Home => Home,
             NavPage.Regions => Regions,
             NavPage.Servers => Servers,
+            NavPage.Monitoring => Monitoring,
             NavPage.News => News,
             NavPage.Settings => Settings,
             NavPage.Admin => Admin,

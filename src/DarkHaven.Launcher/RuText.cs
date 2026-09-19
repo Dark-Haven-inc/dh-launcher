@@ -26,6 +26,13 @@ public static class RuText
     /// <summary>"18 сен 2026" — for dense lists.</summary>
     public static string ShortDate(DateTimeOffset d) => $"{d.Day} {MonthsShort[d.Month - 1]} {d.Year}";
 
+    /// <summary>"18 сен, 21:05" — a moment within the last month, where the year goes without saying.</summary>
+    public static string DayTime(DateTimeOffset d) =>
+        $"{d.Day} {MonthsShort[d.Month - 1]}, {d.ToString("HH:mm", CultureInfo.InvariantCulture)}";
+
+    /// <summary>"18 сен".</summary>
+    public static string DayMonth(DateTimeOffset d) => $"{d.Day} {MonthsShort[d.Month - 1]}";
+
     /// <summary>"18 сен 2026 21:05".</summary>
     public static string ShortDateTime(DateTimeOffset d) =>
         $"{ShortDate(d)} {d.ToString("HH:mm", CultureInfo.InvariantCulture)}";

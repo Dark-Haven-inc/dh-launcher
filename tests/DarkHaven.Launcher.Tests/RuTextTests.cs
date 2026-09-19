@@ -19,6 +19,8 @@ public class RuTextTests
         Assert.Equal("18 сентября 2026", RuText.Date(new DateTimeOffset(2026, 9, 18, 21, 5, 0, TimeSpan.Zero)));
         Assert.Equal("1 мая 2026", RuText.Date(new DateOnly(2026, 5, 1)));
         Assert.Equal("31 дек 2025 23:59", RuText.ShortDateTime(new DateTimeOffset(2025, 12, 31, 23, 59, 0, TimeSpan.Zero)));
+        Assert.Equal("5 мар, 07:05", RuText.DayTime(new DateTimeOffset(2026, 3, 5, 7, 5, 0, TimeSpan.Zero)));
+        Assert.Equal("5 мар", RuText.DayMonth(new DateTimeOffset(2026, 3, 5, 7, 5, 0, TimeSpan.Zero)));
     }
 
     [Theory]
