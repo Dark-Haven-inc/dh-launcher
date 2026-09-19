@@ -109,6 +109,7 @@ public sealed class SectorMap : Control
 
     // Legend/hint text never changes at runtime — no reason to re-measure it on every repaint.
     private readonly FormattedText _hintText;
+    private FormattedText _scaleText;
     private readonly FormattedText _legendOnlineText, _legendOfflineText, _legendQuarantineText;
 
     // Busy scenes (the РУхаб region map, dozens of dots) skip the secondary diagonal sparkle rays —
@@ -178,7 +179,8 @@ public sealed class SectorMap : Control
                 rng.NextDouble() * 0.6 + 0.2,
                 rng.NextDouble() * 6.28);
 
-        _hintText = Fmt("тащить — двигать · колесо — масштаб", Color.Parse("#5A6B8A"), 9, false);
+        _hintText = Fmt("тащить — двигать · колесо — масштаб", Color.Parse("#5A6B8A"), 14, false);
+        _scaleText = Fmt($"{345}%",Color.Parse("#5A6B8A"),14, false);
         _legendOnlineText = Fmt("онлайн", Dim, 9.5, false);
         _legendOfflineText = Fmt("офлайн", Dim, 9.5, false);
         _legendQuarantineText = Fmt("карантин", Dim, 9.5, false);
@@ -335,6 +337,7 @@ public sealed class SectorMap : Control
         // room is to push nodes further apart on screen — i.e. start zoomed in close, not fitted
         // wide. The player pans/wheel-zooms from here; wheel zoom's own range (0.5–4.0) is untouched.
         _targetScale = _scale = Math.Clamp(2.2 / Math.Max(spanX, spanY), 1.8, 3.8);
+		ScaleTextUpdate();
 
         var mid = ToScreen(new Point((minX + maxX) / 2, (minY + maxY) / 2));
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
@@ -414,7 +417,13 @@ public sealed class SectorMap : Control
         var c = new Point(Bounds.Width / 2, Bounds.Height / 2);
         _zoomAnchorLocal = new Point((cursor.X - c.X - _pan.X) / (BasePx * _scale), (cursor.Y - c.Y - _pan.Y) / (BasePx * _scale));
         _targetScale = Math.Clamp(_targetScale * (e.Delta.Y > 0 ? 1.16 : 1 / 1.16), 0.5, 4.0);
+        ScaleTextUpdate();
         e.Handled = true;
+    }
+
+    private void ScaleTextUpdate()
+    {
+        _scaleText = Fmt($"{Math.Round(_targetScale * 100)}%",Color.Parse("#5A6B8A"),14, false);
     }
 
     private IMapNode? HitTest(Point screen)
@@ -902,6 +911,7 @@ public sealed class SectorMap : Control
             x += 13 + t.Width + 16;
         }
         ctx.DrawText(_hintText, new Point(b.Width - _hintText.Width - 14, b.Height - _hintText.Height - 12));
+        ctx.DrawText(_scaleText, new Point(b.Width - _scaleText.Width - 14, b.Height - _scaleText.Height - 24));
     }
 
     // --- helpers ---
