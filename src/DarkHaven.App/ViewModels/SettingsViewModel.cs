@@ -40,7 +40,7 @@ public partial class SettingsViewModel : ViewModelBase
         _authUrl = services.Settings.GetConfig("AuthUrl") ?? AuthApi.DefaultBaseUrl;
         _buildsUrl = services.Settings.GetConfig("EngineBuildsUrl") ?? EngineManager.BuildsManifestUrl;
         _regionsUrl = services.Settings.GetConfig("RegionsUrl") ?? "";
-        _platformUrl = services.Settings.GetConfig("PlatformApiUrl") ?? "";
+        _platformUrl = services.Settings.GetConfig("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
         _discordAppId = services.Settings.GetConfig("DiscordAppId") ?? "";
         ApplyVerboseLog(_verboseLog);
         _ = LoadCacheSummaryAsync();

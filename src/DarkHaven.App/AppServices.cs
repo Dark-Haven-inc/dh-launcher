@@ -131,7 +131,7 @@ public sealed class AppServices : IDisposable
         RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
         RegionWatch.EnsureRunning();
 
-        var platformUrl = Settings.GetConfig("PlatformApiUrl");
+        var platformUrl = Settings.GetConfig("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
         Platform = new PlatformApi(Http, platformUrl);
         Images = new RemoteImages(Platform);
         // The platform's own /api/news is a drop-in for the bundled news.json (same shape) —

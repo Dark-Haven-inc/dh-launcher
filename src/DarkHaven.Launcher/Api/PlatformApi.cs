@@ -12,6 +12,9 @@ namespace DarkHaven.Launcher.Api;
 /// </summary>
 public sealed class PlatformApi(HttpClient http, string? baseUrl)
 {
+    /// <summary>The live platform, on the game server's host (dh-platform's DEPLOY.md).</summary>
+    public const string DefaultBaseUrl = "https://api.dark-haven.xyz";
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(baseUrl);
     public bool IsSignedIn => _jwt is not null;
 
