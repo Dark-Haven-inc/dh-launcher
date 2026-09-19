@@ -138,24 +138,102 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> MarkNotificationReadAsync(int id, CancellationToken cancel = default) =>
         await PostAuthed($"/api/notifications/{id}/read", new { }, cancel);
 
-    public async Task<bool> UpdateProfileAsync(string? frame, string? title, string? avatarUrl, CancellationToken cancel = default)
+    /// <summary>
+    /// The text half of the Discord-style look. Null leaves a field alone, "" clears it. The platform
+    /// validates (frame names, #RRGGBB, 40/190 chars) and says why in <c>Error</c> when it refuses.
+    /// </summary>
+    public async Task<(bool Ok, string? Error)> UpdateLookAsync(
+        string? frame, string? title, string? accentColor, string? aboutMe, CancellationToken cancel = default)
     {
-        if (_jwt is null) return false;
+        if (_jwt is null) return (false, "Нет связи с платформой Frontier 15.");
         try
         {
             var req = new HttpRequestMessage(HttpMethod.Put, Url("/api/profile/me"))
             {
-                Content = JsonContent.Create(new { frame, title, avatarUrl }, options: LauncherJson.Options),
+                Content = JsonContent.Create(new { frame, title, accentColor, aboutMe }, options: LauncherJson.Options),
                 Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
             };
             var res = await http.SendAsync(req, cancel);
-            return res.IsSuccessStatusCode;
+            return res.IsSuccessStatusCode ? (true, null) : (false, await ErrorOf(res, cancel));
         }
         catch (Exception e)
         {
             Log.Debug(e, "Platform profile update failed");
-            return false;
+            return (false, "Нет связи с платформой Frontier 15.");
         }
+    }
+
+    /// <summary>
+    /// Uploads an avatar or banner (<paramref name="slot"/> is "avatar" or "banner"). The platform
+    /// crops and re-encodes it; the returned URL is relative to the platform, see <see cref="MediaUri"/>.
+    /// </summary>
+    public async Task<(string? Url, string? Error)> UploadPictureAsync(string slot, byte[] image, CancellationToken cancel = default)
+    {
+        if (_jwt is null) return (null, "Нет связи с платформой Frontier 15.");
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Put, Url($"/api/profile/me/{slot}"))
+            {
+                Content = new ByteArrayContent(image),
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            var res = await http.SendAsync(req, cancel);
+            if (!res.IsSuccessStatusCode)
+                return (null, res.StatusCode == System.Net.HttpStatusCode.TooManyRequests
+                    ? "Слишком много загрузок подряд — попробуйте через час."
+                    : await ErrorOf(res, cancel));
+            var body = await res.Content.ReadFromJsonAsync<UploadResult>(LauncherJson.Options, cancel);
+            return (body?.Url, null);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Platform picture upload failed");
+            return (null, "Нет связи с платформой Frontier 15.");
+        }
+    }
+
+    public async Task<bool> DeletePictureAsync(string slot, CancellationToken cancel = default) =>
+        await DeleteAuthed($"/api/profile/me/{slot}", cancel);
+
+    /// <summary>Anyone's profile card: look, title, member-since. Nothing private.</summary>
+    public Task<PlatformPublicProfile?> GetPublicProfileAsync(Guid userId, CancellationToken cancel = default) =>
+        GetAuthed<PlatformPublicProfile>($"/api/profile/{userId}", cancel);
+
+    /// <summary>
+    /// Absolute address of a platform media path (<c>/api/media/…</c>). Only ever the platform's own
+    /// host: anything that isn't a bare path from it is refused, so a profile can't make the launcher
+    /// fetch from somewhere else.
+    /// </summary>
+    public Uri? MediaUri(string? path) =>
+        IsConfigured && path is { Length: > 1 } && path.StartsWith("/api/media/", StringComparison.Ordinal)
+            ? new Uri(Url(path))
+            : null;
+
+    /// <summary>Public, cacheable bytes of an avatar or banner; null if unavailable.</summary>
+    public async Task<byte[]?> GetMediaAsync(string? path, CancellationToken cancel = default)
+    {
+        if (MediaUri(path) is not { } uri) return null;
+        try
+        {
+            using var res = await http.GetAsync(uri, cancel);
+            return res.IsSuccessStatusCode ? await res.Content.ReadAsByteArrayAsync(cancel) : null;
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Platform media {Path} failed", path);
+            return null;
+        }
+    }
+
+    private static async Task<string> ErrorOf(HttpResponseMessage res, CancellationToken cancel)
+    {
+        try
+        {
+            if (await res.Content.ReadFromJsonAsync<FriendRequestResult>(LauncherJson.Options, cancel) is { Error: { } e })
+                return e;
+        }
+        catch (Exception) { /* not every error has a JSON body */ }
+        return $"Платформа отказала (код {(int)res.StatusCode}).";
     }
 
     // --- Admin (only meaningful when CanAdmin) ---
@@ -189,6 +267,10 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
     public async Task<bool> SendWarningAsync(Guid userId, string text, CancellationToken cancel = default) =>
         await PostAuthed("/api/admin/warning", new { userId, text }, cancel);
+
+    /// <summary>Moderation: take down a player's avatar, banner or "о себе" ("avatar"/"banner"/"about").</summary>
+    public async Task<bool> ClearLookAsync(Guid userId, string part, CancellationToken cancel = default) =>
+        await DeleteAuthed($"/api/admin/player/{userId}/look/{part}", cancel);
 
     // --- Roles (owner-only to grant/revoke — enforced server-side too) ---
 
@@ -352,10 +434,19 @@ public sealed record PlatformProfile(
     Guid UserId, string Username, string? AvatarUrl, string Frame, string? Title,
     string? DiscordId, string? DiscordAvatar, DateTimeOffset MemberSince,
     long TotalPlaytimeSeconds, string PlaytimeSource,
-    bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
+    bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires,
+    string? BannerUrl = null, string? AccentColor = null, string? AboutMe = null);
+
+/// <summary>Someone's card as <c>GET /api/profile/{id}</c> returns it.</summary>
+public sealed record PlatformPublicProfile(
+    Guid UserId, string Username, string? AvatarUrl, string? BannerUrl, string? AccentColor, string? AboutMe,
+    string Frame, string? Title, DateTimeOffset MemberSince);
+
+internal sealed record UploadResult(string? Url);
 
 public sealed record PlatformFriend(
-    int Id, Guid UserId, string Username, string Frame, bool Online, string? ServerName, string? ServerAddress);
+    int Id, Guid UserId, string Username, string Frame, bool Online, string? ServerName, string? ServerAddress,
+    string? AvatarUrl = null);
 
 public sealed record PlatformFriends(
     PlatformFriend[] Friends, PlatformFriend[] IncomingRequests, PlatformFriend[] OutgoingRequests);

@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.ProfileCard"
+             x:DataType="vm:IProfileCard">
+
+    <!-- Discord's profile popout, in the launcher's HUD colours: banner on top, the avatar biting
+         into its lower edge through a ring cut out in the card's own colour. -->
+    <Border Background="{StaticResource DhBgElevatedBrush}" BorderBrush="{StaticResource DhBorderBrush}"
+            BorderThickness="1" CornerRadius="8" ClipToBounds="True">
+        <StackPanel>
+            <Panel Height="120">
+                <Border Background="{Binding CardBannerBrush}" />
+                <Image Source="{Binding CardBanner}" Stretch="UniformToFill" IsVisible="{Binding CardHasBanner}" />
+            </Panel>
+
+            <Border Width="96" Height="96" CornerRadius="48" Margin="16,-48,0,0" HorizontalAlignment="Left"
+                    Background="{StaticResource DhBgElevatedBrush}" Padding="6">
+                <Border CornerRadius="42" BorderBrush="{Binding CardRingBrush}" BorderThickness="3"
+                        Background="{StaticResource DhBgPanelBrush}">
+                    <Panel Width="78" Height="78">
+                        <Panel.Clip><EllipseGeometry Rect="0,0,78,78" /></Panel.Clip>
+                        <Image Source="{Binding CardAvatar}" Stretch="UniformToFill" IsVisible="{Binding CardHasAvatar}" />
+                        <Image Source="/Assets/emblem.png" Margin="18" IsVisible="{Binding !CardHasAvatar}" />
+                    </Panel>
+                </Border>
+            </Border>
+
+            <StackPanel Margin="18,8,18,18" Spacing="12">
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding CardName}" FontSize="20" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding CardSubtitle}" Classes="dim" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <Border Height="1" Background="{StaticResource DhBorderBrush}" />
+
+                <StackPanel Spacing="4" IsVisible="{Binding CardHasAbout}">
+                    <TextBlock Text="О СЕБЕ" Classes="caps" FontSize="10" />
+                    <TextBlock Text="{Binding CardAbout}" TextWrapping="Wrap" FontSize="12" />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock Text="В СЕТИ FRONTIER 15 С" Classes="caps" FontSize="10" />
+                    <TextBlock Text="{Binding CardMemberSince}" FontSize="12" />
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views"
              x:Class="DarkHaven.App.Views.AdminView"
              x:DataType="vm:AdminViewModel">
 
@@ -57,12 +58,32 @@
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Classes="dim" FontSize="12">
-                                    <Run Text="На платформе с" /><Run Text=" " /><Run Text="{Binding SearchResult.MemberSince, StringFormat='d MMM yyyy'}" />
-                                    <Run Text=" · последний раз " /><Run Text="{Binding SearchResult.LastSeen, StringFormat='d MMM yyyy'}" />
+                                    <Run Text="На платформе с" /><Run Text=" " /><Run Text="{Binding SearchResult.MemberSince, Converter={x:Static vm:RuDateConverter.Instance}}" />
+                                    <Run Text=" · последний раз " /><Run Text="{Binding SearchResult.LastSeen, Converter={x:Static vm:RuDateConverter.Instance}}" />
                                 </TextBlock>
-                                <TextBlock Classes="dim" FontSize="12" Text="{Binding SearchResult.TotalPlaytimeSeconds, StringFormat='Наиграно на серверах DH: {0} с'}" />
+                                <TextBlock Classes="dim" FontSize="12">
+                                    <Run Text="Наиграно на серверах DH:" /><Run Text=" " /><Run Text="{Binding SearchResult.TotalPlaytimeSeconds, Converter={x:Static vm:DurationConverter.Instance}}" />
+                                </TextBlock>
                                 <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding SearchResult.LauncherBanned}"
                                            Text="{Binding SearchResult.LauncherBanReason, StringFormat='Причина бана: {0}'}" />
+
+                                <!-- Their profile as everyone sees it, and the moderation for it -->
+                                <Grid ColumnDefinitions="280,16,*" Margin="0,10,0,0">
+                                    <views:ProfileCard DataContext="{Binding SearchCard}" />
+                                    <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Top">
+                                        <TextBlock Text="ПРОФИЛЬ ИГРОКА" Classes="caps" />
+                                        <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                                   Text="Если картинка или текст нарушают правила — уберите. Игрок получит уведомление, действие попадёт в журнал." />
+                                        <Button Classes="ghost" Content="Убрать аватар" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="avatar" />
+                                        <Button Classes="ghost" Content="Убрать баннер" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="banner" />
+                                        <Button Classes="ghost" Content="Убрать «О себе»" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="about" />
+                                        <TextBlock Text="{Binding LookStatus}" FontSize="11" TextWrapping="Wrap"
+                                                   IsVisible="{Binding LookStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </StackPanel>
                     </Border>

@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using DarkHaven.App.ViewModels;
 
@@ -7,25 +6,29 @@ namespace DarkHaven.App.Views;
 
 public partial class ProfileView : UserControl
 {
+    private static readonly FilePickerFileType Images =
+        new("Изображения") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"] };
+
     public ProfileView()
     {
         InitializeComponent();
-        PickAvatarButton.Click += PickAvatar;
+        PickAvatarButton.Click += async (_, _) => { if (await PickImageAsync("Выберите аватар") is { } p) Vm?.StageAvatar(p); };
+        PickBannerButton.Click += async (_, _) => { if (await PickImageAsync("Выберите баннер") is { } p) Vm?.StageBanner(p); };
     }
 
-    private async void PickAvatar(object? sender, RoutedEventArgs e)
+    private ProfileViewModel? Vm => DataContext as ProfileViewModel;
+
+    private async Task<string?> PickImageAsync(string title)
     {
-        if (DataContext is not ProfileViewModel vm || TopLevel.GetTopLevel(this) is not { } top)
-            return;
+        if (TopLevel.GetTopLevel(this) is not { } top)
+            return null;
 
         var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Выберите изображение",
+            Title = title,
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("Изображения") { Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"] }],
+            FileTypeFilter = [Images],
         });
-
-        if (files is [{ } file] && file.TryGetLocalPath() is { } path)
-            vm.SetAvatar(path);
+        return files is [{ } file] ? file.TryGetLocalPath() : null;
     }
 }

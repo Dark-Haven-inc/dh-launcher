@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,8 +9,19 @@ using DarkHaven.Launcher.Servers;
 
 namespace DarkHaven.App.ViewModels;
 
-public partial class FriendItemViewModel(PlatformFriend f) : ViewModelBase
+public partial class FriendItemViewModel(PlatformFriend f, AppServices services) : ViewModelBase
 {
+    private FriendProfileViewModel? _card;
+
+    [ObservableProperty] private Bitmap? _avatar;
+    public bool HasAvatar => Avatar is not null;
+    partial void OnAvatarChanged(Bitmap? value) => OnPropertyChanged(nameof(HasAvatar));
+
+    /// <summary>Their profile card — fetched the first time someone opens it.</summary>
+    public FriendProfileViewModel Card => _card ??= new FriendProfileViewModel(services, f.UserId, f.Username, Status);
+
+    public async Task LoadAvatarAsync() => Avatar = await services.Images.GetAsync(f.AvatarUrl);
+
     public int Id => f.Id;
     public string Username => f.Username;
     public string Initial => f.Username.Length > 0 ? f.Username[..1].ToUpperInvariant() : "?";
@@ -114,11 +126,15 @@ public partial class FriendsViewModel : ViewModelBase
         }
     }
 
-    private static void Fill(ObservableCollection<FriendItemViewModel> target, PlatformFriend[]? source)
+    private void Fill(ObservableCollection<FriendItemViewModel> target, PlatformFriend[]? source)
     {
         target.Clear();
         foreach (var f in source ?? [])
-            target.Add(new FriendItemViewModel(f));
+        {
+            var item = new FriendItemViewModel(f, _services);
+            target.Add(item);
+            _ = item.LoadAvatarAsync();
+        }
     }
 
     [RelayCommand]

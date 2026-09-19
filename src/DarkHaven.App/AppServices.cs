@@ -27,6 +27,7 @@ public sealed class AppServices : IDisposable
     public RegionWatcher RegionWatch { get; }
     public DhNews News { get; }
     public PlatformApi Platform { get; }
+    public RemoteImages Images { get; }
     public ServerInfoApi ServerInfo { get; }
     public ContentUpdater Content { get; }
     public GameLauncher Game { get; }
@@ -132,6 +133,7 @@ public sealed class AppServices : IDisposable
 
         var platformUrl = Settings.GetConfig("PlatformApiUrl");
         Platform = new PlatformApi(Http, platformUrl);
+        Images = new RemoteImages(Platform);
         // The platform's own /api/news is a drop-in for the bundled news.json (same shape) —
         // default to it once a platform is configured, unless someone already set NewsUrl by hand.
         var newsUrl = Settings.GetConfig("NewsUrl")

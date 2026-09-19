@@ -1,159 +1,275 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views"
              x:Class="DarkHaven.App.Views.ProfileView"
              x:DataType="vm:ProfileViewModel">
 
+    <UserControl.Styles>
+        <!-- Colour swatches in the editor -->
+        <Style Selector="Button.swatch">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBgBrush}" />
+        </Style>
+        <Style Selector="Button.swatch:pointerover /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+        </Style>
+        <Style Selector="Button.swatch.selected /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <!-- The frame that's on right now -->
+        <Style Selector="Button.ghost.selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Border.rule">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{StaticResource DhBorderBrush}" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
-        <StackPanel Margin="36,28" Spacing="22" MaxWidth="760">
+        <Grid Margin="36,28" ColumnDefinitions="340,32,*" MaxWidth="1040" HorizontalAlignment="Left">
 
-            <!-- Header: avatar + identity -->
-            <Grid ColumnDefinitions="Auto,20,*,Auto">
-                <Border Grid.Column="0" Width="92" Height="92" CornerRadius="46"
-                        Background="{Binding FrameColors.FillBrush}"
-                        BorderBrush="{Binding FrameColors.RingBrush}" BorderThickness="3">
-                    <!-- A Border's CornerRadius only draws round; it doesn't clip what's inside, so a
-                         UniformToFill picture poked its square corners out of the ring. 86 = 92 - 2*3. -->
-                    <Panel Width="86" Height="86">
-                        <Panel.Clip><EllipseGeometry Rect="0,0,86,86" /></Panel.Clip>
-                        <Image Source="{Binding Avatar}" IsVisible="{Binding HasAvatar}" Stretch="UniformToFill" />
-                        <Image Source="/Assets/emblem.png" Margin="20" IsVisible="{Binding !HasAvatar}" />
-                    </Panel>
+            <!-- Left: the card — and, while editing, its live preview -->
+            <StackPanel Grid.Column="0" Spacing="12" VerticalAlignment="Top">
+                <views:ProfileCard />
+
+                <Button Classes="primary" Content="Изменить профиль" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" Command="{Binding EditCommand}"
+                        IsVisible="{Binding !IsEditing}" />
+                <Button Classes="ghost" Content="Управление аккаунтами" HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center" Command="{Binding ManageAccountsCommand}"
+                        IsVisible="{Binding !IsEditing}" />
+                <TextBlock Text="Так ваш профиль увидят другие" Classes="dim" FontSize="11"
+                           HorizontalAlignment="Center" IsVisible="{Binding IsEditing}" />
+
+                <!-- Local look exists, the platform has none: friends see a blank card -->
+                <Border Classes="card" Padding="12,10" BorderBrush="{StaticResource DhWarnBrush}" BorderThickness="1">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="NeedsSync" />
+                            <Binding Path="!IsEditing" />
+                        </MultiBinding>
+                    </Border.IsVisible>
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource DhWarnBrush}"
+                               Text="Этот профиль пока видите только вы. Откройте «Изменить профиль» и нажмите «Сохранить» — тогда его увидят друзья." />
                 </Border>
-
-                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="3">
-                    <TextBlock Text="{Binding AccountName}" Classes="h1" />
-                    <TextBlock Text="{Binding AccountStatus}" Classes="dim" />
-                    <TextBlock Classes="dim" FontSize="12">
-                        <Run Text="в сети с" /><Run Text=" " /><Run Text="{Binding MemberSince}" />
-                    </TextBlock>
-                </StackPanel>
-
-                <StackPanel Grid.Column="3" VerticalAlignment="Center" Spacing="6">
-                    <Button Classes="ghost" Content="Сменить аватар" Name="PickAvatarButton" />
-                    <Button Classes="ghost" Content="Убрать аватар" Command="{Binding ClearAvatarCommand}"
-                            IsVisible="{Binding HasAvatar}" />
-                </StackPanel>
-            </Grid>
-
-            <!-- Launcher ban banner (server-authoritative, only known once the platform answers) -->
-            <Border Classes="card" Padding="14,12" IsVisible="{Binding LauncherBanned}"
-                    BorderBrush="{StaticResource DhDangerBrush}" BorderThickness="1">
-                <StackPanel Spacing="2">
-                    <TextBlock Text="⛔ ДОСТУП ОГРАНИЧЕН" FontWeight="Bold" FontSize="12" LetterSpacing="1"
-                               Foreground="{StaticResource DhDangerBrush}" />
-                    <TextBlock Text="{Binding LauncherBanText}" Classes="dim" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <!-- Frame picker -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="РАМКА" Classes="caps" />
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Classes="ghost" Content="Синяя"   Command="{Binding SetFrameCommand}" CommandParameter="blue" />
-                    <Button Classes="ghost" Content="Золотая" Command="{Binding SetFrameCommand}" CommandParameter="gold" />
-                    <Button Classes="ghost" Content="Циан"    Command="{Binding SetFrameCommand}" CommandParameter="cyan" />
-                    <Button Classes="ghost" Content="Без рамки" Command="{Binding SetFrameCommand}" CommandParameter="none" />
-                </StackPanel>
             </StackPanel>
 
-            <!-- Stat tiles -->
-            <Grid ColumnDefinitions="*,10,*,10,*" >
-                <Border Grid.Column="0" Classes="card" Padding="16,12">
-                    <StackPanel><TextBlock Text="Наиграно" Classes="dim" />
-                        <TextBlock Text="{Binding TotalPlaytime}" FontSize="18" FontWeight="Bold" /></StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="card" Padding="16,12">
-                    <StackPanel><TextBlock Text="В избранном" Classes="dim" />
-                        <TextBlock Text="{Binding FavoritesCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
-                </Border>
-                <Border Grid.Column="4" Classes="card" Padding="16,12">
-                    <StackPanel><TextBlock Text="Недавних" Classes="dim" />
-                        <TextBlock Text="{Binding RecentCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
-                </Border>
-            </Grid>
+            <!-- Right: everything else… -->
+            <StackPanel Grid.Column="2" Spacing="22" IsVisible="{Binding !IsEditing}">
 
-            <!-- Characters from the game DB, with Frontier bank balance (platform only) -->
-            <StackPanel Spacing="10" IsVisible="{Binding IsPlatformConnected}">
-                <TextBlock Text="ПЕРСОНАЖИ" Classes="caps" />
-                <TextBlock Text="{Binding CharactersNote}" Classes="dim" TextWrapping="Wrap"
-                           IsVisible="{Binding CharactersNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                <ItemsControl ItemsSource="{Binding Characters}" IsVisible="{Binding HasCharacters}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:CharacterRowViewModel">
-                            <Border Classes="card" Padding="14,10">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <StackPanel Spacing="2">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="ВЫБРАН" Classes="caps" FontSize="9" VerticalAlignment="Center"
-                                                       Foreground="{StaticResource DhOnlineBrush}" IsVisible="{Binding Selected}" />
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding Slot}" Classes="dim" FontSize="11" />
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="{Binding Balance}" FontSize="16" FontWeight="Bold"
-                                               VerticalAlignment="Center" FontFamily="{StaticResource DhMono}"
-                                               Foreground="{StaticResource DhWarnBrush}" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
-            <!-- Per-server playtime -->
-            <StackPanel Spacing="10">
-                <TextBlock Text="ВРЕМЯ ПО СЕРВЕРАМ" Classes="caps" />
-                <TextBlock Text="Пока пусто — сыграй пару заходов, и здесь появится статистика."
-                           Classes="dim" IsVisible="{Binding NoPlaytime}" />
-                <ItemsControl ItemsSource="{Binding Servers}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:PlaytimeRowViewModel">
-                            <Border Classes="card" Padding="14,10">
-                                <StackPanel Spacing="6">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Hours}" Foreground="{StaticResource DhAccentBrush}" />
-                                    </Grid>
-                                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding BarFraction}" Height="4" />
-                                    <TextBlock Text="{Binding Sessions}" Classes="dim" FontSize="11" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
-            <!-- Discord account link -->
-            <StackPanel Spacing="8" IsVisible="{Binding IsPlatformConnected}">
-                <TextBlock Text="DISCORD" Classes="caps" />
-                <Border Classes="card" Padding="14,12">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="dim" TextWrapping="Wrap"
-                                   Text="Привяжите Discord-аккаунт, чтобы роль на Discord-сервере DH автоматически давала доступ в АДМИН (если она настроена)." />
-                        <Button Classes="ghost" HorizontalAlignment="Left" Content="Получить код привязки"
-                                Command="{Binding RequestDiscordLinkCommand}" IsEnabled="{Binding !DiscordLinkRequesting}" />
-                        <StackPanel Spacing="2" IsVisible="{Binding DiscordLinkCode, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <TextBlock FontSize="12" Classes="dim">
-                                <Run Text="Отправьте боту «Дозорный» в Discord:" />
-                            </TextBlock>
-                            <TextBlock FontFamily="Consolas,monospace" FontSize="16" FontWeight="Bold">
-                                <Run Text="!link " /><Run Text="{Binding DiscordLinkCode}" />
-                            </TextBlock>
-                        </StackPanel>
+                <!-- Launcher ban banner (server-authoritative, only known once the platform answers) -->
+                <Border Classes="card" Padding="14,12" IsVisible="{Binding LauncherBanned}"
+                        BorderBrush="{StaticResource DhDangerBrush}" BorderThickness="1">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="⛔ ДОСТУП ОГРАНИЧЕН" FontWeight="Bold" FontSize="12" LetterSpacing="1"
+                                   Foreground="{StaticResource DhDangerBrush}" />
+                        <TextBlock Text="{Binding LauncherBanText}" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+
+                <!-- Stat tiles -->
+                <Grid ColumnDefinitions="*,10,*,10,*">
+                    <Border Grid.Column="0" Classes="card" Padding="16,12">
+                        <StackPanel><TextBlock Text="Наиграно" Classes="dim" />
+                            <TextBlock Text="{Binding TotalPlaytime}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="card" Padding="16,12">
+                        <StackPanel><TextBlock Text="В избранном" Classes="dim" />
+                            <TextBlock Text="{Binding FavoritesCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Column="4" Classes="card" Padding="16,12">
+                        <StackPanel><TextBlock Text="Недавних" Classes="dim" />
+                            <TextBlock Text="{Binding RecentCount}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Characters from the game DB, with Frontier bank balance (platform only) -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsPlatformConnected}">
+                    <TextBlock Text="ПЕРСОНАЖИ" Classes="caps" />
+                    <TextBlock Text="{Binding CharactersNote}" Classes="dim" TextWrapping="Wrap"
+                               IsVisible="{Binding CharactersNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <ItemsControl ItemsSource="{Binding Characters}" IsVisible="{Binding HasCharacters}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CharacterRowViewModel">
+                                <Border Classes="card" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="ВЫБРАН" Classes="caps" FontSize="9" VerticalAlignment="Center"
+                                                           Foreground="{StaticResource DhOnlineBrush}" IsVisible="{Binding Selected}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Slot}" Classes="dim" FontSize="11" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Balance}" FontSize="16" FontWeight="Bold"
+                                                   VerticalAlignment="Center" FontFamily="{StaticResource DhMono}"
+                                                   Foreground="{StaticResource DhWarnBrush}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Per-server playtime -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ВРЕМЯ ПО СЕРВЕРАМ" Classes="caps" />
+                    <TextBlock Text="Пока пусто — сыграй пару заходов, и здесь появится статистика."
+                               Classes="dim" IsVisible="{Binding NoPlaytime}" />
+                    <ItemsControl ItemsSource="{Binding Servers}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PlaytimeRowViewModel">
+                                <Border Classes="card" Padding="14,10">
+                                    <StackPanel Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Hours}" Foreground="{StaticResource DhAccentBrush}" />
+                                        </Grid>
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding BarFraction}" Height="4" />
+                                        <TextBlock Text="{Binding Sessions}" Classes="dim" FontSize="11" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Discord account link -->
+                <StackPanel Spacing="8" IsVisible="{Binding IsPlatformConnected}">
+                    <TextBlock Text="DISCORD" Classes="caps" />
+                    <Border Classes="card" Padding="14,12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="dim" TextWrapping="Wrap"
+                                       Text="Привяжите Discord-аккаунт, чтобы роль на Discord-сервере DH автоматически давала доступ в АДМИН (если она настроена)." />
+                            <Button Classes="ghost" HorizontalAlignment="Left" Content="Получить код привязки"
+                                    Command="{Binding RequestDiscordLinkCommand}" IsEnabled="{Binding !DiscordLinkRequesting}" />
+                            <StackPanel Spacing="2" IsVisible="{Binding DiscordLinkCode, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TextBlock FontSize="12" Classes="dim">
+                                    <Run Text="Отправьте боту «Дозорный» в Discord:" />
+                                </TextBlock>
+                                <TextBlock FontFamily="Consolas,monospace" FontSize="16" FontWeight="Bold">
+                                    <Run Text="!link " /><Run Text="{Binding DiscordLinkCode}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding IsPlatformConnected}"
+                           Text="🌐 Наигранное и персонажи — с сервера Frontier 15. Друзья — на главной, уведомления — под колокольчиком вверху." />
+                <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !IsPlatformConnected}"
+                           Text="Персонажи, синхронизация наигранного и друзья появятся, когда будет готов бэкенд Frontier 15." />
             </StackPanel>
 
-            <Button Classes="ghost" HorizontalAlignment="Left" Content="Управление аккаунтами"
-                    Command="{Binding ManageAccountsCommand}" />
+            <!-- …or the editor, with the card on the left as its live preview -->
+            <StackPanel Grid.Column="2" Spacing="18" IsVisible="{Binding IsEditing}" MaxWidth="560"
+                        HorizontalAlignment="Left">
+                <!-- Actions up top, always in view — the form is taller than the window -->
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Профиль" Classes="h1" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                            <Button Classes="ghost" Content="Отмена" Command="{Binding CancelEditCommand}"
+                                    IsEnabled="{Binding !IsSaving}" />
+                            <Button Classes="primary" Content="{Binding SaveLabel}" Command="{Binding SaveProfileCommand}"
+                                    IsEnabled="{Binding !IsSaving}" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding SaveError}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding HasSaveError}" />
+                </StackPanel>
 
-            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding IsPlatformConnected}"
-                       Text="🌐 Наигранное и персонажи — с сервера Frontier 15. Друзья — на главной, уведомления — под колокольчиком вверху." />
-            <TextBlock Classes="dim" TextWrapping="Wrap" FontSize="11" IsVisible="{Binding !IsPlatformConnected}"
-                       Text="Иконки персонажей, рамки из игры, синхронизация наигранного между устройствами и друзья появятся, когда будет готов бэкенд Frontier 15." />
-        </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="АВАТАР" Classes="caps" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="Сменить аватар" Name="PickAvatarButton" />
+                        <Button Classes="ghost" Content="Убрать" Command="{Binding RemoveAvatarCommand}"
+                                IsVisible="{Binding HasAvatar}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Classes="rule" />
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="БАННЕР" Classes="caps" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="Загрузить баннер" Name="PickBannerButton" />
+                        <Button Classes="ghost" Content="Убрать" Command="{Binding RemoveBannerCommand}"
+                                IsVisible="{Binding HasBanner}" />
+                    </StackPanel>
+                    <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                               Text="Лучше всего широкая картинка примерно 3 к 1 — например 960×320. Без баннера шапка заливается цветом профиля." />
+                </StackPanel>
+
+                <Border Classes="rule" />
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="ЦВЕТ ПРОФИЛЯ" Classes="caps" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <ItemsControl ItemsSource="{Binding AccentChoices}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AccentChoice">
+                                    <Button Classes="swatch" Classes.selected="{Binding IsSelected}"
+                                            Background="{Binding Brush}" ToolTip.Tip="{Binding Hex}"
+                                            Command="{Binding $parent[ItemsControl].((vm:ProfileViewModel)DataContext).SetAccentCommand}"
+                                            CommandParameter="{Binding Hex}">
+                                        <TextBlock Text="✓" FontWeight="Bold" FontSize="13" Foreground="White"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsSelected}" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBox Text="{Binding AccentColor}" Width="96" MaxLength="7" VerticalAlignment="Center"
+                                 FontFamily="{StaticResource DhMono}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Classes="rule" />
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="РАМКА АВАТАРА" Classes="caps" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="Синяя" Command="{Binding SetFrameCommand}" CommandParameter="blue"
+                                Classes.selected="{Binding Frame, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=blue}" />
+                        <Button Classes="ghost" Content="Золотая" Command="{Binding SetFrameCommand}" CommandParameter="gold"
+                                Classes.selected="{Binding Frame, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=gold}" />
+                        <Button Classes="ghost" Content="Циан" Command="{Binding SetFrameCommand}" CommandParameter="cyan"
+                                Classes.selected="{Binding Frame, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=cyan}" />
+                        <Button Classes="ghost" Content="Без рамки" Command="{Binding SetFrameCommand}" CommandParameter="none"
+                                Classes.selected="{Binding Frame, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=none}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Classes="rule" />
+
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="О СЕБЕ" Classes="caps" />
+                        <TextBlock Grid.Column="1" Text="{Binding AboutCounter}" Classes="dim" FontSize="11" />
+                    </Grid>
+                    <TextBox Text="{Binding AboutMe}" AcceptsReturn="True" TextWrapping="Wrap" MaxLength="190"
+                             Height="92" Watermark="Пара слов о себе — роль, любимый корабль, часовой пояс…" />
+                </StackPanel>
+
+                <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding IsPlatformConnected}"
+                           Text="Профиль увидят друзья и все игроки в лаунчере. Картинки платформа обрежет и пересожмёт: аватар — в квадрат, баннер — в полосу 3 к 1." />
+                <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !IsPlatformConnected}"
+                           Text="Сейчас нет связи с платформой Frontier 15 — профиль сохранится на этом компьютере, а друзья увидят его, когда связь появится и вы сохраните его ещё раз." />
+            </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>

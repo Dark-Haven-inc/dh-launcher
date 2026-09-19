@@ -31,7 +31,7 @@ public sealed class CharacterRowViewModel(PlatformCharacter c)
 
 public partial class ProfileViewModel(AppServices services, Action openAccounts) : ViewModelBase
 {
-    private static readonly string[] Frames = ["none", "blue", "gold", "cyan"];
+    private static readonly string[] Frames = ProfileLook.Frames;
 
     [ObservableProperty] private Bitmap? _avatar;
     [ObservableProperty] private string _frame = "blue";
@@ -61,25 +61,26 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
                                  ?? services.Accounts.Accounts.FirstOrDefault()?.Username
                                  ?? "Гость";
 
+    private AppServices Services => services;
+
     public bool IsGuest => services.Accounts.Accounts.Count == 0;
     public string AccountStatus => IsGuest ? "гостевой вход" : "аккаунт Space Station 14";
     public bool HasAvatar => Avatar is not null;
     public bool NoPlaytime => Servers.Count == 0;
 
-    public FrameBrushes FrameColors => Frame switch
-    {
-        "gold" => new(Color.Parse("#F0B454"), Color.Parse("#3A2E12")),
-        "cyan" => new(Color.Parse("#7FD4FF"), Color.Parse("#14313A")),
-        "none" => new(Color.Parse("#24365A"), Colors.Transparent),
-        _ => new(Color.Parse("#5AA0FF"), Color.Parse("#111A2E")),
-    };
+    public FrameBrushes FrameColors => ProfileLook.Frame(Frame);
 
     public void Reload()
     {
+        // Leaving the page mid-edit throws the unsaved edit away rather than half-keeping it.
+        if (IsEditing)
+            CancelEdit();
+
         try
         {
             Frame = services.Settings.GetConfig("ProfileFrame") is { } f && Frames.Contains(f) ? f : "blue";
             LoadAvatar(services.Settings.GetConfig("ProfileAvatarPath"));
+            LoadLook();
 
             var total = services.Settings.GetTotalPlaytimeSeconds();
             TotalPlaytime = total > 0 ? FormatDuration(total) : "ещё не играл";
@@ -150,40 +151,15 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
                 CharactersNote = "Персонажи и их баланс появятся, когда платформа подключится к игровой базе.";
             }
             OnPropertyChanged(nameof(HasCharacters));
+
+            await ApplyPlatformLookAsync(p);
         }
         catch { /* platform unreachable — local data already shown, nothing more to do */ }
     }
 
-    /// <summary>Called by the view after the user picks an image.</summary>
-    public void SetAvatar(string path)
-    {
-        try
-        {
-            var dest = Path.Combine(LauncherPaths.DataDir, "avatar" + Path.GetExtension(path));
-            File.Copy(path, dest, overwrite: true);
-            services.Settings.SetConfig("ProfileAvatarPath", dest);
-            LoadAvatar(dest);
-            OnPropertyChanged(nameof(HasAvatar));
-        }
-        catch { /* ignore bad file */ }
-    }
-
+    /// <summary>Only in the editor now — kept on "Сохранить" (see ProfileViewModel.Look.cs).</summary>
     [RelayCommand]
-    private void ClearAvatar()
-    {
-        services.Settings.SetConfig("ProfileAvatarPath", null);
-        Avatar?.Dispose();
-        Avatar = null;
-        OnPropertyChanged(nameof(HasAvatar));
-    }
-
-    [RelayCommand]
-    private void SetFrame(string frame)
-    {
-        Frame = Frames.Contains(frame) ? frame : "blue";
-        services.Settings.SetConfig("ProfileFrame", Frame);
-        OnPropertyChanged(nameof(FrameColors));
-    }
+    private void SetFrame(string frame) => Frame = Frames.Contains(frame) ? frame : "blue";
 
     [RelayCommand] private void ManageAccounts() => openAccounts();
 

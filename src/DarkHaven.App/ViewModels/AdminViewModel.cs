@@ -77,6 +77,16 @@ public partial class AdminViewModel : ViewModelBase
     [ObservableProperty] private PlatformPlayerInfo? _searchResult;
     [ObservableProperty] private bool _searchNotFound;
 
+    /// <summary>The found player's profile card — so a moderator sees what they'd be taking down.</summary>
+    [ObservableProperty] private FriendProfileViewModel? _searchCard;
+    [ObservableProperty] private string? _lookStatus;
+
+    partial void OnSearchResultChanged(PlatformPlayerInfo? value)
+    {
+        LookStatus = null;
+        SearchCard = value is null ? null : new FriendProfileViewModel(_services, value.UserId, value.Username, "игрок Frontier 15");
+    }
+
     [ObservableProperty] private string _roleUsername = "";
     [ObservableProperty] private string _roleToGrant = "admin";
 
@@ -342,6 +352,25 @@ public partial class AdminViewModel : ViewModelBase
             SearchNotFound = true;
         else
             SearchResult = who;
+    }
+
+    /// <summary>Take down the found player's avatar, banner or "о себе" ("avatar"/"banner"/"about").</summary>
+    [RelayCommand]
+    private async Task ClearLook(string part)
+    {
+        if (SearchResult is not { } who)
+            return;
+
+        var what = part switch { "avatar" => "аватар", "banner" => "баннер", _ => "«О себе»" };
+        if (await _services.Platform.ClearLookAsync(who.UserId, part))
+        {
+            LookStatus = $"Убрано: {what}. Игрок получил уведомление, запись — в журнале.";
+            SearchCard = new FriendProfileViewModel(_services, who.UserId, who.Username, "игрок Frontier 15");
+        }
+        else
+        {
+            LookStatus = "Не получилось — платформа отказала или недоступна.";
+        }
     }
 
     // --- Roles (owner only — the view hides this section for plain admins) ---
