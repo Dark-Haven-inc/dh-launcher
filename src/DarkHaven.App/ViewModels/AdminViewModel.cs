@@ -33,6 +33,25 @@ public sealed class AdminRoleRowViewModel(PlatformRole r)
     public string Role => r.Role;
 }
 
+/// <summary>Someone who has admin rights on the game server itself (not a platform role).</summary>
+public sealed class AdminGameAdminRowViewModel(PlatformGameAdmin a)
+{
+    public Guid UserId => a.UserId;
+    public string Username => a.Username ?? "неизвестный игрок";
+    public string RankText => a.RankName ?? "без ранга";
+    public string StateText => a.Suspended ? " · отстранён" : a.Deadminned ? " · снял права сам" : "";
+    public string TitleText => string.IsNullOrWhiteSpace(a.Title) ? "" : $" · {a.Title}";
+}
+
+/// <summary>A ban the game server itself issued, as shown on a player's card.</summary>
+public sealed class AdminGameBanRowViewModel(PlatformGameBan b)
+{
+    public string Reason => b.Reason;
+    public string WhenText => RuText.ShortDate(b.At.ToLocalTime());
+    public string KindText => b.IsRoleBan ? "бан на роль" : "бан на сервер";
+    public string StateText => b.Lifted ? "снят" : b.ExpiresAt is { } e ? $"до {RuText.ShortDate(e.ToLocalTime())}" : "навсегда";
+}
+
 public sealed class AdminAuditRowViewModel(PlatformAuditEntry a)
 {
     public string ActorUsername => a.ActorUsername;
@@ -87,6 +106,12 @@ public partial class AdminViewModel : ViewModelBase
         SearchCard = value is null ? null : new FriendProfileViewModel(_services, value.UserId, value.Username, "игрок Frontier 15");
     }
 
+    [ObservableProperty] private bool _gameAccessEnabled;
+    [ObservableProperty] private bool _hasGameBans;
+    [ObservableProperty] private PlatformGameRank? _selectedGameRank;
+    [ObservableProperty] private string _gameAdminTitle = "";
+    [ObservableProperty] private string? _gameAccessStatus;
+
     [ObservableProperty] private string _roleUsername = "";
     [ObservableProperty] private string _roleToGrant = "admin";
 
@@ -106,6 +131,10 @@ public partial class AdminViewModel : ViewModelBase
     public ObservableCollection<AdminAuditRowViewModel> AuditLog { get; } = [];
     public ObservableCollection<string> GameServers { get; } = [];
     public ObservableCollection<AdminChatMessageViewModel> ChatMessages { get; } = [];
+    public ObservableCollection<AdminGameAdminRowViewModel> GameAdmins { get; } = [];
+    public ObservableCollection<PlatformGameRank> GameRanks { get; } = [];
+    /// <summary>The game server's own bans on the player currently shown in ИГРОК.</summary>
+    public ObservableCollection<AdminGameBanRowViewModel> SearchGameBans { get; } = [];
 
     private DateTimeOffset? _chatCursor;
 
@@ -207,6 +236,8 @@ public partial class AdminViewModel : ViewModelBase
                 AuditLog.Clear();
                 foreach (var a in audit)
                     AuditLog.Add(new AdminAuditRowViewModel(a));
+
+                await ReloadGameAccessAsync();
             }
 
             if (IsOwner)
@@ -222,6 +253,52 @@ public partial class AdminViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    // --- Доступ на игровой сервер (admin/owner) ---
+
+    /// <summary>Who currently has in-game admin rights, and which ranks the server offers.</summary>
+    public async Task ReloadGameAccessAsync()
+    {
+        var access = await _services.Platform.GetGameAccessAsync();
+        GameAccessEnabled = access?.Enabled ?? false;
+
+        GameRanks.Clear();
+        foreach (var r in access?.Ranks ?? [])
+            GameRanks.Add(r);
+        SelectedGameRank ??= GameRanks.FirstOrDefault();
+
+        GameAdmins.Clear();
+        foreach (var a in access?.Admins ?? [])
+            GameAdmins.Add(new AdminGameAdminRowViewModel(a));
+    }
+
+    /// <summary>Gives the player found in ИГРОК the selected rank on the game server.</summary>
+    [RelayCommand]
+    private async Task GrantGameAccess()
+    {
+        if (!CanAdmin || SearchResult is not { } who) return;
+        if (SelectedGameRank is not { } rank)
+        {
+            GameAccessStatus = "Сначала выберите ранг.";
+            return;
+        }
+
+        GameAccessStatus = await _services.Platform.GrantGameAdminAsync(who.UserId, rank.Id, GameAdminTitle)
+                           ?? $"{who.Username} получил ранг {rank.Name}. Права появятся при следующем заходе в игру.";
+        GameAdminTitle = "";
+        await ReloadGameAccessAsync();
+        await SearchPlayer();
+    }
+
+    [RelayCommand]
+    private async Task RevokeGameAccess(AdminGameAdminRowViewModel? row)
+    {
+        if (!CanAdmin || row is null) return;
+
+        GameAccessStatus = await _services.Platform.RevokeGameAdminAsync(row.UserId)
+                           ?? $"{row.Username} больше не администратор на сервере.";
+        await ReloadGameAccessAsync();
     }
 
     // --- News ---
@@ -352,6 +429,12 @@ public partial class AdminViewModel : ViewModelBase
             SearchNotFound = true;
         else
             SearchResult = who;
+
+        // The game server's own bans, which the platform reads straight from its database.
+        SearchGameBans.Clear();
+        foreach (var b in who?.GameBans ?? [])
+            SearchGameBans.Add(new AdminGameBanRowViewModel(b));
+        HasGameBans = SearchGameBans.Count > 0;
     }
 
     /// <summary>Take down the found player's avatar, banner or "о себе" ("avatar"/"banner"/"about").</summary>

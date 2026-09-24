@@ -312,6 +312,53 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> RemoveRoleAsync(Guid userId, CancellationToken cancel = default) =>
         await DeleteAuthed($"/api/admin/roles/{userId}", cancel);
 
+    // --- In-game admin rights (admin/owner). The platform writes them into the game server's own
+    // admin table; the server picks a change up the next time that player connects. ---
+
+    public async Task<PlatformGameAccess?> GetGameAccessAsync(CancellationToken cancel = default) =>
+        await GetAuthed<PlatformGameAccess>("/api/admin/game-access", cancel);
+
+    /// <summary>Null on success, otherwise the reason to show the admin who asked.</summary>
+    public async Task<string?> GrantGameAdminAsync(Guid userId, int rankId, string? title, CancellationToken cancel = default)
+    {
+        if (_jwt is null) return "Нет связи с платформой Frontier 15.";
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/admin/game-access"))
+            {
+                Content = JsonContent.Create(new { userId, rankId, title }, options: LauncherJson.Options),
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            using var res = await http.SendAsync(req, cancel);
+            return res.IsSuccessStatusCode ? null : await ErrorOf(res, cancel);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Platform: granting game admin failed");
+            return "Платформа недоступна.";
+        }
+    }
+
+    /// <summary>Null on success, otherwise the reason to show the admin who asked.</summary>
+    public async Task<string?> RevokeGameAdminAsync(Guid userId, CancellationToken cancel = default)
+    {
+        if (_jwt is null) return "Нет связи с платформой Frontier 15.";
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Delete, Url($"/api/admin/game-access/{userId}"))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            using var res = await http.SendAsync(req, cancel);
+            return res.IsSuccessStatusCode ? null : await ErrorOf(res, cancel);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Platform: revoking game admin failed");
+            return "Платформа недоступна.";
+        }
+    }
+
     // --- Audit log (admin/owner only, enforced server-side) ---
 
     public Task<IReadOnlyList<PlatformAuditEntry>> GetAuditLogAsync(CancellationToken cancel = default) =>
@@ -509,7 +556,19 @@ public sealed record PlatformBan(
 
 public sealed record PlatformPlayerInfo(
     Guid UserId, string Username, DateTimeOffset MemberSince, DateTimeOffset LastSeen, string? Role,
-    long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires);
+    long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires,
+    PlatformGameBan[]? GameBans = null, string? GameAdminRank = null);
+
+/// <summary>A ban from the game server's own database — not the launcher ban above.</summary>
+public sealed record PlatformGameBan(
+    string Reason, DateTimeOffset At, DateTimeOffset? ExpiresAt, bool IsRoleBan, bool Lifted);
+
+public sealed record PlatformGameRank(int Id, string Name);
+
+public sealed record PlatformGameAdmin(
+    Guid UserId, string? Username, string? Title, int? RankId, string? RankName, bool Suspended, bool Deadminned);
+
+public sealed record PlatformGameAccess(bool Enabled, PlatformGameRank[] Ranks, PlatformGameAdmin[] Admins);
 
 public sealed record PlatformRole(Guid UserId, string Username, string Role);
 

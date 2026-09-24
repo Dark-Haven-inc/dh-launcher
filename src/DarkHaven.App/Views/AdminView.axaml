@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:views="using:DarkHaven.App.Views"
+             xmlns:api="using:DarkHaven.Launcher.Api"
              x:Class="DarkHaven.App.Views.AdminView"
              x:DataType="vm:AdminViewModel">
 
@@ -66,6 +67,26 @@
                                 </TextBlock>
                                 <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding SearchResult.LauncherBanned}"
                                            Text="{Binding SearchResult.LauncherBanReason, StringFormat='Причина бана: {0}'}" />
+                                <TextBlock Classes="dim" FontSize="12"
+                                           IsVisible="{Binding SearchResult.GameAdminRank, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                           Text="{Binding SearchResult.GameAdminRank, StringFormat='Права на игровом сервере: {0}'}" />
+
+                                <!-- Bans the game server itself issued — separate from the launcher ban above -->
+                                <StackPanel Spacing="4" IsVisible="{Binding HasGameBans}">
+                                    <TextBlock Text="БАНЫ НА СЕРВЕРЕ" Classes="caps" FontSize="10" Margin="0,6,0,0" />
+                                    <ItemsControl ItemsSource="{Binding SearchGameBans}">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AdminGameBanRowViewModel">
+                                                <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap">
+                                                    <Run Text="{Binding WhenText}" /><Run Text=" · " /><Run Text="{Binding KindText}" />
+                                                    <Run Text=" · " /><Run Text="{Binding StateText}" /><Run Text=" — " /><Run Text="{Binding Reason}" />
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
 
                                 <!-- Their profile as everyone sees it, and the moderation for it -->
                                 <Grid ColumnDefinitions="280,16,*" Margin="0,10,0,0">
@@ -278,6 +299,59 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </StackPanel>
+
+                <!-- Доступ на игровой сервер: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Text="ДОСТУП НА СЕРВЕР" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !GameAccessEnabled}"
+                                       Text="Платформа не подключена к базе игрового сервера, поэтому выдавать права нельзя." />
+
+                            <StackPanel Spacing="10" IsVisible="{Binding GameAccessEnabled}">
+                                <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                           Text="Найдите игрока в разделе ИГРОК, выберите ранг и выдайте права. У игрока они появятся при следующем заходе в игру." />
+                                <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                                    <ComboBox Grid.Column="0" HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding GameRanks}" SelectedItem="{Binding SelectedGameRank}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="api:PlatformGameRank">
+                                                <TextBlock Text="{Binding Name}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <TextBox Grid.Column="1" Text="{Binding GameAdminTitle}" Watermark="Должность (необязательно)" />
+                                    <Button Grid.Column="2" Classes="primary" Content="Выдать найденному"
+                                            Command="{Binding GrantGameAccessCommand}" IsEnabled="{Binding !IsLoading}" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding GameAdmins}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AdminGameAdminRowViewModel">
+                                            <Border Classes="card" Padding="12,10">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                        <TextBlock Classes="dim">
+                                                            <Run Text="{Binding RankText}" /><Run Text="{Binding TitleText}" /><Run Text="{Binding StateText}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Classes="ghost" Content="Забрать" VerticalAlignment="Center"
+                                                            Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeGameAccessCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding GameAccessStatus}" FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding GameAccessStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- Roles: owner only -->
