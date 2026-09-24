@@ -3,6 +3,7 @@ using DarkHaven.Launcher.Accounts;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
 using DarkHaven.Launcher.Models;
+using DarkHaven.Launcher.Servers;
 using Serilog;
 
 namespace DarkHaven.Launcher.Update;
@@ -38,12 +39,22 @@ public sealed class LaunchCoordinator(
         IProgress<LaunchProgress>? progress = null,
         Action<ResolvedServerInfo>? onResolved = null,
         ClientLog? clientLog = null,
+        string? expectedFork = null,
+        string? regionName = null,
         CancellationToken cancel = default)
     {
         void Step(LaunchStep s, StepState st, string d, double? f = null, double? bps = null, TimeSpan? eta = null)
             => progress?.Report(new LaunchProgress(s, st, d, f, bps, eta));
 
         var resolved = await serverInfo.GetAsync(address, cancel);
+
+        // Before anything is downloaded or launched: is this still our server? (ServerIdentity)
+        if (ServerIdentity.Mismatch(expectedFork, resolved.Info, regionName ?? address) is { } wrong)
+        {
+            Log.Warning("Refusing to connect to {Address}: fork id is not the region's own", address);
+            throw new WrongServerException(wrong);
+        }
+
         onResolved?.Invoke(resolved);
         var build = resolved.Info.Build
                     ?? throw new InvalidOperationException("Сервер не сообщил информацию о сборке");

@@ -34,6 +34,9 @@ public sealed class ServerEntry(string address)
     /// <summary>A region shown on the map to sketch the planned network but not yet online / connectable.</summary>
     public bool RegionQuarantine { get; set; }
 
+    /// <summary>The fork id this region's server must report — see <see cref="DhRegion.ExpectFork"/>.</summary>
+    public string? ExpectedFork { get; set; }
+
     /// <summary>Round-trip time to the server's HTTP endpoint, ms — populated by a region poll.</summary>
     public int? PingMs { get; set; }
 

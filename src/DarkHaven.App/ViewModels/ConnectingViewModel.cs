@@ -54,6 +54,11 @@ public partial class ConnectingViewModel : ViewModelBase
     [ObservableProperty] private string _buildTag = "";
     [ObservableProperty] private string? _motd;
     [ObservableProperty] private bool _isBusy = true;
+
+    /// <summary>Set when we stopped because a stranger answered the region's address; the player
+    /// can still insist (see <see cref="ConnectAnyway"/>).</summary>
+    [ObservableProperty] private bool _canConnectAnyway;
+    private bool _ignoreIdentity;
     [ObservableProperty] private string? _errorText;
 
     public bool HasError => ErrorText is not null;
@@ -112,6 +117,8 @@ public partial class ConnectingViewModel : ViewModelBase
                         Title = sn;
                 }),
                 clientLog: _clientLog,
+                expectedFork: _ignoreIdentity ? null : _server.ExpectedFork,
+                regionName: _server.DisplayName,
                 cancel: _cts.Token);
 
             try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
@@ -127,6 +134,18 @@ public partial class ConnectingViewModel : ViewModelBase
             _services.Discord.SetIdle();
             _services.SetGameSession(null);
             Close();
+        }
+        catch (WrongServerException e)
+        {
+            // Not a failure to connect — a refusal to. Offer the override rather than deciding for them.
+            Log.Warning("Wrong server at {Address}", _server.Address);
+            _services.Discord.SetIdle();
+            _services.SetGameSession(null);
+            IsBusy = false;
+            var active = Steps.FirstOrDefault(s => s.State == StepState.Active);
+            if (active is not null) active.State = StepState.Failed;
+            ErrorText = e.Message;
+            CanConnectAnyway = true;
         }
         catch (Exception e)
         {
@@ -261,9 +280,18 @@ public partial class ConnectingViewModel : ViewModelBase
         Finished?.Invoke();
     }
 
+    /// <summary>"Всё равно подключиться" — same attempt, identity check off for this one try.</summary>
+    [RelayCommand]
+    private void ConnectAnyway()
+    {
+        _ignoreIdentity = true;
+        Retry();
+    }
+
     [RelayCommand]
     private void Retry()
     {
+        CanConnectAnyway = false;
         ErrorText = null;
         LogTail = null;
         foreach (var s in Steps) { s.State = StepState.Pending; s.Detail = ""; s.ShowBar = false; }

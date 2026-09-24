@@ -35,6 +35,7 @@
                         <Button Classes="ghost" Content="{Binding CopyLabel}" Command="{Binding CopyLogCommand}" IsVisible="{Binding HasLogTail}" />
                         <Button Classes="ghost" Content="Логи" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
                         <Button Classes="ghost" Content="Ещё раз" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
+                        <Button Classes="ghost" Content="Всё равно подключиться" Command="{Binding ConnectAnywayCommand}" IsVisible="{Binding CanConnectAnyway}" />
                         <Button Classes="ghost" Content="Закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
                     </StackPanel>
                 </Grid>
