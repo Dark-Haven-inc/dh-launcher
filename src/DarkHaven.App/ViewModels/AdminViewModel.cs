@@ -31,6 +31,39 @@ public sealed class AdminRoleRowViewModel(PlatformRole r)
     public Guid UserId => r.UserId;
     public string Username => r.Username;
     public string Role => r.Role;
+    public string RoleTitle => RoleInfo.Title(r.Role);
+    public bool IsPrimary => r.IsPrimary;
+    public bool CanRevoke => !r.IsPrimary;
+    public string GrantedText => r.IsPrimary
+        ? "главный владелец — задан в настройках платформы"
+        : r.GrantedByName is { } by && r.GrantedAt is { } at
+            ? $"выдал {by} · {RuText.ShortDate(at.ToLocalTime())}"
+            : r.GrantedAt is { } auto ? $"с {RuText.ShortDate(auto.ToLocalTime())}" : "";
+}
+
+/// <summary>What each launcher role means, in the words the РОЛИ section shows. Mirrors the
+/// platform's RoleRules — the platform is what actually enforces it.</summary>
+public static class RoleInfo
+{
+    public static readonly string[] All = ["news", "moderator", "admin", "owner"];
+
+    public static string Title(string? role) => role switch
+    {
+        "owner" => "владелец",
+        "admin" => "администратор",
+        "moderator" => "модератор",
+        "news" => "редактор новостей",
+        _ => "игрок",
+    };
+
+    public static string Describe(string? role) => role switch
+    {
+        "news" => "Пишет и правит новости. Больше ничего.",
+        "moderator" => "Ищет игроков, банит на лаунчере, выносит предупреждения, убирает чужие аватары и «о себе», читает и пишет в чат сервера и ahelp.",
+        "admin" => "Всё, что модератор, плюс новости, журнал действий, объявления всем и выдача прав администратора в игре.",
+        "owner" => "Всё, плюс раздача ролей. Роль владельца выдаёт и снимает только главный владелец.",
+        _ => "",
+    };
 }
 
 /// <summary>Someone who has admin rights on the game server itself (not a platform role).</summary>
@@ -113,7 +146,8 @@ public partial class AdminViewModel : ViewModelBase
     [ObservableProperty] private string? _gameAccessStatus;
 
     [ObservableProperty] private string _roleUsername = "";
-    [ObservableProperty] private string _roleToGrant = "admin";
+    [ObservableProperty] private string _roleToGrant = "moderator";
+    [ObservableProperty] private string? _roleStatus;
 
     [ObservableProperty] private string _selectedRegion = "";
     [ObservableProperty] private string _chatChannel = "ooc";
@@ -372,9 +406,9 @@ public partial class AdminViewModel : ViewModelBase
         if (int.TryParse(BanDays, out var days) && days > 0)
             expires = DateTimeOffset.UtcNow.AddDays(days);
 
-        var ok = await _services.Platform.IssueLauncherBanAsync(who.UserId, BanReason.Trim(), expires);
-        Status = ok ? $"{who.Username} забанен на лаунчере." : "Не удалось выдать бан.";
-        if (ok)
+        var error = await _services.Platform.IssueLauncherBanAsync(who.UserId, BanReason.Trim(), expires);
+        Status = error ?? $"{who.Username} забанен на лаунчере.";
+        if (error is null)
         {
             BanUsername = "";
             BanReason = "";
@@ -406,9 +440,9 @@ public partial class AdminViewModel : ViewModelBase
             return;
         }
 
-        var ok = await _services.Platform.SendWarningAsync(who.UserId, WarnText.Trim());
-        Status = ok ? $"Предупреждение отправлено {who.Username}." : "Не удалось отправить.";
-        if (ok)
+        var error = await _services.Platform.SendWarningAsync(who.UserId, WarnText.Trim());
+        Status = error ?? $"Предупреждение отправлено {who.Username}.";
+        if (error is null)
         {
             WarnUsername = "";
             WarnText = "";
@@ -445,14 +479,14 @@ public partial class AdminViewModel : ViewModelBase
             return;
 
         var what = part switch { "avatar" => "аватар", "banner" => "баннер", _ => "«О себе»" };
-        if (await _services.Platform.ClearLookAsync(who.UserId, part))
+        if (await _services.Platform.ClearLookAsync(who.UserId, part) is { } error)
         {
-            LookStatus = $"Убрано: {what}. Игрок получил уведомление, запись — в журнале.";
-            SearchCard = new FriendProfileViewModel(_services, who.UserId, who.Username, "игрок Frontier 15");
+            LookStatus = error;
         }
         else
         {
-            LookStatus = "Не получилось — платформа отказала или недоступна.";
+            LookStatus = $"Убрано: {what}. Игрок получил уведомление, запись — в журнале.";
+            SearchCard = new FriendProfileViewModel(_services, who.UserId, who.Username, "игрок Frontier 15");
         }
     }
 
@@ -460,6 +494,14 @@ public partial class AdminViewModel : ViewModelBase
 
     [RelayCommand]
     private void SetRoleToGrant(string role) => RoleToGrant = role;
+
+    public string RoleToGrantTitle => RoleInfo.Title(RoleToGrant);
+    public string RoleToGrantDescription => RoleInfo.Describe(RoleToGrant);
+    partial void OnRoleToGrantChanged(string value)
+    {
+        OnPropertyChanged(nameof(RoleToGrantTitle));
+        OnPropertyChanged(nameof(RoleToGrantDescription));
+    }
 
     [RelayCommand]
     private async Task GrantRole()
@@ -469,13 +511,13 @@ public partial class AdminViewModel : ViewModelBase
         var who = await _services.Platform.GetPlayerAsync(RoleUsername.Trim());
         if (who is null)
         {
-            Status = $"Игрок «{RoleUsername}» не найден.";
+            RoleStatus = $"Игрок «{RoleUsername}» не найден — он должен хотя бы раз войти в лаунчер под своим аккаунтом.";
             return;
         }
 
-        var ok = await _services.Platform.SetRoleAsync(who.UserId, RoleToGrant);
-        Status = ok ? $"{who.Username} теперь {RoleToGrant}." : "Не удалось выдать роль.";
-        if (ok)
+        var error = await _services.Platform.SetRoleAsync(who.UserId, RoleToGrant);
+        RoleStatus = error ?? $"{who.Username} теперь {RoleInfo.Title(RoleToGrant)}. Он получил уведомление, вкладка у него обновится в течение пары минут.";
+        if (error is null)
         {
             RoleUsername = "";
             await ReloadAsync();
@@ -485,10 +527,13 @@ public partial class AdminViewModel : ViewModelBase
     [RelayCommand]
     private async Task RevokeRole(AdminRoleRowViewModel row)
     {
-        if (await _services.Platform.RemoveRoleAsync(row.UserId))
-            Roles.Remove(row);
-        else
-            Status = "Не удалось снять роль.";
+        if (await _services.Platform.RemoveRoleAsync(row.UserId) is { } error)
+        {
+            RoleStatus = error;
+            return;
+        }
+        Roles.Remove(row);
+        RoleStatus = $"{row.Username} больше не {row.RoleTitle}. Права пропали сразу.";
     }
 
     // --- Live game chat (moderator+): OOC/AdminChat/DeadChat on a chosen region's server ---

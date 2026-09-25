@@ -287,8 +287,9 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public Task<PlatformPlayerInfo?> GetPlayerAsync(string username, CancellationToken cancel = default) =>
         GetAuthed<PlatformPlayerInfo>($"/api/admin/player?username={Uri.EscapeDataString(username)}", cancel);
 
-    public async Task<bool> IssueLauncherBanAsync(Guid userId, string reason, DateTimeOffset? expiresAt, CancellationToken cancel = default) =>
-        await PostAuthed("/api/admin/launcher-ban", new { userId, reason, expiresAt }, cancel);
+    /// <summary>Null on success, otherwise why not (e.g. the player outranks you).</summary>
+    public Task<string?> IssueLauncherBanAsync(Guid userId, string reason, DateTimeOffset? expiresAt, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, "/api/admin/launcher-ban", new { userId, reason, expiresAt }, cancel);
 
     public async Task<bool> RevokeLauncherBanAsync(int banId, CancellationToken cancel = default) =>
         await DeleteAuthed($"/api/admin/launcher-ban/{banId}", cancel);
@@ -302,23 +303,67 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<bool> DeleteNewsAsync(int id, CancellationToken cancel = default) =>
         await DeleteAuthed($"/api/admin/news/{id}", cancel);
 
-    public async Task<bool> SendWarningAsync(Guid userId, string text, CancellationToken cancel = default) =>
-        await PostAuthed("/api/admin/warning", new { userId, text }, cancel);
+    /// <summary>Null on success, otherwise why not.</summary>
+    public Task<string?> SendWarningAsync(Guid userId, string text, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, "/api/admin/warning", new { userId, text }, cancel);
 
     /// <summary>Moderation: take down a player's avatar, banner or "о себе" ("avatar"/"banner"/"about").</summary>
-    public async Task<bool> ClearLookAsync(Guid userId, string part, CancellationToken cancel = default) =>
-        await DeleteAuthed($"/api/admin/player/{userId}/look/{part}", cancel);
+    /// <summary>Null on success, otherwise why not.</summary>
+    public Task<string?> ClearLookAsync(Guid userId, string part, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, $"/api/admin/player/{userId}/look/{part}", null, cancel);
 
     // --- Roles (owner-only to grant/revoke — enforced server-side too) ---
 
     public Task<IReadOnlyList<PlatformRole>> GetRolesAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformRole>("/api/admin/roles", cancel);
 
-    public async Task<bool> SetRoleAsync(Guid userId, string role, CancellationToken cancel = default) =>
-        await PostAuthed("/api/admin/roles", new { userId, role }, cancel);
+    /// <summary>Null on success, otherwise the platform's reason (owner rules, unknown player…).</summary>
+    public Task<string?> SetRoleAsync(Guid userId, string role, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, "/api/admin/roles", new { userId, role }, cancel);
 
-    public async Task<bool> RemoveRoleAsync(Guid userId, CancellationToken cancel = default) =>
-        await DeleteAuthed($"/api/admin/roles/{userId}", cancel);
+    /// <summary>Null on success, otherwise the platform's reason.</summary>
+    public Task<string?> RemoveRoleAsync(Guid userId, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, $"/api/admin/roles/{userId}", null, cancel);
+
+    /// <summary>
+    /// Re-reads this player's role. A role can be granted or taken away while the launcher is open,
+    /// and the sign-in response is the only other place it came from. True if it changed.
+    /// </summary>
+    public async Task<bool> RefreshRolesAsync(CancellationToken cancel = default)
+    {
+        if (_jwt is null) return false;
+        if (await GetAuthed<RolesResponse>("/api/session/roles", cancel) is not { Roles: { } fresh })
+            return false;
+        if (fresh.Order().SequenceEqual(Roles.Order()))
+            return false;
+        Roles = fresh;
+        return true;
+    }
+
+    /// <summary>An admin action whose refusal the admin should read: null on success, else the reason.</summary>
+    private async Task<string?> SendAuthed(HttpMethod method, string path, object? body, CancellationToken cancel)
+    {
+        if (_jwt is null) return "Нет связи с платформой Frontier 15.";
+        try
+        {
+            using var req = new HttpRequestMessage(method, Url(path))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            if (body is not null)
+                req.Content = JsonContent.Create(body, options: LauncherJson.Options);
+            using var res = await http.SendAsync(req, cancel);
+            if (res.IsSuccessStatusCode) return null;
+            if (res.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                return "Недостаточно прав — возможно, вашу роль только что изменили.";
+            return await ErrorOf(res, cancel);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Platform admin {Method} {Path} failed", method, path);
+            return "Платформа недоступна.";
+        }
+    }
 
     // --- In-game admin rights (admin/owner). The platform writes them into the game server's own
     // admin table; the server picks a change up the next time that player connects. ---
@@ -591,7 +636,11 @@ public sealed record PlatformGameAdmin(
 
 public sealed record PlatformGameAccess(bool Enabled, PlatformGameRank[] Ranks, PlatformGameAdmin[] Admins);
 
-public sealed record PlatformRole(Guid UserId, string Username, string Role);
+public sealed record PlatformRole(
+    Guid UserId, string Username, string Role,
+    string? GrantedByName = null, DateTimeOffset? GrantedAt = null, bool IsPrimary = false);
+
+internal sealed record RolesResponse(string[]? Roles);
 
 public sealed record PlatformChatMessage(string Sender, string Text, DateTimeOffset AtUtc);
 

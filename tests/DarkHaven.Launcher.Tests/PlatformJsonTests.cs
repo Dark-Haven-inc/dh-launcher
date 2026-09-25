@@ -95,4 +95,27 @@ public class PlatformJsonTests
         Assert.Equal(21, h.InGamePoints[0].Peak);
         Assert.Equal(37, h.Summary.Peak);
     }
+
+    [Fact]
+    public void Reads_the_roles_list_with_who_gave_it_and_the_primary_owner()
+    {
+        const string json = """
+        [{"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"GODWINCH","role":"owner",
+          "grantedByName":null,"grantedAt":"2026-09-25T10:00:00+00:00","isPrimary":true},
+         {"userId":"a1e66119-b624-4eff-9903-edcbf6d790b9","username":"Cadet_Nova","role":"moderator",
+          "grantedByName":"GODWINCH","grantedAt":"2026-09-25T11:00:00+00:00","isPrimary":false}]
+        """;
+        var roles = JsonSerializer.Deserialize<PlatformRole[]>(json, LauncherJson.Options)!;
+        Assert.True(roles[0].IsPrimary);
+        Assert.Equal(("moderator", "GODWINCH", false), (roles[1].Role, roles[1].GrantedByName, roles[1].IsPrimary));
+    }
+
+    /// <summary>An older platform sends only userId/username/role — still readable.</summary>
+    [Fact]
+    public void Reads_a_roles_list_from_an_older_platform()
+    {
+        const string json = """[{"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"GODWINCH","role":"owner"}]""";
+        var r = Assert.Single(JsonSerializer.Deserialize<PlatformRole[]>(json, LauncherJson.Options)!);
+        Assert.Equal(("owner", false, (string?)null), (r.Role, r.IsPrimary, r.GrantedByName));
+    }
 }

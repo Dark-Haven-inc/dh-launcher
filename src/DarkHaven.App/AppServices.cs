@@ -177,9 +177,16 @@ public sealed class AppServices : IDisposable
         _heartbeat.Tick += async (_, _) =>
         {
             if (Platform.IsSignedIn && Platform.SignedInAt is { } at && DateTimeOffset.UtcNow - at > PlatformSessionRenewAfter)
+            {
                 await SignInToPlatformAsync(); // raises PlatformSessionChanged, which sends presence
-            else
-                await SendPresenceAsync();
+                return;
+            }
+
+            await SendPresenceAsync();
+            // A role granted or taken away while the launcher is open: show or hide АДМИН now,
+            // not at the next sign-in.
+            if (await Platform.RefreshRolesAsync())
+                PlatformSessionChanged?.Invoke();
         };
         _heartbeat.Start();
     }

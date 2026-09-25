@@ -6,6 +6,27 @@
              x:Class="DarkHaven.App.Views.AdminView"
              x:DataType="vm:AdminViewModel">
 
+    <UserControl.Styles>
+        <!-- Role switches: same look as МОНИТОРИНГ's range switches — the chosen one is lit -->
+        <Style Selector="Button.pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        </Style>
+        <Style Selector="Button.pill:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        </Style>
+        <Style Selector="Button.pill.selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
         <StackPanel Margin="40,36" Spacing="22" MaxWidth="720" HorizontalAlignment="Left">
 
@@ -354,20 +375,30 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Roles: owner only -->
+                <!-- Roles: owner only. The platform enforces the rules (RoleRules); this just explains them. -->
                 <StackPanel Spacing="10" IsVisible="{Binding IsOwner}">
                     <TextBlock Text="РОЛИ" Classes="caps" />
                     <Border Classes="card" Padding="16">
-                        <StackPanel Spacing="8">
+                        <StackPanel Spacing="10">
                             <TextBox Text="{Binding RoleUsername}" Watermark="Ник игрока" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Classes="ghost" Content="news" Command="{Binding SetRoleToGrantCommand}" CommandParameter="news" />
-                                <Button Classes="ghost" Content="admin" Command="{Binding SetRoleToGrantCommand}" CommandParameter="admin" />
-                                <Button Classes="ghost" Content="owner" Command="{Binding SetRoleToGrantCommand}" CommandParameter="owner" />
-                                <TextBlock Text="{Binding RoleToGrant, StringFormat='выбрано: {0}'}" Classes="dim" VerticalAlignment="Center" />
+                                <Button Classes="pill" Content="Редактор новостей" Command="{Binding SetRoleToGrantCommand}" CommandParameter="news"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
+                                <Button Classes="pill" Content="Модератор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="moderator"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=moderator}" />
+                                <Button Classes="pill" Content="Администратор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="admin"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=admin}" />
+                                <Button Classes="pill" Content="Владелец" Command="{Binding SetRoleToGrantCommand}" CommandParameter="owner"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=owner}" />
                             </StackPanel>
-                            <Button Classes="primary" Content="Выдать роль" HorizontalAlignment="Left"
+                            <TextBlock Text="{Binding RoleToGrantDescription}" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+                            <Button Classes="primary" HorizontalAlignment="Left"
+                                    Content="{Binding RoleToGrantTitle, StringFormat='Выдать роль: {0}'}"
                                     Command="{Binding GrantRoleCommand}" IsEnabled="{Binding !IsLoading}" />
+                            <TextBlock Text="{Binding RoleStatus}" FontSize="12" TextWrapping="Wrap"
+                                       IsVisible="{Binding RoleStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                       Text="Правила: модерировать можно только тех, кто ниже по роли, и никогда себя. Выданная роль появляется у игрока в течение пары минут, снятая пропадает сразу. Роль можно выдать только тому, кто хотя бы раз входил в лаунчер под своим аккаунтом. Роль в лаунчере не делает админом в игре — для этого раздел ДОСТУП НА СЕРВЕР." />
                         </StackPanel>
                     </Border>
 
@@ -377,11 +408,15 @@
                             <DataTemplate x:DataType="vm:AdminRoleRowViewModel">
                                 <Border Classes="card" Padding="12,10">
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Role}" Classes="dim" />
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding RoleTitle}" Classes="dim" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding GrantedText}" Classes="dim" FontSize="11" />
                                         </StackPanel>
                                         <Button Grid.Column="1" Classes="ghost" Content="Снять" VerticalAlignment="Center"
+                                                IsVisible="{Binding CanRevoke}"
                                                 Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeRoleCommand}"
                                                 CommandParameter="{Binding}" />
                                     </Grid>
