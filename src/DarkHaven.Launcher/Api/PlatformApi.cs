@@ -278,6 +278,10 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public Task<IReadOnlyList<PlatformNewsAdmin>> GetAllNewsAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformNewsAdmin>("/api/admin/news", cancel);
 
+    /// <summary>Whether the host has frozen the admin (the platform's emergency lockdown).</summary>
+    public Task<PlatformAdminStatus?> GetAdminStatusAsync(CancellationToken cancel = default) =>
+        GetAuthed<PlatformAdminStatus>("/api/admin/status", cancel);
+
     public Task<IReadOnlyList<PlatformBan>> GetLauncherBansAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformBan>("/api/admin/launcher-bans", cancel);
 
@@ -641,6 +645,8 @@ public sealed record PlatformRole(
     string? GrantedByName = null, DateTimeOffset? GrantedAt = null, bool IsPrimary = false);
 
 internal sealed record RolesResponse(string[]? Roles);
+
+public sealed record PlatformAdminStatus(bool Lockdown, string? Reason, DateTimeOffset? Since);
 
 public sealed record PlatformChatMessage(string Sender, string Text, DateTimeOffset AtUtc);
 

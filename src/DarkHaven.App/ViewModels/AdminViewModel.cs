@@ -139,6 +139,8 @@ public partial class AdminViewModel : ViewModelBase
         SearchCard = value is null ? null : new FriendProfileViewModel(_services, value.UserId, value.Username, "игрок Frontier 15");
     }
 
+    /// <summary>Set while the host has the admin frozen — shown as a banner over everything.</summary>
+    [ObservableProperty] private string? _lockdownText;
     [ObservableProperty] private bool _gameAccessEnabled;
     [ObservableProperty] private bool _hasGameBans;
     [ObservableProperty] private PlatformGameRank? _selectedGameRank;
@@ -247,6 +249,11 @@ public partial class AdminViewModel : ViewModelBase
         IsLoading = true;
         try
         {
+            var status = await _services.Platform.GetAdminStatusAsync();
+            LockdownText = status is { Lockdown: true }
+                ? $"Админка заморожена с сервера: {status.Reason}. Смотреть можно, менять — нет, пока её не разморозят."
+                : null;
+
             var bans = await _services.Platform.GetLauncherBansAsync();
             Bans.Clear();
             foreach (var b in bans)

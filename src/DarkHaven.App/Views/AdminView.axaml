@@ -51,6 +51,12 @@
 
             <TextBlock Text="{Binding Status}" Classes="dim" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
+            <!-- The host's emergency freeze (dh-platform Admin/Lockdown) -->
+            <Border Background="{StaticResource DhDangerBrush}" CornerRadius="6" Padding="14,10"
+                    IsVisible="{Binding LockdownText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding LockdownText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" />
+            </Border>
+
             <StackPanel Spacing="22" IsVisible="{Binding CanModerate}">
 
                 <!-- Player search -->
