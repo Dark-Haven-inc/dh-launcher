@@ -129,8 +129,9 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
         HasLauncherStats = true;
         LauncherNowText = now.Total.ToString();
         LauncherInGameText = now.InGame.ToString();
-        LauncherPeakDayText = now.PeakDay is { } d ? d.ToString() : "—";
-        LauncherPeakEverText = now.PeakEver is { } e && now.PeakEverAt is { } eAt
+        // A peak of zero is a period when nobody was around — show a dash, not "рекорд 0".
+        LauncherPeakDayText = now.PeakDay is > 0 and { } d ? d.ToString() : "—";
+        LauncherPeakEverText = now.PeakEver is > 0 and { } e && now.PeakEverAt is { } eAt
             ? $"{e} · {RuText.ShortDate(eAt.ToLocalTime())}"
             : "—";
 
