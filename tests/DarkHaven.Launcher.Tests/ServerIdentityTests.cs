@@ -53,6 +53,37 @@ public class ServerIdentityTests
         Assert.Contains("Colonial Marines RU", msg);
     }
 
+    /// <summary>ХЕЙВЕН today: our server says "custom" and is moving to "Dark-Haven" on the CDN; the
+    /// Colonial Marines server on the same machine says "colonialmarines".</summary>
+    [Theory]
+    [InlineData("custom", true)]
+    [InlineData("Dark-Haven", true)]
+    [InlineData("dark-haven", true)]
+    [InlineData("colonialmarines", false)]
+    [InlineData("colonialmarines-pathogen", false)]
+    public void Haven_accepts_its_current_and_next_build_and_refuses_the_marines(string fork, bool ours) =>
+        Assert.Equal(ours, ServerIdentity.Mismatch("custom,Dark-Haven", Info(fork), "ХЕЙВЕН") is null);
+
+    [Fact]
+    public void The_bundled_regions_pin_haven_against_the_marines()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "dh-regions.json");
+        if (!File.Exists(path))
+            path = Path.Combine(FindRepoRoot(), "src", "DarkHaven.Launcher", "Assets", "dh-regions.json");
+        var regions = JsonSerializer.Deserialize<DhRegion[]>(File.ReadAllText(path), LauncherJson.Options)!;
+        var haven = regions.Single(r => r.Name == "ХЕЙВЕН");
+        Assert.NotNull(ServerIdentity.Mismatch(haven.ExpectFork, Info("colonialmarines"), haven.Name));
+        Assert.Null(ServerIdentity.Mismatch(haven.ExpectFork, Info("custom"), haven.Name));
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "DarkHavenLauncher.slnx")))
+            dir = dir.Parent;
+        return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
+    }
+
     [Fact]
     public void A_region_carries_its_expected_fork_into_the_server_entry()
     {

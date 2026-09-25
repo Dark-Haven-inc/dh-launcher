@@ -20,12 +20,15 @@ public static class ServerIdentity
     /// </summary>
     public static string? Mismatch(string? expectedFork, ServerInfo info, string regionName)
     {
-        var expected = expectedFork?.Trim();
-        if (string.IsNullOrEmpty(expected))
+        // Several accepted ids, comma-separated: the one the server reports today and the one it's
+        // about to move to, so switching doesn't lock players out of their own region.
+        var expected = (expectedFork ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (expected.Length == 0)
             return null;
 
         var actual = info.Build?.ForkId?.Trim();
-        if (string.IsNullOrEmpty(actual) || string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(actual) || expected.Contains(actual, StringComparer.OrdinalIgnoreCase))
             return null;
 
         var who = info.Desc is { Length: > 0 } d ? $" Он представляется так: «{d.Trim()}»." : "";

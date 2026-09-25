@@ -2,6 +2,7 @@
   {
     "name": "ХЕЙВЕН",
     "address": "ss14://95.31.51.216:1212",
+    "expectFork": "custom,Dark-Haven",
     "blurb": "Центральная станция сектора. Основной сервер Frontier 15.",
     "status": "open",
     "neighbours": ["РУБЕЖ", "ВЕРФЬ", "КАРАНТИН", "ПОЛИГОН"],

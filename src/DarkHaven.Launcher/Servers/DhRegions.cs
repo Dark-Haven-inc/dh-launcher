@@ -47,7 +47,8 @@ public sealed record DhRegion
     /// so the launcher can tell it's still ours. Several servers have shared one address here — a
     /// neighbour's server taking the port while ours was down — and without this a player is dropped
     /// into a stranger's game believing it's the region they clicked. It survives restarts, unlike
-    /// <c>auth.public_key</c>, which the engine regenerates every start. Leave it out to skip the check.
+    /// <c>auth.public_key</c>, which the engine regenerates every start. Several ids may be listed,
+    /// comma-separated. Leave it out to skip the check.
     /// </summary>
     [JsonPropertyName("expectFork")] public string? ExpectFork { get; init; }
 }
