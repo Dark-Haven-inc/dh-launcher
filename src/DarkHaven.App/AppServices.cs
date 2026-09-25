@@ -21,7 +21,6 @@ public sealed class AppServices : IDisposable
     public AuthApi Auth { get; }
     public AccountManager Accounts { get; }
     public EngineManager Engines { get; }
-    public HubApi Hub { get; }
     public ServerListManager ServerList { get; }
     public DhRegions Regions { get; }
     public RegionWatcher RegionWatch { get; }
@@ -125,14 +124,20 @@ public sealed class AppServices : IDisposable
         if (int.TryParse(Settings.GetConfig("DownloadLimitKbps"), out var kbps))
             DarkHaven.Launcher.Content.DownloadThrottle.SetKbps(kbps);
 
-        Hub = new HubApi(Http, LauncherPaths.HubCachePath);
-        ServerList = new ServerListManager(Hub);
         Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
         RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
         RegionWatch.EnsureRunning();
 
+        // Dev builds pointed the platform at a local copy on :5080; that address outlived the local
+        // copy on some installs and silently cut them off from the real platform (no profile, no
+        // АДМИН). The live platform has been the default since 0.3.0 — drop the stale override.
+        if (Settings.GetConfig("PlatformApiUrl") is { } stale && stale.TrimEnd('/') == "http://localhost:5080")
+            Settings.SetConfig("PlatformApiUrl", null);
+
         var platformUrl = Settings.GetConfig("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
         Platform = new PlatformApi(Http, platformUrl);
+        // СЕРВЕРЫ: only what staff approved on the platform (no longer the public hub).
+        ServerList = new ServerListManager(Platform, Http, LauncherPaths.ServerListCachePath);
         Images = new RemoteImages(Platform);
         // The platform's own /api/news is a drop-in for the bundled news.json (same shape) —
         // default to it once a platform is configured, unless someone already set NewsUrl by hand.

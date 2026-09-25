@@ -243,7 +243,8 @@ string? GetFlagValue(string name)
 
 async Task ShowServers()
 {
-    var mgr = new ServerListManager(new HubApi(http));
+    var mgr = new ServerListManager(new PlatformApi(http, PlatformApi.DefaultBaseUrl), http,
+        Path.Combine(Path.GetTempPath(), "dh-cli-servers-cache.json"));
     await mgr.RefreshAsync();
 
     var filter = new ServerFilter { Search = GetFlagValue("--search") ?? "", HideEmpty = flags.Contains("--no-empty") };

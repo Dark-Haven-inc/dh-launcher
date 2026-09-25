@@ -2,10 +2,31 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.Launcher;
+using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Servers;
 using Serilog;
 
 namespace DarkHaven.App.ViewModels;
+
+/// <summary>One of the player's own server applications, as the СЕРВЕРЫ tab lists them.</summary>
+public sealed class MyApplicationRow(PlatformServerApplication a)
+{
+    public int Id => a.Id;
+    public string Name => a.Name;
+    public string Address => a.Address;
+    public bool CanWithdraw => a.Status == "pending";
+    public string StatusText => a.Status switch
+    {
+        "pending" => "на рассмотрении",
+        "approved" => "одобрен — есть в списке",
+        "rejected" => "отклонён",
+        "hidden" => "убран из списка",
+        _ => a.Status,
+    };
+    public string? Note => a.ReviewNote is { } n ? $"Ответ: {n}" : null;
+    public string WhenText => RuText.ShortDate(a.CreatedAt.ToLocalTime());
+}
 
 public partial class ServerListViewModel : ViewModelBase
 {
@@ -35,6 +56,76 @@ public partial class ServerListViewModel : ViewModelBase
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private string _directAddress = "";
     [ObservableProperty] private ServerRowViewModel? _selectedServer;
+
+    // Asking for a server to be listed (dh-platform ServersController)
+    [ObservableProperty] private bool _showApply;
+    [ObservableProperty] private string _applyName = "";
+    [ObservableProperty] private string _applyAddress = "";
+    [ObservableProperty] private string _applyDescription = "";
+    [ObservableProperty] private string _applyContact = "";
+    [ObservableProperty] private string? _applyStatus;
+    [ObservableProperty] private bool _applyBusy;
+    public ObservableCollection<MyApplicationRow> MyApplications { get; } = [];
+    public bool CanApply => _services.Platform.IsSignedIn;
+    public bool HasMyApplications => MyApplications.Count > 0;
+    public bool IsEmpty => TotalCount == 0 && !IsLoading;
+    partial void OnTotalCountChanged(int value) => OnPropertyChanged(nameof(IsEmpty));
+    partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(IsEmpty));
+
+    [RelayCommand]
+    private async Task ToggleApply()
+    {
+        ShowApply = !ShowApply;
+        OnPropertyChanged(nameof(CanApply));
+        if (ShowApply)
+            await LoadMyApplicationsAsync();
+    }
+
+    private async Task LoadMyApplicationsAsync()
+    {
+        if (!_services.Platform.IsSignedIn) return;
+        var mine = await _services.Platform.GetMyServerApplicationsAsync();
+        MyApplications.Clear();
+        foreach (var a in mine)
+            MyApplications.Add(new MyApplicationRow(a));
+        OnPropertyChanged(nameof(HasMyApplications));
+    }
+
+    [RelayCommand]
+    private async Task SubmitApplication()
+    {
+        if (ApplyBusy) return;
+        ApplyBusy = true;
+        try
+        {
+            var (error, reachable) = await _services.Platform.ApplyForServerAsync(
+                ApplyName.Trim(), ApplyAddress.Trim(), NullIfBlank(ApplyDescription), NullIfBlank(ApplyContact));
+            if (error is not null)
+            {
+                ApplyStatus = error;
+                return;
+            }
+            ApplyStatus = reachable
+                ? "Заявка отправлена. Сервер ответил на проверку. Решение придёт в уведомления."
+                : "Заявка отправлена, но сервер сейчас не ответил на проверку — включите его, иначе заявку могут отклонить. Решение придёт в уведомления.";
+            ApplyName = ApplyAddress = ApplyDescription = ApplyContact = "";
+            await LoadMyApplicationsAsync();
+        }
+        finally
+        {
+            ApplyBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task WithdrawApplication(MyApplicationRow? row)
+    {
+        if (row is null) return;
+        ApplyStatus = await _services.Platform.WithdrawServerApplicationAsync(row.Id) ?? $"Заявка «{row.Name}» отозвана.";
+        await LoadMyApplicationsAsync();
+    }
+
+    private static string? NullIfBlank(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     /// <summary>Flat list — every row, for counts and favourites lookups, and the grouped list view.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
@@ -120,14 +211,14 @@ public partial class ServerListViewModel : ViewModelBase
             await _services.ServerList.RefreshAsync();
             TotalCount = _services.ServerList.Servers.Count;
             Error = _services.ServerList.StaleSince is { } t
-                ? $"Хаб недоступен — список от {t.ToLocalTime():dd.MM HH:mm}."
+                ? $"Платформа недоступна — список от {t.ToLocalTime():dd.MM HH:mm}."
                 : null;
             ApplyFilter();
         }
         catch (Exception e)
         {
             Log.Warning(e, "Failed to refresh server list");
-            Error = "Не удалось связаться с хабом.";
+            Error = "Не удалось загрузить список серверов.";
         }
         finally
         {

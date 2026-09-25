@@ -15,6 +15,8 @@ public static class LauncherPaths
     public static string ContentDbPath => Path.Combine(DataDir, "content.db");
     public static string SettingsDbPath => Path.Combine(DataDir, "settings.db");
     public static string HubCachePath => Path.Combine(DataDir, "hub-cache.json");
+    /// <summary>The last approved-servers list that loaded, for when the platform can't be reached.</summary>
+    public static string ServerListCachePath => Path.Combine(DataDir, "servers-cache.json");
     public static string NewsCachePath => Path.Combine(DataDir, "news-cache.json");
 
     /// <summary>The game client's stdout/stderr from the latest launch (see <see cref="Update.ClientLog"/>).</summary>

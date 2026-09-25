@@ -8,16 +8,67 @@
     <DockPanel Margin="28,24">
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
             <StackPanel>
-                <TextBlock Classes="h1" Text="РУхаб" />
+                <TextBlock Classes="h1" Text="Серверы" />
                 <TextBlock Classes="dim">
-                    <Run Text="{Binding Servers.Count}" /><Run Text=" из " /><Run Text="{Binding TotalCount}" /><Run Text=" — русскоязычные и украинские сервера SS14" />
+                    <Run Text="{Binding Servers.Count}" /><Run Text=" из " /><Run Text="{Binding TotalCount}" /><Run Text=" — сервера, одобренные администрацией Frontier 15" />
                 </TextBlock>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Classes="nav" Command="{Binding ToggleApplyCommand}" Content="+ Разместить свой сервер" />
                 <Button Classes="nav" Command="{Binding RefreshCommand}" Content="↻ Обновить" />
                 <ToggleButton Classes="nav" IsChecked="{Binding MapView}" Content="Карта" />
             </StackPanel>
         </Grid>
+
+        <!-- Asking for a server to be listed -->
+        <Border DockPanel.Dock="Top" Classes="card" Padding="16" Margin="0,14,0,0" IsVisible="{Binding ShowApply}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="ЗАЯВКА НА РАЗМЕЩЕНИЕ СЕРВЕРА" Classes="caps" />
+                <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap"
+                           Text="Сервер появится в списке, когда его одобрит владелец или администратор Frontier 15. Решение придёт в уведомления. Локальный сервер для тестов и маппинга сюда подавать не нужно." />
+                <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding !CanApply}"
+                           Text="Чтобы подать заявку, войдите в аккаунт." />
+                <StackPanel Spacing="8" IsVisible="{Binding CanApply}">
+                    <Grid ColumnDefinitions="*,8,*">
+                        <TextBox Grid.Column="0" Watermark="Название сервера" Text="{Binding ApplyName}" MaxLength="60" />
+                        <TextBox Grid.Column="2" Watermark="ss14://адрес:порт" Text="{Binding ApplyAddress}" MaxLength="200" />
+                    </Grid>
+                    <TextBox Watermark="Коротко о сервере: режим, правила, для кого" Text="{Binding ApplyDescription}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" MaxLength="500" />
+                    <TextBox Watermark="Как с вами связаться (Discord, ссылка)" Text="{Binding ApplyContact}" MaxLength="100" />
+                    <Button Classes="primary" HorizontalAlignment="Left" Content="Отправить заявку"
+                            Command="{Binding SubmitApplicationCommand}" IsEnabled="{Binding !ApplyBusy}" />
+                </StackPanel>
+                <TextBlock Text="{Binding ApplyStatus}" FontSize="12" TextWrapping="Wrap"
+                           IsVisible="{Binding ApplyStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <TextBlock Text="МОИ ЗАЯВКИ" Classes="caps" Margin="0,6,0,0" IsVisible="{Binding HasMyApplications}" />
+                <ItemsControl ItemsSource="{Binding MyApplications}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MyApplicationRow">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="1">
+                                    <TextBlock>
+                                        <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding StatusText}" />
+                                        <Run Text=" · " /><Run Text="{Binding WhenText}" Foreground="{StaticResource DhTextDimBrush}" />
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Note}" Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                               IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="ghost" Content="Отозвать" VerticalAlignment="Center"
+                                        IsVisible="{Binding CanWithdraw}"
+                                        Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).WithdrawApplicationCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,14,0,0" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"
+                   Text="В списке пока нет одобренных серверов. Держите свой сервер — подайте заявку кнопкой «Разместить свой сервер»." />
 
         <TextBox DockPanel.Dock="Top" Margin="0,14,0,0" Watermark="Поиск серверов…" Text="{Binding Search}" />
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="0,10,0,0">

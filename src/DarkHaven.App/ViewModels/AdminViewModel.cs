@@ -76,6 +76,49 @@ public sealed class AdminGameAdminRowViewModel(PlatformGameAdmin a)
     public string TitleText => string.IsNullOrWhiteSpace(a.Title) ? "" : $" · {a.Title}";
 }
 
+/// <summary>A server on (or asking to get on) the СЕРВЕРЫ list, as staff see it.</summary>
+public sealed partial class AdminServerRowViewModel(PlatformAdminServer s) : ObservableObject
+{
+    public int Id => s.Id;
+    public string Name => s.Name;
+    public string Address => s.Address;
+    public string? Description => s.Description;
+    public string? Contact => s.Contact is { } c ? $"Связь: {c}" : null;
+    public int SortOrder => s.SortOrder;
+    public string Status => s.Status;
+    public PlatformAdminServer Server => s;
+
+    public string SubmittedText => s.SubmittedByName is { } by
+        ? $"подал {by} · {RuText.ShortDate(s.CreatedAt.ToLocalTime())}"
+        : RuText.ShortDate(s.CreatedAt.ToLocalTime());
+
+    /// <summary>What the platform found when it pinged the server at submission.</summary>
+    public string ProbeText => s.ProbedName is { } n
+        ? $"✔ при подаче отвечал как «{n}», игроков: {s.ProbedPlayers ?? 0}"
+        : "✖ при подаче не отвечал";
+
+    public string ReviewText
+    {
+        get
+        {
+            if (s.ReviewedByName is not { } by || s.ReviewedAt is not { } at)
+                return "";
+            var what = s.Status switch { "approved" => "одобрил", "rejected" => "отклонил", "hidden" => "убрал", _ => "решил" };
+            return $"{what} {by} · {RuText.ShortDate(at.ToLocalTime())}" + (s.ReviewNote is { } n ? $" — {n}" : "");
+        }
+    }
+
+    public string StatusTitle => s.Status switch
+    {
+        "rejected" => "отклонён",
+        "hidden" => "убран из списка",
+        _ => s.Status,
+    };
+
+    /// <summary>Reason for a rejection / note for an approval, typed right on the card.</summary>
+    [ObservableProperty] private string _note = "";
+}
+
 /// <summary>A ban the game server itself issued, as shown on a player's card.</summary>
 public sealed class AdminGameBanRowViewModel(PlatformGameBan b)
 {
@@ -139,6 +182,22 @@ public partial class AdminViewModel : ViewModelBase
         SearchCard = value is null ? null : new FriendProfileViewModel(_services, value.UserId, value.Username, "игрок Frontier 15");
     }
 
+    /// <summary>Which part of АДМИН is showing — one at a time instead of one endless page.</summary>
+    [ObservableProperty] private string _section = "players";
+
+    // СЕРВЕРЫ: applications and the list itself (admin/owner)
+    [ObservableProperty] private string _newServerName = "";
+    [ObservableProperty] private string _newServerAddress = "";
+    [ObservableProperty] private string _newServerDescription = "";
+    [ObservableProperty] private string? _serversStatus;
+    [ObservableProperty] private string _serversTabTitle = "Серверы";
+    public ObservableCollection<AdminServerRowViewModel> PendingServers { get; } = [];
+    public ObservableCollection<AdminServerRowViewModel> ListedServers { get; } = [];
+    public ObservableCollection<AdminServerRowViewModel> ArchivedServers { get; } = [];
+    public bool HasPendingServers => PendingServers.Count > 0;
+    public bool HasArchivedServers => ArchivedServers.Count > 0;
+    public bool HasListedServers => ListedServers.Count > 0;
+
     /// <summary>Set while the host has the admin frozen — shown as a banner over everything.</summary>
     [ObservableProperty] private string? _lockdownText;
     [ObservableProperty] private bool _gameAccessEnabled;
@@ -179,7 +238,10 @@ public partial class AdminViewModel : ViewModelBase
     public bool CanModerate => _services.Platform.CanModerate;
     public bool CanAdmin => _services.Platform.CanAdmin;
     public bool IsOwner => _services.Platform.Roles.Contains("owner");
-    public bool NoAccess => _services.Platform.IsSignedIn && !CanModerate;
+    public bool CanEditNews => _services.Platform.CanEditNews;
+    /// <summary>Anyone with any launcher role gets the tab — a news editor included.</summary>
+    public bool CanSeeAdmin => CanModerate || CanEditNews;
+    public bool NoAccess => _services.Platform.IsSignedIn && !CanSeeAdmin;
     public bool IsEditingNews => EditingNews is not null;
     public string NewsSubmitLabel => IsEditingNews ? "Сохранить" : "Опубликовать";
 
@@ -238,12 +300,23 @@ public partial class AdminViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanAdmin));
         OnPropertyChanged(nameof(IsOwner));
         OnPropertyChanged(nameof(NoAccess));
+        OnPropertyChanged(nameof(CanEditNews));
+        OnPropertyChanged(nameof(CanSeeAdmin));
+
+        // A news editor has only the news section; don't leave them staring at one they can't use.
+        if (!CanModerate && CanEditNews)
+            Section = "news";
+        else if (Section is "servers" or "journal" or "access" && !CanAdmin)
+            Section = "players";
     }
+
+    [RelayCommand]
+    private void SetSection(string section) => Section = section;
 
     public async Task ReloadAsync()
     {
         OnPlatformSessionChanged();
-        if (!CanModerate)
+        if (!CanSeeAdmin)
             return;
 
         IsLoading = true;
@@ -254,24 +327,32 @@ public partial class AdminViewModel : ViewModelBase
                 ? $"Админка заморожена с сервера: {status.Reason}. Смотреть можно, менять — нет, пока её не разморозят."
                 : null;
 
-            var bans = await _services.Platform.GetLauncherBansAsync();
-            Bans.Clear();
-            foreach (var b in bans)
-                Bans.Add(new AdminBanRowViewModel(b));
+            if (CanModerate)
+            {
+                var bans = await _services.Platform.GetLauncherBansAsync();
+                Bans.Clear();
+                foreach (var b in bans)
+                    Bans.Add(new AdminBanRowViewModel(b));
 
-            var servers = await _services.Platform.GetGameServersAsync();
-            GameServers.Clear();
-            foreach (var s in servers)
-                GameServers.Add(s);
-            if (SelectedRegion.Length == 0 || !GameServers.Contains(SelectedRegion))
-                SelectedRegion = GameServers.FirstOrDefault() ?? "";
+                var servers = await _services.Platform.GetGameServersAsync();
+                GameServers.Clear();
+                foreach (var s in servers)
+                    GameServers.Add(s);
+                if (SelectedRegion.Length == 0 || !GameServers.Contains(SelectedRegion))
+                    SelectedRegion = GameServers.FirstOrDefault() ?? "";
+            }
 
-            if (CanAdmin)
+            if (CanEditNews)
             {
                 var news = await _services.Platform.GetAllNewsAsync();
                 News.Clear();
                 foreach (var n in news)
                     News.Add(new AdminNewsRowViewModel(n));
+            }
+
+            if (CanAdmin)
+            {
+                await ReloadServersAsync();
 
                 var audit = await _services.Platform.GetAuditLogAsync();
                 AuditLog.Clear();
@@ -294,6 +375,92 @@ public partial class AdminViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    // --- СЕРВЕРЫ: what goes on the launcher's server list (admin/owner) ---
+
+    public async Task ReloadServersAsync()
+    {
+        var all = await _services.Platform.GetAdminServersAsync();
+        PendingServers.Clear();
+        ListedServers.Clear();
+        ArchivedServers.Clear();
+        foreach (var s in all)
+        {
+            var row = new AdminServerRowViewModel(s);
+            (s.Status switch { "pending" => PendingServers, "approved" => ListedServers, _ => ArchivedServers }).Add(row);
+        }
+        ServersTabTitle = PendingServers.Count > 0 ? $"Серверы · {PendingServers.Count}" : "Серверы";
+        OnPropertyChanged(nameof(HasPendingServers));
+        OnPropertyChanged(nameof(HasArchivedServers));
+        OnPropertyChanged(nameof(HasListedServers));
+    }
+
+    [RelayCommand]
+    private async Task AddServer()
+    {
+        var error = await _services.Platform.AddServerAsync(
+            NewServerName.Trim(), NewServerAddress.Trim(),
+            string.IsNullOrWhiteSpace(NewServerDescription) ? null : NewServerDescription.Trim(), null, null);
+        ServersStatus = error ?? $"«{NewServerName.Trim()}» добавлен в список.";
+        if (error is null)
+        {
+            NewServerName = NewServerAddress = NewServerDescription = "";
+            await ReloadServersAsync();
+        }
+    }
+
+    [RelayCommand] private Task ApproveServer(AdminServerRowViewModel? row) => Decide(row, "approve", "одобрен и появился в списке");
+    [RelayCommand] private Task RejectServer(AdminServerRowViewModel? row) => Decide(row, "reject", "отклонён");
+    [RelayCommand] private Task HideServer(AdminServerRowViewModel? row) => Decide(row, "hide", "убран из списка");
+    /// <summary>Put a hidden or rejected server (back) on the list.</summary>
+    [RelayCommand] private Task RestoreServer(AdminServerRowViewModel? row) => Decide(row, "approve", "снова в списке");
+
+    private async Task Decide(AdminServerRowViewModel? row, string decision, string done)
+    {
+        if (row is null) return;
+        var note = string.IsNullOrWhiteSpace(row.Note) ? null : row.Note.Trim();
+        var error = await _services.Platform.DecideServerAsync(row.Id, decision, note);
+        ServersStatus = error ?? $"«{row.Name}» {done}.";
+        if (error is null)
+            await ReloadServersAsync();
+    }
+
+    [RelayCommand]
+    private async Task DeleteServer(AdminServerRowViewModel? row)
+    {
+        if (row is null) return;
+        var error = await _services.Platform.DeleteServerAsync(row.Id);
+        ServersStatus = error ?? $"«{row.Name}» удалён насовсем.";
+        if (error is null)
+            await ReloadServersAsync();
+    }
+
+    [RelayCommand] private Task MoveServerUp(AdminServerRowViewModel? row) => Move(row, -1);
+    [RelayCommand] private Task MoveServerDown(AdminServerRowViewModel? row) => Move(row, +1);
+
+    /// <summary>Swap places with the neighbour, so the order players see is exactly this list's.</summary>
+    private async Task Move(AdminServerRowViewModel? row, int direction)
+    {
+        if (row is null) return;
+        var list = ListedServers.ToList();
+        var i = list.IndexOf(row);
+        var j = i + direction;
+        if (i < 0 || j < 0 || j >= list.Count) return;
+
+        (list[i], list[j]) = (list[j], list[i]);
+        for (var k = 0; k < list.Count; k++)
+        {
+            var s = list[k].Server;
+            var order = (k + 1) * 10;
+            if (s.SortOrder == order) continue;
+            if (await _services.Platform.EditServerAsync(s.Id, s.Name, s.Address, s.Description, s.Contact, order) is { } error)
+            {
+                ServersStatus = error;
+                break;
+            }
+        }
+        await ReloadServersAsync();
     }
 
     // --- Доступ на игровой сервер (admin/owner) ---

@@ -26,6 +26,8 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public IReadOnlyList<string> Roles { get; private set; } = [];
     public bool CanAdmin => Roles.Contains("admin") || Roles.Contains("owner");
     public bool CanModerate => CanAdmin || Roles.Contains("moderator");
+    /// <summary>The "news" role writes news and nothing else — but it still needs the АДМИН tab to do it.</summary>
+    public bool CanEditNews => CanAdmin || Roles.Contains("news");
 
     private string? _jwt;
 
@@ -81,6 +83,62 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
     public async Task<IReadOnlyList<MonitoredServer>> GetMonitoredServersAsync(CancellationToken cancel = default) =>
         await GetPublic<MonitoredServer[]>("/api/monitoring", cancel) ?? [];
+
+    // --- СЕРВЕРЫ: only what owners/admins let in (dh-platform ServersController) ---
+
+    /// <summary>The approved servers, in the order staff set. Null if the platform can't be reached.</summary>
+    public Task<PlatformListedServer[]?> GetListedServersAsync(CancellationToken cancel = default) =>
+        GetPublic<PlatformListedServer[]>("/api/servers", cancel);
+
+    /// <summary>Ask for a server to be listed. Error is null on success; Reachable says whether the
+    /// platform could reach the server when it checked.</summary>
+    public async Task<(string? Error, bool Reachable)> ApplyForServerAsync(
+        string name, string address, string? description, string? contact, CancellationToken cancel = default)
+    {
+        if (_jwt is null) return ("Войдите в аккаунт, чтобы подать заявку.", false);
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/servers/applications"))
+            {
+                Content = JsonContent.Create(new { name, address, description, contact }, options: LauncherJson.Options),
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            using var res = await http.SendAsync(req, cancel);
+            if (!res.IsSuccessStatusCode)
+                return (await ErrorOf(res, cancel), false);
+            var body = await res.Content.ReadFromJsonAsync<ApplicationResult>(LauncherJson.Options, cancel);
+            return (null, body?.Reachable ?? false);
+        }
+        catch (Exception e)
+        {
+            Log.Debug(e, "Server application failed");
+            return ("Платформа недоступна.", false);
+        }
+    }
+
+    public Task<IReadOnlyList<PlatformServerApplication>> GetMyServerApplicationsAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformServerApplication>("/api/servers/applications/mine", cancel);
+
+    public Task<string?> WithdrawServerApplicationAsync(int id, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, $"/api/servers/applications/{id}", null, cancel);
+
+    // --- Admin side of the list (admin, owner) ---
+
+    public Task<IReadOnlyList<PlatformAdminServer>> GetAdminServersAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformAdminServer>("/api/admin/servers", cancel);
+
+    public Task<string?> AddServerAsync(string name, string address, string? description, string? contact, int? sortOrder, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, "/api/admin/servers", new { name, address, description, contact, sortOrder }, cancel);
+
+    public Task<string?> EditServerAsync(int id, string name, string address, string? description, string? contact, int? sortOrder, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Put, $"/api/admin/servers/{id}", new { name, address, description, contact, sortOrder }, cancel);
+
+    /// <summary><paramref name="decision"/>: "approve", "reject" (note required) or "hide".</summary>
+    public Task<string?> DecideServerAsync(int id, string decision, string? note, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, $"/api/admin/servers/{id}/{decision}", new { note }, cancel);
+
+    public Task<string?> DeleteServerAsync(int id, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, $"/api/admin/servers/{id}", null, cancel);
 
     /// <summary>How many people have the launcher open right now, and the peaks.</summary>
     public Task<LauncherOnline?> GetLauncherOnlineAsync(CancellationToken cancel = default) =>
@@ -657,6 +715,23 @@ public sealed record PlatformRole(
     string? Source = null);
 
 internal sealed record RolesResponse(string[]? Roles);
+
+internal sealed record ApplicationResult(int Id, bool Reachable);
+
+/// <summary>A server on the СЕРВЕРЫ list, as staff approved it.</summary>
+public sealed record PlatformListedServer(int Id, string Name, string Address, string? Description);
+
+/// <summary>One of the player's own applications and where it stands.</summary>
+public sealed record PlatformServerApplication(
+    int Id, string Name, string Address, string Status, string? ReviewNote,
+    DateTimeOffset CreatedAt, DateTimeOffset? ReviewedAt);
+
+/// <summary>A server as staff see it — every status, with who asked and what the check found.</summary>
+public sealed record PlatformAdminServer(
+    int Id, string Name, string Address, string? Description, string? Contact, string Status, int SortOrder,
+    Guid? SubmittedBy, string? SubmittedByName, DateTimeOffset CreatedAt,
+    string? ProbedName, int? ProbedPlayers,
+    string? ReviewedByName, DateTimeOffset? ReviewedAt, string? ReviewNote);
 
 public sealed record PlatformAdminStatus(bool Lockdown, string? Reason, DateTimeOffset? Since);
 

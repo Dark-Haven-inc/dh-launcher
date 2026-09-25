@@ -15,6 +15,8 @@ public sealed class ServerEntry(string address)
 
     public ServerReachability Reachability { get; set; } = ServerReachability.Unknown;
     public string? Name { get; set; }
+    /// <summary>What staff wrote about it when they approved it (СЕРВЕРЫ list only).</summary>
+    public string? Description { get; set; }
     /// <summary>The name the server reports in <c>/status</c> (kept even for regions, which display a codename).</summary>
     public string? ServerName { get; set; }
     public int Players { get; set; }
