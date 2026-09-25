@@ -14,6 +14,7 @@
         <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
         <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
         <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
         <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>

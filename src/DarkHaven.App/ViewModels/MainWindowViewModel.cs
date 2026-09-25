@@ -5,7 +5,7 @@ using DarkHaven.Launcher.Update;
 
 namespace DarkHaven.App.ViewModels;
 
-public enum NavPage { Home, Regions, Servers, Monitoring, News, Settings, Admin, Account, Profile }
+public enum NavPage { Home, Regions, Servers, Monitoring, News, Settings, Admin, Account, Profile, Bans }
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -35,6 +35,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public AdminViewModel Admin { get; }
     public NotificationsViewModel Notifications { get; }
     public MonitoringViewModel Monitoring { get; }
+    /// <summary>The public ban list, opened from a region's card (not a bottom tab).</summary>
+    public BanListViewModel Bans { get; }
 
     /// <summary>Signed-in account name for the top bar, or null.</summary>
     public string? AccountName => _services.Accounts.Active?.Username ?? _services.Accounts.Accounts.FirstOrDefault()?.Username;
@@ -57,6 +59,12 @@ public partial class MainWindowViewModel : ViewModelBase
         Admin = new AdminViewModel(services);
         Notifications = new NotificationsViewModel(services);
         Monitoring = new MonitoringViewModel(services, Connect);
+        Bans = new BanListViewModel(services, back: () => Page = NavPage.Regions);
+        Regions.OpenBans = title =>
+        {
+            Page = NavPage.Bans;
+            Bans.Open(title);
+        };
 
         _services.RegionWatch.CameOnline += (name, address) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -246,6 +254,7 @@ public partial class MainWindowViewModel : ViewModelBase
             NavPage.Admin => Admin,
             NavPage.Account => Account,
             NavPage.Profile => Profile,
+            NavPage.Bans => Bans,
             _ => Regions,
         };
     }

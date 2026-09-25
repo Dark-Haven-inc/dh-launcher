@@ -84,6 +84,26 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<IReadOnlyList<MonitoredServer>> GetMonitoredServersAsync(CancellationToken cancel = default) =>
         await GetPublic<MonitoredServer[]>("/api/monitoring", cancel) ?? [];
 
+    // --- Public ban list of the DH servers (dh-platform BanListController) ---
+
+    /// <summary>A page of the public ban list. Null if the platform can't be reached.</summary>
+    public Task<PlatformBanListPage?> GetBanListAsync(
+        string search, DateTimeOffset? from, DateTimeOffset? to, string status, string type, int page, int pageSize,
+        CancellationToken cancel = default)
+    {
+        var query = new List<string>
+        {
+            $"status={Uri.EscapeDataString(status)}",
+            $"type={Uri.EscapeDataString(type)}",
+            $"page={page}",
+            $"pageSize={pageSize}",
+        };
+        if (search.Length > 0) query.Add($"q={Uri.EscapeDataString(search)}");
+        if (from is { } f) query.Add($"from={Uri.EscapeDataString(f.ToString("O"))}");
+        if (to is { } t) query.Add($"to={Uri.EscapeDataString(t.ToString("O"))}");
+        return GetPublic<PlatformBanListPage>("/api/banlist?" + string.Join('&', query), cancel);
+    }
+
     // --- СЕРВЕРЫ: only what owners/admins let in (dh-platform ServersController) ---
 
     /// <summary>The approved servers, in the order staff set. Null if the platform can't be reached.</summary>
@@ -717,6 +737,14 @@ public sealed record PlatformRole(
 internal sealed record RolesResponse(string[]? Roles);
 
 internal sealed record ApplicationResult(int Id, bool Reachable);
+
+/// <summary>One ban as the public list shows it. Admin/LiftedBy are null when the server hides names.</summary>
+public sealed record PlatformPublicBan(
+    int Id, bool IsRoleBan, DateTimeOffset At, DateTimeOffset? ExpiresAt, string Reason, string Player,
+    string? Admin, DateTimeOffset? LiftedAt, string? LiftedBy, string? Roles);
+
+/// <summary><c>Available</c> is false while the platform has no game database to read.</summary>
+public sealed record PlatformBanListPage(bool Available, long Total, PlatformPublicBan[] Items);
 
 /// <summary>A server on the СЕРВЕРЫ list, as staff approved it.</summary>
 public sealed record PlatformListedServer(int Id, string Name, string Address, string? Description);

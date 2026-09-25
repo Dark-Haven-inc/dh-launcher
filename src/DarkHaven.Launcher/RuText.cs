@@ -40,4 +40,23 @@ public static class RuText
     /// <summary>Thousands grouped with a non-breaking space, the Russian way: "45 000".</summary>
     public static string Number(long n) =>
         n.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ');
+
+    /// <summary>"3 дня", "2 часа", "1 месяц" — a length of time, rounded to its biggest unit.</summary>
+    public static string Span(TimeSpan span)
+    {
+        if (span.TotalDays >= 365) return Plural((int)Math.Round(span.TotalDays / 365), "год", "года", "лет");
+        if (span.TotalDays >= 30) return Plural((int)Math.Round(span.TotalDays / 30), "месяц", "месяца", "месяцев");
+        if (span.TotalDays >= 1) return Plural((int)Math.Round(span.TotalDays), "день", "дня", "дней");
+        if (span.TotalHours >= 1) return Plural((int)Math.Round(span.TotalHours), "час", "часа", "часов");
+        return Plural(Math.Max(1, (int)Math.Round(span.TotalMinutes)), "минута", "минуты", "минут");
+    }
+
+    /// <summary>"1 день", "3 дня", "5 дней", "11 дней", "21 день".</summary>
+    public static string Plural(int n, string one, string few, string many)
+    {
+        var mod100 = n % 100;
+        var mod10 = n % 10;
+        var word = mod100 is >= 11 and <= 14 ? many : mod10 == 1 ? one : mod10 is >= 2 and <= 4 ? few : many;
+        return $"{n} {word}";
+    }
 }

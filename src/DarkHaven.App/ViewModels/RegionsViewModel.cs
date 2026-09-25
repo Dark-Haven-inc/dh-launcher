@@ -166,4 +166,10 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
         if (Selected is { CanConnect: true })
             connect(Selected.Entry);
     }
+
+    /// <summary>Opens the public ban list (set by the window, which owns the pages).</summary>
+    public Action<string>? OpenBans { get; set; }
+
+    [RelayCommand]
+    private void ShowBans() => OpenBans?.Invoke(Selected?.Name ?? "Frontier 15");
 }

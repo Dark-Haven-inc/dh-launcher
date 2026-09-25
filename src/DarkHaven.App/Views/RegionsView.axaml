@@ -60,6 +60,11 @@
 
                 <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Content="Баны игроков" Command="{Binding ShowBansCommand}"
+                        IsVisible="{Binding !Selected.IsQuarantine}" />
+
+                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                         Content="{Binding Selected.SlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
                         IsVisible="{Binding Selected.CanWaitForSlot}" />
 
