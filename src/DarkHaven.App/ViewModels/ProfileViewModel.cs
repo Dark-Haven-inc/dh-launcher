@@ -48,6 +48,9 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
 
     /// <summary>The code to type as <c>!link &lt;код&gt;</c> to the "Дозорный" Discord bot, once requested.</summary>
     [ObservableProperty] private string? _discordLinkCode;
+    /// <summary>The linked Discord account's name, or null while nothing is linked.</summary>
+    [ObservableProperty] private string? _discordLinkedName;
+    [ObservableProperty] private string? _discordStatus;
     [ObservableProperty] private bool _discordLinkRequesting;
 
     public ObservableCollection<PlaytimeRowViewModel> Servers { get; } = [];
@@ -127,6 +130,9 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
             if (p is null) return;
 
             IsPlatformConnected = true;
+            DiscordLinkedName = p.DiscordId is null ? null : p.DiscordName ?? $"ID {p.DiscordId}";
+            if (DiscordLinkedName is not null)
+                DiscordLinkCode = null; // the code did its job
 
             if (p.PlaytimeSource == "game-server")
                 TotalPlaytime = p.TotalPlaytimeSeconds > 0 ? FormatDuration(p.TotalPlaytimeSeconds) : "ещё не играл";
@@ -179,6 +185,19 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
         {
             DiscordLinkRequesting = false;
         }
+    }
+
+    /// <summary>Cut the Discord link. A launcher role that came from Discord goes with it.</summary>
+    [RelayCommand]
+    private async Task UnlinkDiscord()
+    {
+        if (await services.Platform.UnlinkDiscordAsync() is { } error)
+        {
+            DiscordStatus = error;
+            return;
+        }
+        DiscordLinkedName = null;
+        DiscordStatus = "Discord отвязан. Если роль в лаунчере давал Discord, она снята.";
     }
 
     private void LoadAvatar(string? path)

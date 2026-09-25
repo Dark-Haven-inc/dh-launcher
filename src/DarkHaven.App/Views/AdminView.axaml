@@ -95,6 +95,9 @@
                                 <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding SearchResult.LauncherBanned}"
                                            Text="{Binding SearchResult.LauncherBanReason, StringFormat='Причина бана: {0}'}" />
                                 <TextBlock Classes="dim" FontSize="12"
+                                           IsVisible="{Binding SearchResult.Discord, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                           Text="{Binding SearchResult.Discord.Display, StringFormat='Discord: {0}'}" />
+                                <TextBlock Classes="dim" FontSize="12"
                                            IsVisible="{Binding SearchResult.GameAdminRank, Converter={x:Static ObjectConverters.IsNotNull}}"
                                            Text="{Binding SearchResult.GameAdminRank, StringFormat='Права на игровом сервере: {0}'}" />
 

@@ -453,6 +453,10 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
     /// <summary>Requests a short-lived code to give the "Дозорный" bot via <c>!link &lt;код&gt;</c> in
     /// Discord. Null if not signed in or the platform is unreachable.</summary>
+    /// <summary>Cuts the Discord link; a role that came from Discord goes with it. Null on success.</summary>
+    public Task<string?> UnlinkDiscordAsync(CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, "/api/discord/link", null, cancel);
+
     public async Task<(string Code, int ExpiresInSeconds)?> StartDiscordLinkAsync(CancellationToken cancel = default)
     {
         if (_jwt is null) return null;
@@ -568,7 +572,8 @@ public sealed record PlatformProfile(
     string? DiscordId, string? DiscordAvatar, DateTimeOffset MemberSince,
     long TotalPlaytimeSeconds, string PlaytimeSource,
     bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires,
-    string? BannerUrl = null, string? AccentColor = null, string? AboutMe = null);
+    string? BannerUrl = null, string? AccentColor = null, string? AboutMe = null,
+    string? DiscordName = null, DateTimeOffset? DiscordLinkedAt = null);
 
 /// <summary>Someone's card as <c>GET /api/profile/{id}</c> returns it.</summary>
 public sealed record PlatformPublicProfile(
@@ -627,7 +632,13 @@ public sealed record PlatformBan(
 public sealed record PlatformPlayerInfo(
     Guid UserId, string Username, DateTimeOffset MemberSince, DateTimeOffset LastSeen, string? Role,
     long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires,
-    PlatformGameBan[]? GameBans = null, string? GameAdminRank = null);
+    PlatformGameBan[]? GameBans = null, string? GameAdminRank = null, PlatformDiscordLink? Discord = null);
+
+/// <summary>The Discord account a player linked through the "Дозорный" bot.</summary>
+public sealed record PlatformDiscordLink(string DiscordId, string? DiscordName, DateTimeOffset LinkedAt)
+{
+    public string Display => DiscordName ?? DiscordId;
+}
 
 /// <summary>A ban from the game server's own database — not the launcher ban above.</summary>
 public sealed record PlatformGameBan(
@@ -642,7 +653,8 @@ public sealed record PlatformGameAccess(bool Enabled, PlatformGameRank[] Ranks, 
 
 public sealed record PlatformRole(
     Guid UserId, string Username, string Role,
-    string? GrantedByName = null, DateTimeOffset? GrantedAt = null, bool IsPrimary = false);
+    string? GrantedByName = null, DateTimeOffset? GrantedAt = null, bool IsPrimary = false,
+    string? Source = null);
 
 internal sealed record RolesResponse(string[]? Roles);
 

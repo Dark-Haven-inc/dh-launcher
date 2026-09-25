@@ -149,10 +149,22 @@
                     <TextBlock Text="DISCORD" Classes="caps" />
                     <Border Classes="card" Padding="14,12">
                         <StackPanel Spacing="8">
+                            <!-- Linked -->
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DiscordLinkedName, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                                    <Run Text="Привязан: " /><Run Text="{Binding DiscordLinkedName}" FontWeight="SemiBold" />
+                                </TextBlock>
+                                <Button Grid.Column="1" Classes="ghost" Content="Отвязать" Command="{Binding UnlinkDiscordCommand}" />
+                            </Grid>
+                            <!-- Not linked -->
                             <TextBlock Classes="dim" TextWrapping="Wrap"
-                                       Text="Привяжите Discord-аккаунт, чтобы роль на Discord-сервере DH автоматически давала доступ в АДМИН (если она настроена)." />
+                                       IsVisible="{Binding DiscordLinkedName, Converter={x:Static ObjectConverters.IsNull}}"
+                                       Text="Привяжите Discord-аккаунт: некоторые роли на Discord-сервере DH сами дают роль в лаунчере — модератора или редактора новостей. Админов назначают только вручную." />
                             <Button Classes="ghost" HorizontalAlignment="Left" Content="Получить код привязки"
+                                    IsVisible="{Binding DiscordLinkedName, Converter={x:Static ObjectConverters.IsNull}}"
                                     Command="{Binding RequestDiscordLinkCommand}" IsEnabled="{Binding !DiscordLinkRequesting}" />
+                            <TextBlock Text="{Binding DiscordStatus}" FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding DiscordStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
                             <StackPanel Spacing="2" IsVisible="{Binding DiscordLinkCode, Converter={x:Static ObjectConverters.IsNotNull}}">
                                 <TextBlock FontSize="12" Classes="dim">
                                     <Run Text="Отправьте боту «Дозорный» в Discord:" />

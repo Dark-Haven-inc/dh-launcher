@@ -118,4 +118,26 @@ public class PlatformJsonTests
         var r = Assert.Single(JsonSerializer.Deserialize<PlatformRole[]>(json, LauncherJson.Options)!);
         Assert.Equal(("owner", false, (string?)null), (r.Role, r.IsPrimary, r.GrantedByName));
     }
+
+    [Fact]
+    public void Reads_the_linked_discord_on_the_profile_and_the_admin_card()
+    {
+        const string profile = """
+        {"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"GODWINCH","avatarUrl":null,"frame":"blue","title":null,
+         "discordId":"1234567890","discordName":"godwinch","discordLinkedAt":"2026-09-25T20:00:00+00:00","discordAvatar":null,
+         "memberSince":"2026-09-01T00:00:00+00:00","totalPlaytimeSeconds":0,"playtimeSource":"unavailable",
+         "launcherBanned":false,"launcherBanReason":null,"launcherBanExpires":null}
+        """;
+        var p = JsonSerializer.Deserialize<PlatformProfile>(profile, LauncherJson.Options)!;
+        Assert.Equal(("1234567890", "godwinch"), (p.DiscordId, p.DiscordName));
+
+        const string card = """
+        {"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"GODWINCH",
+         "memberSince":"2026-09-01T00:00:00+00:00","lastSeen":"2026-09-25T00:00:00+00:00","role":"owner",
+         "totalPlaytimeSeconds":0,"launcherBanned":false,"launcherBanReason":null,"launcherBanExpires":null,
+         "discord":{"discordId":"1234567890","discordName":null,"linkedAt":"2026-09-25T20:00:00+00:00"}}
+        """;
+        var who = JsonSerializer.Deserialize<PlatformPlayerInfo>(card, LauncherJson.Options)!;
+        Assert.Equal("1234567890", who.Discord!.Display); // no name → the id
+    }
 }
