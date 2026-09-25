@@ -32,7 +32,7 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="Админ" Classes="h1" />
-                <TextBlock Text="Игроки, новости, баны на лаунчер, роли" Classes="dim" />
+                <TextBlock Text="Игроки, серверы, чат, новости, роли и журнал" Classes="dim" />
             </StackPanel>
 
             <!-- Access gating -->
