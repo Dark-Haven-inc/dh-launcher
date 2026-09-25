@@ -21,6 +21,12 @@ public sealed partial class MonitorRegion(string name, string address) : Observa
 /// <summary>One row of the table view — the chart's values without hovering.</summary>
 public sealed record HistoryRow(string When, string Average, string Peak, string Uptime);
 
+/// <summary>"ХЕЙВЕН — 12" under the launcher counter.</summary>
+public sealed record LauncherRegionRow(string Name, int Players)
+{
+    public string Text => $"{Name} — {Players}";
+}
+
 /// <summary>
 /// МОНИТОРИНГ: a region's state right now (read straight from its /status, so the ping is the
 /// player's own) and its online history from the platform, for a day, a week or a month.
@@ -37,6 +43,7 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
 
     public ObservableCollection<MonitorRegion> Regions { get; } = [];
     public ObservableCollection<HistoryRow> Rows { get; } = [];
+    public ObservableCollection<LauncherRegionRow> LauncherRegions { get; } = [];
 
     [ObservableProperty] private MonitorRegion? _selected;
 
@@ -59,6 +66,14 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private string _averageText = "—";
     [ObservableProperty] private string _uptimeText = "—";
     [ObservableProperty] private bool _showTable;
+
+    // The launcher itself, counted from the presence heartbeat every copy already sends
+    [ObservableProperty] private bool _hasLauncherStats;
+    [ObservableProperty] private string _launcherNowText = "—";
+    [ObservableProperty] private string _launcherInGameText = "—";
+    [ObservableProperty] private string _launcherPeakDayText = "—";
+    [ObservableProperty] private string _launcherPeakEverText = "—";
+    [ObservableProperty] private IReadOnlyList<OnlinePoint>? _launcherPoints;
     [ObservableProperty] private string _copyLabel = "Скопировать адрес";
 
     public bool HasRegions => Regions.Count > 0;
@@ -93,8 +108,40 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
     private async Task TickAsync()
     {
         await RefreshLiveAsync();
+        await RefreshLauncherAsync();
         if (DateTime.UtcNow - _historyAt >= HistoryEvery)
             await RefreshHistoryAsync();
+    }
+
+    /// <summary>
+    /// How many people have the launcher open. Independent of the chosen region — the graph below
+    /// follows whatever range the player picked for the server graph, so both read as one picture.
+    /// </summary>
+    private async Task RefreshLauncherAsync()
+    {
+        var now = await services.Platform.GetLauncherOnlineAsync();
+        if (now is null)
+        {
+            HasLauncherStats = false;
+            return;
+        }
+
+        HasLauncherStats = true;
+        LauncherNowText = now.Total.ToString();
+        LauncherInGameText = now.InGame.ToString();
+        LauncherPeakDayText = now.PeakDay is { } d ? d.ToString() : "—";
+        LauncherPeakEverText = now.PeakEver is { } e && now.PeakEverAt is { } eAt
+            ? $"{e} · {RuText.ShortDate(eAt.ToLocalTime())}"
+            : "—";
+
+        LauncherRegions.Clear();
+        foreach (var r in now.Regions)
+            LauncherRegions.Add(new LauncherRegionRow(r.Name, r.Players));
+
+        if (DateTime.UtcNow - _historyAt < HistoryEvery && LauncherPoints is not null)
+            return;
+        var history = await services.Platform.GetLauncherHistoryAsync(Range);
+        LauncherPoints = history?.Points;
     }
 
     [RelayCommand]

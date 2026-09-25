@@ -202,6 +202,50 @@
                     </Border>
                 </StackPanel>
             </Border>
+
+            <!-- The launcher itself: counted from the presence heartbeat every copy already sends -->
+            <Border Classes="card" Padding="18,16" IsVisible="{Binding HasLauncherStats}">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="ЛАУНЧЕР" Classes="caps" />
+                        <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                   Text="Сколько человек прямо сейчас держат лаунчер открытым. График — за выбранный выше период." />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="Auto,28,Auto,28,Auto,28,Auto,*">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="СЕЙЧАС" Classes="statlabel" />
+                            <TextBlock Text="{Binding LauncherNowText}" FontWeight="SemiBold" FontSize="20" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2">
+                            <TextBlock Text="ИЗ НИХ В ИГРЕ" Classes="statlabel" />
+                            <TextBlock Text="{Binding LauncherInGameText}" FontWeight="SemiBold" FontSize="20" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" Spacing="2">
+                            <TextBlock Text="ПИК ЗА СУТКИ" Classes="statlabel" />
+                            <TextBlock Text="{Binding LauncherPeakDayText}" FontWeight="SemiBold" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="6" Spacing="2">
+                            <TextBlock Text="РЕКОРД" Classes="statlabel" />
+                            <TextBlock Text="{Binding LauncherPeakEverText}" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Grid>
+
+                    <controls:OnlineChart Height="200" Points="{Binding LauncherPoints}"
+                                          Range="{Binding Range}"
+                                          EmptyText="Статистика копится с первой минуты работы платформы."
+                                          Classes.loading="{Binding IsLoading}" />
+
+                    <ItemsControl ItemsSource="{Binding LauncherRegions}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="14" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LauncherRegionRow">
+                                <TextBlock Text="{Binding Text}" Classes="dim" FontSize="12" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

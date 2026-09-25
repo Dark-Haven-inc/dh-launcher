@@ -66,4 +66,33 @@ public class PlatformJsonTests
         var a = Assert.Single(access.Admins);
         Assert.Equal(("Cadet_Nova", "Админ", true), (a.Username, a.RankName, a.Deadminned));
     }
+
+    [Fact]
+    public void Reads_how_many_people_have_the_launcher_open()
+    {
+        const string json = """
+        {"at":"2026-09-25T01:00:00+00:00","total":37,"inGame":21,
+         "peakDay":52,"peakDayAt":"2026-09-24T19:30:00+00:00",
+         "peakEver":140,"peakEverAt":"2026-09-20T20:00:00+00:00",
+         "regions":[{"name":"ХЕЙВЕН","players":21}]}
+        """;
+        var now = JsonSerializer.Deserialize<LauncherOnline>(json, LauncherJson.Options)!;
+        Assert.Equal((37, 21, 52, 140), (now.Total, now.InGame, now.PeakDay, now.PeakEver));
+        Assert.Equal(("ХЕЙВЕН", 21), (now.Regions[0].Name, now.Regions[0].Players));
+    }
+
+    [Fact]
+    public void Reads_the_launcher_graph_including_the_in_game_line()
+    {
+        const string json = """
+        {"range":"24h","bucketMinutes":5,
+         "points":[{"at":"2026-09-25T00:55:00+00:00","average":30.5,"peak":37,"uptime":1}],
+         "inGamePoints":[{"at":"2026-09-25T00:55:00+00:00","average":18.0,"peak":21,"uptime":1}],
+         "summary":{"peak":37,"peakAt":"2026-09-25T00:55:00+00:00","average":30.5,"uptimePercent":100,"samples":288}}
+        """;
+        var h = JsonSerializer.Deserialize<LauncherHistory>(json, LauncherJson.Options)!;
+        Assert.Equal(37, h.Points[0].Peak);
+        Assert.Equal(21, h.InGamePoints[0].Peak);
+        Assert.Equal(37, h.Summary.Peak);
+    }
 }

@@ -82,6 +82,14 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public async Task<IReadOnlyList<MonitoredServer>> GetMonitoredServersAsync(CancellationToken cancel = default) =>
         await GetPublic<MonitoredServer[]>("/api/monitoring", cancel) ?? [];
 
+    /// <summary>How many people have the launcher open right now, and the peaks.</summary>
+    public Task<LauncherOnline?> GetLauncherOnlineAsync(CancellationToken cancel = default) =>
+        GetPublic<LauncherOnline>("/api/monitoring/launcher", cancel);
+
+    /// <summary>The same graph as a region's, but counting launchers instead of players.</summary>
+    public Task<LauncherHistory?> GetLauncherHistoryAsync(string range, CancellationToken cancel = default) =>
+        GetPublic<LauncherHistory>($"/api/monitoring/launcher/history?range={Uri.EscapeDataString(range)}", cancel);
+
     /// <summary><paramref name="range"/>: "24h", "7d" or "30d".</summary>
     public Task<OnlineHistory?> GetOnlineHistoryAsync(string region, string range, CancellationToken cancel = default) =>
         GetPublic<OnlineHistory>($"/api/monitoring/{Uri.EscapeDataString(region)}/history?range={Uri.EscapeDataString(range)}", cancel);
@@ -531,6 +539,19 @@ public sealed record OnlinePoint(DateTimeOffset At, double? Average, int? Peak, 
 public sealed record OnlineSummary(int? Peak, DateTimeOffset? PeakAt, double? Average, double? UptimePercent, int Samples);
 
 public sealed record OnlineHistory(string Region, string Range, int BucketMinutes, OnlinePoint[] Points, OnlineSummary Summary);
+
+/// <summary>Where the launcher's users are sitting right now.</summary>
+public sealed record LauncherRegionCount(string Name, int Players);
+
+/// <summary>The launcher itself: open copies now, how many of those are in a game, and the peaks.</summary>
+public sealed record LauncherOnline(
+    DateTimeOffset At, int Total, int InGame,
+    int? PeakDay, DateTimeOffset? PeakDayAt, int? PeakEver, DateTimeOffset? PeakEverAt,
+    LauncherRegionCount[] Regions);
+
+/// <summary><c>InGamePoints</c> is the same buckets counting only those in a game.</summary>
+public sealed record LauncherHistory(
+    string Range, int BucketMinutes, OnlinePoint[] Points, OnlinePoint[] InGamePoints, OnlineSummary Summary);
 
 public sealed record PlatformFriend(
     int Id, Guid UserId, string Username, string Frame, bool Online, string? ServerName, string? ServerAddress,
