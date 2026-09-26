@@ -25,10 +25,17 @@ if (Test-Path $pub) { Remove-Item $pub -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $pub, $OutputDir | Out-Null
 
 # 1. The Avalonia app, self-contained so players need no .NET runtime installed.
+#    The launch-proof signing key comes from the DH_LAUNCH_SIGNING_KEY environment variable (a CI secret; see
+#    src/DarkHaven.Launcher/Security/LaunchProof.cs). Without it the launcher signs nothing.
+$launchKey = $env:DH_LAUNCH_SIGNING_KEY
+if (-not $launchKey) {
+    Write-Warning "DH_LAUNCH_SIGNING_KEY is not set - this build will not sign launch proofs, and Frontier 15 servers enforcing the launcher check will turn its players away."
+}
 Write-Host "-- publish DarkHaven.App" -ForegroundColor DarkCyan
 dotnet publish (Join-Path $repo "src/DarkHaven.App/DarkHaven.App.csproj") `
     -c Release -r $Rid --self-contained true `
     -p:LauncherVersion=$Version -p:PublishSingleFile=false `
+    "-p:DhLaunchKey=$launchKey" `
     -o $pub
 if ($LASTEXITCODE) { throw "app publish failed" }
 

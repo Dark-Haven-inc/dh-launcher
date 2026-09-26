@@ -97,7 +97,11 @@ jobs:
               --token "${{ github.token }}" || echo "no prior release yet — first cut"
           fi
 
+      # DH_LAUNCH_SIGNING_KEY: the launch-proof signing key (`dhlauncher launch-key`). Without it the release still
+      # builds, but signs nothing, and Frontier 15 servers enforcing the launcher check turn its players away.
       - name: Pack release
+        env:
+          DH_LAUNCH_SIGNING_KEY: ${{ secrets.DH_LAUNCH_SIGNING_KEY }}
         run: pwsh scripts/pack-release.ps1 -Version ${{ steps.v.outputs.version }}
 
       - name: Drop stale full packages
