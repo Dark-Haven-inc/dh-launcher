@@ -7,22 +7,40 @@ namespace DarkHaven.Launcher.Tests;
 
 public sealed class LaunchProofTests
 {
+    internal static readonly byte[] VectorChallenge = Enumerable.Range(0, LaunchProof.ChallengeLength).Select(i => (byte)(i * 3 + 1)).ToArray();
+
     [Fact]
     public void ProofHasTheAgreedShapeAndVerifies()
     {
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var user = Guid.NewGuid();
-        var issued = DateTimeOffset.FromUnixTimeSeconds(1_790_000_000);
 
-        var token = LaunchProof.Create(key, user, issued, "1.2.3");
+        var token = LaunchProof.Create(key, user, VectorChallenge, "1.2.3");
         var dot = token.IndexOf('.');
         var payload = FromBase64Url(token[..dot]);
         var signature = FromBase64Url(token[(dot + 1)..]);
 
-        Assert.Equal($"dh-launch/1\n{user:D}\n1790000000\n1.2.3", Encoding.UTF8.GetString(payload));
+        Assert.Equal($"dh-launch/2\n{user:D}\n{LaunchProof.ToBase64Url(VectorChallenge)}\n1.2.3", Encoding.UTF8.GetString(payload));
         Assert.Equal(64, signature.Length);
         Assert.True(key.VerifyData(payload, signature, HashAlgorithmName.SHA256,
             DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+    }
+
+    [Fact]
+    public void ChallengeMustBeWhole()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        Assert.Throws<ArgumentException>(() => LaunchProof.Create(key, Guid.NewGuid(), VectorChallenge.AsSpan(0, 32), "1.2.3"));
+    }
+
+    [Fact]
+    public void V1ProofHasTheOldShape()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var user = Guid.NewGuid();
+        var token = LaunchProof.CreateV1(key, user, DateTimeOffset.FromUnixTimeSeconds(1_790_000_000), "1.2.3");
+        var payload = FromBase64Url(token[..token.IndexOf('.')]);
+        Assert.Equal($"dh-launch/1\n{user:D}\n1790000000\n1.2.3", Encoding.UTF8.GetString(payload));
     }
 
     [Fact]
@@ -40,7 +58,8 @@ public sealed class LaunchProofTests
     {
         // Tests are built without -p:DhLaunchKey, like every non-release build.
         Assert.Null(LaunchSigningKey.Shares);
-        Assert.Null(LaunchProof.TryCreate(Guid.NewGuid()));
+        Assert.Null(LaunchProof.TryCreate(Guid.NewGuid(), VectorChallenge));
+        Assert.Null(LaunchProof.TryCreateV1(Guid.NewGuid()));
     }
 
     /// <summary>
@@ -50,8 +69,7 @@ public sealed class LaunchProofTests
     public void KnownVector()
     {
         using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var token = LaunchProof.Create(key, Guid.Parse("11111111-2222-3333-4444-555555555555"),
-            DateTimeOffset.FromUnixTimeSeconds(1_790_000_000), "9.9.9");
+        var token = LaunchProof.Create(key, Guid.Parse("11111111-2222-3333-4444-555555555555"), VectorChallenge, "9.9.9");
 
         Console.WriteLine($"VECTOR_PUBLIC_KEY={Convert.ToBase64String(key.ExportSubjectPublicKeyInfo())}");
         Console.WriteLine($"VECTOR_TOKEN={token}");
