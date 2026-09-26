@@ -36,7 +36,7 @@
                     <TextBlock Text="КУДА ИГРАТЬ" Classes="caps" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <Button Classes="primary" Content="СЕКТОР FRONTIER 15" Command="{Binding OpenRegionsCommand}" />
-                        <Button Classes="ghost" Content="Все серверы SS14" Command="{Binding OpenServersCommand}" />
+                        <Button Classes="ghost" Content="Другие серверы" Command="{Binding OpenServersCommand}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -88,7 +88,7 @@
             </StackPanel>
 
             <TextBlock Classes="dim" TextWrapping="Wrap" IsVisible="{Binding !Friends.IsAvailable}"
-                       Text="Профиль, наигранное время, друзья и уведомления появятся, когда будет готова платформа Frontier 15." />
+                       Text="Войдите в аккаунт, чтобы видеть профиль, наигранное время, друзей и уведомления." />
         </StackPanel>
 
         <Panel Grid.Column="1" Width="310" Margin="28,0,0,0" VerticalAlignment="Top"

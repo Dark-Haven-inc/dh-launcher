@@ -23,13 +23,23 @@
             <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
             <Setter Property="TextBlock.Foreground" Value="White" />
         </Style>
+        <!-- The ban's state: a filled red badge while it's in force, an outline once it isn't -->
         <Style Selector="Border.state">
             <Setter Property="CornerRadius" Value="4" />
             <Setter Property="Padding" Value="7,2" />
-            <Setter Property="Background" Value="{StaticResource DhBgElevatedBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.state TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
         </Style>
         <Style Selector="Border.state.active">
             <Setter Property="Background" Value="{StaticResource DhDangerBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhDangerBrush}" />
+        </Style>
+        <Style Selector="Border.state.active TextBlock">
+            <Setter Property="Foreground" Value="White" />
         </Style>
     </UserControl.Styles>
 
@@ -86,7 +96,7 @@
                                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                                     <TextBlock Grid.Row="0" Text="{Binding Player}" FontWeight="Bold" FontSize="15" />
                                     <Border Grid.Row="0" Grid.Column="1" Classes="state" Classes.active="{Binding IsActive}">
-                                        <TextBlock Text="{Binding StateText}" FontSize="11" Foreground="White" />
+                                        <TextBlock Text="{Binding StateText}" FontSize="11" />
                                     </Border>
                                     <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Reason}" TextWrapping="Wrap" Margin="0,4,0,0" />
                                     <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Classes="dim" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap">
