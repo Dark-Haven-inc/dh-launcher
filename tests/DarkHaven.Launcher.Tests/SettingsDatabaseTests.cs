@@ -131,5 +131,6 @@ public class SettingsDatabaseTests : IDisposable
     {
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         try { File.Delete(_path); } catch { /* best effort */ }
+        try { File.Delete(Path.ChangeExtension(_path, ".key")); } catch { /* best effort */ }
     }
 }

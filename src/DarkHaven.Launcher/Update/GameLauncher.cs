@@ -78,7 +78,7 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
         var env = psi.EnvironmentVariables;
         env["SS14_LOADER_CONTENT_DB"] = contentDbPath;
         env["SS14_LOADER_CONTENT_VERSION"] = launch.VersionId.ToString();
-        env["SS14_LAUNCHER_PATH"] = Environment.ProcessPath ?? "";
+        env["SS14_LAUNCHER_PATH"] = LauncherInfo.ExecutablePath ?? "";
         env["DOTNET_MULTILEVEL_LOOKUP"] = "0";
         env["DOTNET_TieredPGO"] = "1";
         env["DOTNET_ReadyToRun"] = "0";

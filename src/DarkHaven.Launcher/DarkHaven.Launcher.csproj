@@ -22,6 +22,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="DarkHaven.Launcher.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Assets\signing_key" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Assets\dh-regions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Assets\news.json" CopyToOutputDirectory="PreserveNewest" />

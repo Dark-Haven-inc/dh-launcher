@@ -19,9 +19,24 @@ gh release download engine-bundles --repo Dark-Haven-inc/dh-launcher -D . -p '*.
 
 ### Currently bundled
 
-| engine | RT commit | server |
-|--------|-----------|--------|
-| `275.1.0.zip` | `c333ccb58145767922946bf08d919d8856bc1f40` | live ХЕЙВЕН (`медецина` build; content `a240a1d47c`). Verified end-to-end 2026-09-10: launcher → local server on that pair → in-game lobby. |
+| engine | RID | RT commit | server |
+|--------|-----|-----------|--------|
+| `275.1.0.zip` | win-x64 | `c333ccb58145767922946bf08d919d8856bc1f40` | live ХЕЙВЕН (`медецина` build; content `a240a1d47c`). Verified end-to-end 2026-09-10: launcher → local server on that pair → in-game lobby. |
+| `275.1.0_linux-x64.zip` | linux-x64 | `c333ccb58145767922946bf08d919d8856bc1f40` | same. Built with `Tools/package_client_build.py -p linux-x64`. |
+
+### manifest.json
+
+Keyed by engine version (what the server reports in `/info`). The top-level `file`/`sha256` is the
+**win-x64** build (the format predates other platforms); `platforms` adds builds by RID:
+
+```json
+"275.1.0": {
+  "file": "275.1.0.zip", "sha256": "…", "note": "…",
+  "platforms": { "linux-x64": { "file": "275.1.0_linux-x64.zip", "sha256": "…" } }
+}
+```
+
+A launcher on a platform with no build for the server's engine says so instead of trying the CDN.
 
 ## Build recipe
 
@@ -34,15 +49,15 @@ dotnet publish Robust.Client/Robust.Client.csproj \
   -p:TargetOS=Windows -p:FullRelease=True -p:UseAppHost=False
 ```
 
-Then zip `bin/Client/win-x64/publish/*` (minus `Robust.Client` / `Robust.Client.exe`) **plus**
+(`-r linux-x64 -p:TargetOS=Linux` for Linux: the engine compiles platform code in, so every RID
+is its own build.) Then zip `bin/Client/win-x64/publish/*` (minus `Robust.Client` / `Robust.Client.exe`) **plus**
 `RobustToolbox/Resources/*` at the zip root, with **forward-slash** entry names (Windows
 `Compress-Archive` writes backslashes — use `7z` or a small Python `zipfile` script), into
 `275.1.0.zip` (name = the `engine_version` the server reports in `/info`), and put its uppercase
 SHA-256 into `manifest.json`.
 
-Repeat per RID for a cross-platform release (`win-arm64`, `linux-x64`, …); `manifest.json` keys
-by engine version, and the file name can carry the RID once multi-RID support lands.
+Repeat per RID (`linux-x64`, …) and name those zips `<version>_<rid>.zip` under `platforms`.
 
 > **Ideal:** the person who builds the server runs `RobustToolbox/Tools/package_client_build.py`
-> on that machine and hands over the resulting `Robust.Client_<rid>.zip` — then it is guaranteed
-> to match.
+> (`-p win-x64 linux-x64`) on that machine and hands over the resulting `Robust.Client_<rid>.zip`
+> files — then they are guaranteed to match. The script wipes `RobustToolbox/bin` first.

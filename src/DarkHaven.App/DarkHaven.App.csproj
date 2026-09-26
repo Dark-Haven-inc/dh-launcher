@@ -15,7 +15,7 @@
          1.0.0.0 to match the engine builds — otherwise the loader can't start the game at all. -->
     <Version Condition="'$(LauncherVersion)' == ''">0.2.4</Version>
     <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +30,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <!-- Also a plain file: the Linux desktop entry for ss14:// links needs it on disk (see UriScheme). -->
+    <None Include="Assets\emblem.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

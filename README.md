@@ -33,7 +33,12 @@ dotnet run --project src/DarkHaven.Cli -c Release -- connect ss14://frontier.rad
 ```
 
 The engine native libs (`SDL3`, `OpenAL`, …) are vendored in `src/DarkHaven.Loader/natives/win-x64/`
-and copied to the loader output automatically — no SS14 install needed.
+and copied to the loader output automatically — no SS14 install needed. On Linux they come from the
+engine's own `Robust.Natives` NuGet packages; the system provides freetype, EGL and zlib.
+
+Linux (x64) is supported: `dotnet run` works as above, releases ship as an AppImage
+(`docs/RELEASING.md`), `ss14://` links go through a desktop entry, and the saved account token is
+encrypted with a per-user key file next to `settings.db` instead of Windows DPAPI.
 
 ## Release
 
@@ -41,7 +46,7 @@ Releases are GitHub Releases on the public, releases-only
 [`frontier15-launcher`](https://github.com/Dark-Haven-inc/frontier15-launcher/releases): players run
 `Setup.exe` once, every later version arrives as a small in-app delta (Velopack). Push a `v*` tag to
 build one (`.github/workflows/release.yml`), or run `scripts/pack-release.ps1 -Version x.y.z`
-locally. Details in [`docs/RELEASING.md`](docs/RELEASING.md).
+(`-Rid linux-x64` for the Linux AppImage) locally. Details in [`docs/RELEASING.md`](docs/RELEASING.md).
 
 ## Tech
 

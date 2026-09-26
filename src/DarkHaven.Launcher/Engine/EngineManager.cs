@@ -87,8 +87,15 @@ public sealed class EngineManager(
         string requestedVersion, DownloadProgress? progress = null, CancellationToken cancel = default)
     {
         // A bundled engine wins over the CDN — it exists precisely because the CDN has no matching build.
-        if (LoadBundled().TryGetValue(requestedVersion, out var bundled) && TryInstallBundled(requestedVersion, bundled))
-            return requestedVersion;
+        if (LoadBundled().TryGetValue(requestedVersion, out var bundled))
+        {
+            var build = PickBundledBuild(bundled)
+                ?? throw new PlatformNotSupportedException(
+                    $"В этой версии лаунчера нет движка {requestedVersion} для {RidUtility.CurrentOs}-{RidUtility.CurrentArch}. Обновите лаунчер.");
+
+            if (TryInstallBundled(requestedVersion, build))
+                return requestedVersion;
+        }
 
         var (version, platform) = await ResolveAsync(requestedVersion, cancel);
 
@@ -117,7 +124,21 @@ public sealed class EngineManager(
         return version;
     }
 
-    private bool TryInstallBundled(string version, BundledEngine bundled)
+    /// <summary>
+    /// The build of a bundled engine for this machine. <c>file</c>/<c>sha256</c> at the top level are the
+    /// win-x64 build (the manifest predates other platforms); <c>platforms</c> adds builds by RID.
+    /// </summary>
+    internal static BundledBuild? PickBundledBuild(BundledEngine bundled)
+    {
+        var builds = new Dictionary<string, BundledBuild>(bundled.Platforms ?? new());
+        if (!string.IsNullOrEmpty(bundled.File) && !string.IsNullOrEmpty(bundled.Sha256))
+            builds.TryAdd("win-x64", new BundledBuild(bundled.File, bundled.Sha256));
+
+        var rid = RidUtility.FindBest(builds.Keys);
+        return rid is null ? null : builds[rid] with { Note = bundled.Note };
+    }
+
+    private bool TryInstallBundled(string version, BundledBuild bundled)
     {
         var src = Path.Combine(bundledEnginesDir!, bundled.File);
         if (!File.Exists(src))
@@ -166,7 +187,11 @@ public sealed class EngineManager(
         return _bundled;
     }
 
-    private sealed record BundledEngine(string File, string Sha256, string? Note = null);
+    internal sealed record BundledEngine(
+        string? File = null, string? Sha256 = null, string? Note = null,
+        Dictionary<string, BundledBuild>? Platforms = null);
+
+    internal sealed record BundledBuild(string File, string Sha256, string? Note = null);
 
     /// <summary>Ensures an engine module (e.g. <c>Robust.Client.WebView</c>) is extracted to disk.</summary>
     public async Task EnsureModuleAsync(
