@@ -7,6 +7,7 @@ using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
 using DarkHaven.Launcher.Data;
 using DarkHaven.Launcher.Engine;
+using DarkHaven.Launcher.Local;
 using DarkHaven.Launcher.Servers;
 using DarkHaven.Launcher.Update;
 
@@ -34,6 +35,8 @@ public sealed class AppServices : IDisposable
     public LauncherUpdater Updater { get; }
     public DiscordPresence Discord { get; }
     public SlotWatcher SlotWatch { get; }
+    /// <summary>ЛОКАЛКА: DH servers on this PC.</summary>
+    public LocalServers Local { get; }
 
     /// <summary>The <c>ss14://</c> address of the server the player is currently in, or null.</summary>
     public string? CurrentGameAddress { get; private set; }
@@ -154,6 +157,7 @@ public sealed class AppServices : IDisposable
         Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
         Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
         SlotWatch = new SlotWatcher(Http);
+        Local = new LocalServers(Http, LauncherPaths.LocalDir, Settings.GetConfig("LocalBuildsUrl"));
 
         StartPresenceHeartbeat();
         _ = SignInToPlatformAsync();
@@ -215,6 +219,8 @@ public sealed class AppServices : IDisposable
             catch { /* best effort */ }
         }
 
+        // Before Http goes: a local server left running would hold its port and files with nobody watching it.
+        Local.StopAllOnExit();
         RegionWatch.Dispose();
         SlotWatch.Dispose();
         Discord.Dispose();

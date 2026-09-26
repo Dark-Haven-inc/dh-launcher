@@ -20,6 +20,7 @@
         <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
         <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><views:LocalView /></DataTemplate>
         <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
         <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
@@ -113,6 +114,10 @@
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
                             <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Мониторинг" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                        </Button>
+                        <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhTextBrush}" Margin="-8,0,4,0" /><TextBlock Text="Локалка" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">

@@ -5,7 +5,7 @@ using DarkHaven.Launcher.Update;
 
 namespace DarkHaven.App.ViewModels;
 
-public enum NavPage { Home, Regions, Servers, Monitoring, News, Settings, Admin, Account, Profile, Bans }
+public enum NavPage { Home, Regions, Servers, Monitoring, Local, News, Settings, Admin, Account, Profile, Bans }
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -35,6 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AdminViewModel Admin { get; }
     public NotificationsViewModel Notifications { get; }
     public MonitoringViewModel Monitoring { get; }
+    public LocalViewModel Local { get; }
     /// <summary>The public ban list, opened from a region's card (not a bottom tab).</summary>
     public BanListViewModel Bans { get; }
 
@@ -65,6 +66,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Admin = new AdminViewModel(services);
         Notifications = new NotificationsViewModel(services);
         Monitoring = new MonitoringViewModel(services, Connect);
+        Local = new LocalViewModel(services, Connect);
         Bans = new BanListViewModel(services, back: () => Page = NavPage.Regions);
         Regions.OpenBans = title =>
         {
@@ -275,6 +277,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = News.LoadAsync();
         else if (value == NavPage.Admin)
             _ = Admin.ReloadAsync();
+        else if (value == NavPage.Local)
+            Local.Activate();
 
         Current = value switch
         {
@@ -282,6 +286,7 @@ public partial class MainWindowViewModel : ViewModelBase
             NavPage.Regions => Regions,
             NavPage.Servers => Servers,
             NavPage.Monitoring => Monitoring,
+            NavPage.Local => Local,
             NavPage.News => News,
             NavPage.Settings => Settings,
             NavPage.Admin => Admin,
