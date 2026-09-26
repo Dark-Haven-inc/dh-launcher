@@ -159,7 +159,7 @@ public sealed class LaunchBroker : IDisposable
             {
                 // One instance at a time; CurrentUserOnly keeps other accounts on the machine out.
                 await using var pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly, inBufferSize: 4096, outBufferSize: 4096);
                 await pipe.WaitForConnectionAsync(stop);
                 var pid = GetNamedPipeClientProcessId(pipe.SafePipeHandle, out var clientPid) ? (int)clientPid : -1;
                 await ServeAsync(pipe, pid, stop);
