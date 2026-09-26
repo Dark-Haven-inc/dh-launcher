@@ -101,7 +101,9 @@ public static class UriScheme
         sb.Append("Type=Application\n");
         sb.Append("Name=Frontier 15 Launcher\n");
         sb.Append("Comment=Space Station 14 launcher\n");
-        sb.Append($"Exec={QuoteExecArg(exePath)} %u\n");
+        // Started without FUSE (APPIMAGE_EXTRACT_AND_RUN=1): links and the menu entry need the same.
+        var extract = Environment.GetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN") == "1" ? "env APPIMAGE_EXTRACT_AND_RUN=1 " : "";
+        sb.Append($"Exec={extract}{QuoteExecArg(exePath)} %u\n");
         if (icon is not null)
             sb.Append($"Icon={icon}\n");
         sb.Append("Terminal=false\n");

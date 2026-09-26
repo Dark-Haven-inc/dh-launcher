@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Frontier 15 Launcher
+Comment=Space Station 14 launcher
+Exec=frontier15-launcher %u
+Icon=frontier15-launcher
+Terminal=false
+Categories=Game;
+MimeType=x-scheme-handler/ss14;x-scheme-handler/ss14s;

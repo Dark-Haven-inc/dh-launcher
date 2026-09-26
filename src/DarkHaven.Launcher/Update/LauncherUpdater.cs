@@ -52,8 +52,9 @@ public sealed class LauncherUpdater
         }
     }
 
-    /// <summary>True only when running an installed build that can actually apply updates.</summary>
-    public bool Supported => _mgr is { IsInstalled: true };
+    /// <summary>True only when running an installed build that can actually apply updates — not one a
+    /// package manager installed where this user can't write (that one updates through the package).</summary>
+    public bool Supported => _mgr is { IsInstalled: true } && AppImageInstall.CanUpdateItself;
 
     public string CurrentVersion => _mgr?.CurrentVersion?.ToString() ?? LauncherInfo.Version;
 

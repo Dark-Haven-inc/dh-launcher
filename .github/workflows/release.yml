@@ -8,6 +8,14 @@ on:
       version:
         description: 'Version to build (e.g. 0.1.0)'
         required: true
+      publish:
+        description: 'Publish it (off: only build; the packages become artifacts of the run)'
+        type: boolean
+        default: true
+
+# A tag always publishes; a manual run can build without releasing anything, to try the workflow.
+env:
+  PUBLISH: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
 
 concurrency:
   group: release
@@ -110,7 +118,15 @@ jobs:
           find artifacts/releases -name '*-full.nupkg' \
             ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
 
+      - name: Keep the packages (build-only run)
+        if: env.PUBLISH != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-win
+          path: artifacts/releases/
+
       - name: Publish to the releases repo
+        if: env.PUBLISH == 'true'
         run: >
           dotnet vpk upload github
           --repoUrl https://github.com/${{ env.RELEASE_REPO }}
@@ -126,6 +142,7 @@ jobs:
       # launcher only moves over once the new feed already has the release. Once this repo is
       # private, old launchers can't read it anyway, and the step does nothing.
       - name: Mirror to this repo while it is public
+        if: env.PUBLISH == 'true'
         shell: bash
         run: |
           if [ "$(gh api "repos/${{ github.repository }}" --jq .private)" = "true" ]; then
@@ -214,7 +231,15 @@ jobs:
           find artifacts/releases -name '*-full.nupkg' \
             ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
 
+      - name: Keep the packages (build-only run)
+        if: env.PUBLISH != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: artifacts/releases/
+
       - name: Add to the release in the releases repo
+        if: env.PUBLISH == 'true'
         run: >
           dotnet vpk upload github
           --repoUrl https://github.com/${{ env.RELEASE_REPO }}
@@ -225,3 +250,11 @@ jobs:
           --channel linux
           --token ${{ env.RELEASES_TOKEN }}
           --outputDir artifacts/releases
+
+      # The one-line installer players run: curl -fsSL …/releases/latest/download/install.sh | sh
+      - name: Attach install.sh
+        if: env.PUBLISH == 'true'
+        shell: bash
+        run: |
+          GH_TOKEN="$RELEASES_TOKEN" gh release upload "v${{ steps.v.outputs.version }}" scripts/install.sh \
+            --repo "$RELEASE_REPO" --clobber
