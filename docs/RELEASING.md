@@ -126,8 +126,10 @@ tool written to scrape one release does not carry to the next.
 
 Set up or rotate the key:
 
-1. `dotnet run --project src/DarkHaven.Cli -- launch-key` prints a new pair.
-2. The first value goes into the `DH_LAUNCH_SIGNING_KEY` secret of this repo. Never commit it.
+1. `scripts/set-launch-key.sh` (Windows: `scripts/set-launch-key.ps1`, or `set-launch-key.cmd` from cmd/Explorer) makes a new pair, puts the private half into the `DH_LAUNCH_SIGNING_KEY` secret of
+   this repo through `gh` (never shown or written to disk) and prints the public half. By hand:
+   `dotnet run --project src/DarkHaven.Cli -- launch-key` prints the pair.
+2. The private value only ever goes into that secret. Never commit it.
 3. The second value is appended to `anticheat.launch.public_keys` on every game server (comma-separated). Keep the
    previous key there until players have updated past the release that used it, then remove it.
 4. Cut a release. `dotnet build src/DarkHaven.Cli -p:DhLaunchKey=<secret>` then
