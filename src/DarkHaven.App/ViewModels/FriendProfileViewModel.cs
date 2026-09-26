@@ -18,7 +18,7 @@ public partial class FriendProfileViewModel : ViewModelBase, IProfileCard
     [ObservableProperty] private Bitmap? _cardAvatar;
     [ObservableProperty] private Bitmap? _cardBanner;
     [ObservableProperty] private string? _accentColor;
-    [ObservableProperty] private string _frame = "blue";
+    [ObservableProperty] private string _frame = "none";
 
     public bool CardHasAbout => CardAbout is not null;
     public bool CardHasAvatar => CardAvatar is not null;

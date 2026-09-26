@@ -88,7 +88,10 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            // Not every Linux setup has a desktop folder.
             var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            if (string.IsNullOrEmpty(desktop) || !Directory.Exists(desktop))
+                desktop = LauncherPaths.DataDir;
             var target = Path.Combine(desktop, $"dh-launcher-logs-{DateTime.Now:yyyyMMdd-HHmm}.zip");
 
             await Task.Run(() =>
@@ -100,7 +103,10 @@ public partial class SettingsViewModel : ViewModelBase
             });
 
             Status = $"Логи собраны: {target}";
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{target}\"") { UseShellExecute = true });
+            if (OperatingSystem.IsWindows())
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{target}\"") { UseShellExecute = true });
+            else
+                Process.Start(new ProcessStartInfo(desktop) { UseShellExecute = true });
         }
         catch (Exception e)
         {
@@ -170,7 +176,7 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             if (await _services.Updater.CheckAsync())
-                Status = $"Доступно обновление {_services.Updater.PendingVersion}. Баннер вверху обновит лаунчер.";
+                Status = $"Доступно обновление {_services.Updater.PendingVersion}";
             else
                 Status = $"Установлена последняя версия ({_services.Updater.CurrentVersion}).";
         }

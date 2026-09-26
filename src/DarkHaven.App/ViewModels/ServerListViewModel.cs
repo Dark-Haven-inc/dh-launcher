@@ -365,6 +365,6 @@ public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowVi
     public bool IsMisc => Label == NetworkGrouping.MiscLabel;
 
     public string SummaryLine => TotalPlayers > 0
-        ? $"{Count} · {TotalPlayers} игроков"
+        ? $"{Count} · {TotalPlayers}"
         : $"{Count}";
 }

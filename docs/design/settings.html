@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Настройки</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.sets{max-width:600px;display:flex;flex-direction:column;gap:16px}
+.srow{min-height:28px;display:grid;grid-template-columns:160px 1fr;gap:12px;align-items:center;border-bottom:1px solid var(--line);font-size:12px}
+.srow > span:first-child{color:var(--dim)}
+.ctl{display:flex;gap:4px;align-items:center;min-width:0}
+.ctl .field{flex-grow:1}
+.ctl .val{flex-grow:1;font-family:'JBM',monospace;font-size:11px}
+.checks{display:flex;flex-direction:column;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.acts{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html">Главная</a>
+<a href="regions.html">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html">Мониторинг</a>
+<a href="news.html">Новости</a>
+<a href="settings.html" class="on">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main scroll">
+<div class="sets">
+<section>
+<div class="cap"><span>ФАЙЛЫ</span><span></span></div>
+<div class="srow"><span>Папка</span><div class="ctl"><span class="val">~/.local/share/DarkHavenLauncher</span><button class="ibtn" aria-label="Открыть">&#xEA83;</button></div></div>
+<div class="srow"><span>Кэш контента</span><div class="ctl"><span class="val">1,4 ГБ · 3 версии</span><button class="btn">Очистить</button></div></div>
+<div class="acts"><button class="btn">Проверить кэш</button><button class="btn">Удалить старые движки</button><button class="btn">Собрать логи</button></div>
+</section>
+<section>
+<div class="cap"><span>ПОВЕДЕНИЕ</span><span></span></div>
+<div class="checks">
+<label class="check on"><span class="box">&#xEAB2;</span>Обновлять контент автоматически</label>
+<label class="check on"><span class="box">&#xEAB2;</span>Сворачивать при запуске игры</label>
+<label class="check"><span class="box"></span>Совместимость рендера (GLES2)</label>
+<label class="check"><span class="box"></span>Подробный журнал</label>
+</div>
+<div class="srow"><span>Лимит загрузки</span><div class="ctl"><label class="field" style="width:152px;flex-grow:0"><input class="mono" placeholder="—"><span class="suffix">КБ/с</span></label></div></div>
+<div class="srow"><span>Обновления</span><div class="ctl"><button class="btn">Проверить</button></div></div>
+</section>
+<section>
+<div class="cap"><span>ПОДКЛЮЧЕНИЕ</span><span></span></div>
+<div class="srow"><span>Авторизация</span><div class="ctl"><label class="field"><input class="mono" value="https://auth.spacestation14.com/"></label><button class="ibtn" aria-label="По умолчанию">&#xEAE2;</button></div></div>
+<div class="srow"><span>Сборки движка</span><div class="ctl"><label class="field"><input class="mono" value="https://robust-builds.cdn.spacestation14.com/manifest.json"></label><button class="ibtn" aria-label="По умолчанию">&#xEAE2;</button></div></div>
+<div class="srow"><span>Список регионов</span><div class="ctl"><label class="field"><input class="mono" placeholder="—"></label></div></div>
+<div class="srow"><span>Платформа</span><div class="ctl"><label class="field"><input class="mono" placeholder="https://api.darkhaven.games"></label></div></div>
+</section>
+<section>
+<div class="cap"><span>DISCORD</span><span></span></div>
+<div class="srow"><span>ID приложения</span><div class="ctl"><label class="field"><input class="mono" placeholder="—"></label></div></div>
+</section>
+</div>
+</main>
+
+</div>
+
+</div>
+</body>
+</html>

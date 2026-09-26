@@ -140,3 +140,88 @@ jobs:
             --channel win \
             --token "${{ github.token }}" \
             --outputDir artifacts/releases
+
+  # The Linux build: a Velopack AppImage on the same GitHub release, channel "linux". Runs after the
+  # Windows job, which creates the release; this one adds its files to it (--merge). The bundled
+  # engine needs a linux-x64 build in manifest.json ("platforms"), or pack-release.ps1 stops here.
+  release-linux:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_REPO: Dark-Haven-inc/frontier15-launcher
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # vpk builds the AppImage with mksquashfs.
+      - name: Install squashfs-tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq squashfs-tools
+
+      - name: Resolve version
+        id: v
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Fetch bundled engine(s)
+        shell: bash
+        run: |
+          mkdir -p src/DarkHaven.App/bundled-engines
+          gh release download engine-bundles \
+            --repo "${{ github.repository }}" \
+            --dir src/DarkHaven.App/bundled-engines \
+            --pattern '*.zip' --clobber
+          ls -lh src/DarkHaven.App/bundled-engines/*.zip
+
+      - name: Fetch previous releases
+        shell: bash
+        run: |
+          mkdir -p artifacts/releases
+          dotnet vpk download github \
+            --repoUrl "https://github.com/$RELEASE_REPO" \
+            --channel linux \
+            --outputDir artifacts/releases \
+            --token "$RELEASES_TOKEN" || echo "no prior Linux release yet — first cut"
+
+      - name: Pack release
+        shell: pwsh
+        env:
+          DH_LAUNCH_SIGNING_KEY: ${{ secrets.DH_LAUNCH_SIGNING_KEY }}
+        run: ./scripts/pack-release.ps1 -Version ${{ steps.v.outputs.version }} -Rid linux-x64
+
+      - name: Drop stale full packages
+        shell: bash
+        run: |
+          find artifacts/releases -name '*-full.nupkg' \
+            ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
+
+      - name: Add to the release in the releases repo
+        run: >
+          dotnet vpk upload github
+          --repoUrl https://github.com/${{ env.RELEASE_REPO }}
+          --publish
+          --merge
+          --releaseName "Frontier 15 Launcher ${{ steps.v.outputs.version }}"
+          --tag v${{ steps.v.outputs.version }}
+          --channel linux
+          --token ${{ env.RELEASES_TOKEN }}
+          --outputDir artifacts/releases

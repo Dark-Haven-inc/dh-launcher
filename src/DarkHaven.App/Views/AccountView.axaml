@@ -3,59 +3,52 @@
              xmlns:vm="using:DarkHaven.App.ViewModels"
              x:Class="DarkHaven.App.Views.AccountView"
              x:DataType="vm:AccountViewModel">
-
     <ScrollViewer>
-        <StackPanel Margin="0,32" Spacing="16" MaxWidth="420" HorizontalAlignment="Center">
-
-            <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <Image Source="/Assets/emblem.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,6" />
-                <TextBlock Text="ВХОД В СЕТЬ" Classes="h1" HorizontalAlignment="Center" LetterSpacing="2" />
-                <TextBlock Text="Аккаунт Space Station 14 для всех регионов Frontier 15"
-                           Classes="dim" HorizontalAlignment="Center" TextAlignment="Center" />
+        <StackPanel Width="260" Margin="0,64" Spacing="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="12">
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="lbl" Text="ЛОГИН" />
+                    <TextBox Text="{Binding Username}" />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="lbl" Text="ПАРОЛЬ" />
+                    <TextBox Text="{Binding Password}" PasswordChar="•" />
+                </StackPanel>
+                <StackPanel Spacing="4" IsVisible="{Binding NeedsTfa}">
+                    <TextBlock Classes="lbl" Text="КОД 2FA" />
+                    <TextBox Classes="mono" Text="{Binding TfaCode}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Error}" TextWrapping="Wrap"
+                           IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <Button Classes="primary" Height="28" HorizontalAlignment="Stretch" IsDefault="True"
+                        Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}">
+                    <TextBlock Text="ВОЙТИ" LetterSpacing="1.8" />
+                </Button>
+                <Grid ColumnDefinitions="*,*">
+                    <Button Classes="link" HorizontalAlignment="Left" Content="Создать аккаунт" Command="{Binding OpenRegisterCommand}" />
+                    <Button Grid.Column="1" Classes="link" HorizontalAlignment="Right" Content="Забыли пароль?" Command="{Binding OpenForgotCommand}" />
+                </Grid>
             </StackPanel>
 
-            <Border Classes="card" Padding="22">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="ЛОГИН" Classes="caps" />
-                    <TextBox Text="{Binding Username}" />
-                    <TextBlock Text="ПАРОЛЬ" Classes="caps" Margin="0,4,0,0" />
-                    <TextBox Text="{Binding Password}" PasswordChar="•" />
-                    <StackPanel IsVisible="{Binding NeedsTfa}" Spacing="6">
-                        <TextBlock Text="КОД 2FA" Classes="caps" Margin="0,4,0,0" />
-                        <TextBox Text="{Binding TfaCode}" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding Error}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
-                               IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                    <Button Classes="primary" Content="ВОЙТИ" HorizontalAlignment="Stretch" Margin="0,4,0,0"
-                            Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}" />
-                    <Grid ColumnDefinitions="*,*" Margin="0,2,0,0">
-                        <Button Grid.Column="0" Classes="ghost" BorderThickness="0" HorizontalAlignment="Left"
-                                Content="Создать аккаунт" Command="{Binding OpenRegisterCommand}" />
-                        <Button Grid.Column="1" Classes="ghost" BorderThickness="0" HorizontalAlignment="Right"
-                                Content="Забыли пароль?" Command="{Binding OpenForgotCommand}" />
+            <StackPanel IsVisible="{Binding HasAccounts}">
+                <Border Classes="cap">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="caps" Text="АККАУНТЫ" />
+                        <TextBlock Grid.Column="1" Classes="caps" Text="{Binding Accounts.Count}" />
                     </Grid>
-                </StackPanel>
-            </Border>
-
-            <StackPanel Spacing="8" IsVisible="{Binding Accounts.Count}">
-                <TextBlock Text="СОХРАНЁННЫЕ АККАУНТЫ" Classes="caps" />
+                </Border>
                 <ItemsControl ItemsSource="{Binding Accounts}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:AccountRowViewModel">
-                            <Border Background="{StaticResource DhBgElevatedBrush}" BorderThickness="2,0,0,0"
-                                    BorderBrush="{StaticResource DhAccentBrush}" CornerRadius="0,5,5,0" Padding="14,10">
-                                <Grid ColumnDefinitions="*,Auto,Auto">
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding StatusHint}" Classes="dim" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1" Classes="ghost" BorderThickness="0" Content="Выбрать"
+                            <Border Classes="hair" Height="28">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Username}" TextTrimming="CharacterEllipsis"
+                                               FontWeight="{Binding IsActive, Converter={x:Static vm:BoolWeight.Instance}}" />
+                                    <TextBlock Grid.Column="1" Classes="mono dim" FontSize="10" Text="{Binding StatusHint}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Classes="link" Content="Выбрать" IsVisible="{Binding !IsActive}"
                                             Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
-                                            CommandParameter="{Binding}" IsVisible="{Binding !IsActive}" />
-                                    <Button Grid.Column="2" Classes="ghost" BorderThickness="0" Content="Выйти"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="3" Classes="link" FontFamily="{StaticResource DhMono}" Content="&#xEA76;" ToolTip.Tip="Выйти"
                                             Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).LogoutCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>
@@ -64,9 +57,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-
-            <TextBlock Classes="dim mono" FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,0"
-                       Text="{Binding AuthServerLine}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

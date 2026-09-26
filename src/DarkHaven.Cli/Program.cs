@@ -372,8 +372,8 @@ static string LocateLoader()
     foreach (var cfg in new[] { "Release", "Debug" })
     {
         var p = Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..", "..",
-            "src", "DarkHaven.Loader", "bin", cfg, "net10.0", "DarkHaven.Loader.exe"));
+            "src", "DarkHaven.Loader", "bin", cfg, "net10.0", LauncherPaths.LoaderFileName));
         if (File.Exists(p)) return p;
     }
-    throw new FileNotFoundException("DarkHaven.Loader.exe not built — run: dotnet build src/DarkHaven.Loader");
+    throw new FileNotFoundException($"{LauncherPaths.LoaderFileName} not built — run: dotnet build src/DarkHaven.Loader");
 }

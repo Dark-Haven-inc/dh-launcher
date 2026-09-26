@@ -67,10 +67,10 @@ public sealed class OnlineChart : Control
         var accent = Res("DhAccent", "#3B82F6");
         var text = new SolidColorBrush(Res("DhText", "#DCE6F5"));
         var dim = new SolidColorBrush(Res("DhTextDim", "#7C8DB0"));
-        var surface = Res("DhBgElevated", "#111A2E");
+        var surface = Res("DhBg", "#0B0B0C");
         var grid = new Pen(new SolidColorBrush(Res("DhBorder", "#24365A")), 1);
         var gridStrong = new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1);
-        var typeface = new Typeface(GetValue(TextElement.FontFamilyProperty));
+        var typeface = new Typeface(this.TryFindResource("DhMono", out var mono) && mono is FontFamily f ? f : GetValue(TextElement.FontFamilyProperty));
         FormattedText Label(string s, IBrush brush, double size = 10, FontWeight weight = FontWeight.Normal) =>
             new(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                 new Typeface(typeface.FontFamily, FontStyle.Normal, weight), size, brush);
@@ -115,8 +115,8 @@ public sealed class OnlineChart : Control
         DrawTimeAxis(ctx, plot, points, Label, dim);
 
         // The series: one stroke and one wash per run of consecutive values; a down stretch breaks it.
-        var wash = new SolidColorBrush(accent, 0.12);
-        var line = new Pen(new SolidColorBrush(accent), 2, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
+        var wash = new SolidColorBrush(accent, 0.05);
+        var line = new Pen(new SolidColorBrush(accent), 1.25, lineCap: PenLineCap.Square, lineJoin: PenLineJoin.Miter);
         var accentBrush = new SolidColorBrush(accent);
         for (var i = 0; i < n;)
         {
@@ -127,7 +127,8 @@ public sealed class OnlineChart : Control
 
             if (end == start)
             {
-                ctx.DrawEllipse(accentBrush, null, new Point(X(start), Y(points[start].Peak!.Value)), 2.5, 2.5);
+                var at = new Point(X(start), Y(points[start].Peak!.Value));
+                ctx.FillRectangle(accentBrush, new Rect(at.X - 2, at.Y - 2, 4, 4));
                 continue;
             }
 
@@ -164,8 +165,8 @@ public sealed class OnlineChart : Control
     }
 
     private static void DrawMarker(DrawingContext ctx, Point at, IBrush fill, Color surface) =>
-        // 8px dot with a 2px ring in the surface colour, so it stays legible on top of the line.
-        ctx.DrawEllipse(fill, new Pen(new SolidColorBrush(surface), 2), at, 4, 4);
+        // 6px square with a 2px ring in the surface colour, so it stays legible on top of the line.
+        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(surface), 2), new Rect(at.X - 3, at.Y - 3, 6, 6));
 
     private void DrawTimeAxis(DrawingContext ctx, Rect plot, IReadOnlyList<OnlinePoint> points,
         Func<string, IBrush, double, FontWeight, FormattedText> label, IBrush dim)
@@ -234,7 +235,7 @@ public sealed class OnlineChart : Control
         var box = new Rect(Math.Max(0, left), plot.Top + 4, width, height);
 
         var fill = new SolidColorBrush(Res("DhBgHover", "#1B2942"));
-        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1), box, 4, 4);
+        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1), box);
         var ty = box.Top + pad;
         foreach (var l in lines)
         {

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Мониторинг</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.switch{display:flex;gap:8px;align-items:center}
+.now{height:52px;flex-shrink:0;display:flex;align-items:stretch;border:1px solid var(--line);margin-top:-8px}
+.now .cell{padding:0 12px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:4px}
+.now .cell:first-child{border-left:0;flex-grow:1}
+.now .cell b{font-family:'JBM',monospace;font-weight:400;font-size:12px;display:flex;align-items:center;gap:8px}
+.now .cell > span:not(.num){font-size:10.5px;color:var(--dim)}
+.now .num{font-size:12px}
+.now .play{width:128px}
+.copy{font-family:'JBM',monospace;font-size:10.5px;color:var(--dim);text-align:left;align-self:flex-start}
+.copy:hover{color:var(--text)}
+.hist{display:flex;flex-direction:column;gap:8px}
+.chart text{font-family:'JBM',monospace;font-size:9.5px;fill:var(--faint)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .cl{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:2 4}
+.chart .ln{fill:none;stroke:var(--text);stroke-width:1.25}
+.chart .ar{fill:rgba(237,237,237,.05)}
+.sum{display:flex;gap:24px;align-items:center;font-size:11.5px}
+.sum span{color:var(--dim)}
+.sum b{font-family:'JBM',monospace;font-weight:400;margin-left:8px;color:var(--text)}
+.sum .btn{margin-left:auto}
+.launch{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start}
+.lstats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.lstats div{height:36px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:2px}
+.lstats div:nth-child(odd){padding-right:12px}
+.lstats div:nth-child(even){padding-left:12px;border-left:1px solid var(--line)}
+.lstats b{font-family:'JBM',monospace;font-weight:400;font-size:12px}
+.lstats span{font-size:10.5px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html">Главная</a>
+<a href="regions.html">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html" class="on">Мониторинг</a>
+<a href="news.html">Новости</a>
+<a href="settings.html">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main">
+<div class="switch">
+<span class="seg"><button class="chip on">ХЕЙВЕН</button></span>
+</div>
+<div class="now">
+<div class="cell"><b><i class="st on" title="в сети"></i>в сети</b><button class="copy">ss14://95.31.51.216:1212 &#xEBCC;</button></div>
+<div class="cell" style="width:88px"><span class="mono num ">42/80</span><span>онлайн</span></div>
+<div class="cell" style="width:96px"><b>Frontier</b><span>карта</span></div>
+<div class="cell" style="width:88px"><b>Extended</b><span>режим</span></div>
+<div class="cell" style="width:72px"><b>01:12</b><span>раунд</span></div>
+<div class="cell" style="width:68px"><b>38 мс</b><span>пинг</span></div>
+<a class="play" href="connecting.html"><span class="icon">&#xEB2C;</span>ИГРАТЬ</a>
+</div>
+<section class="hist">
+<div class="cap"><span>ОНЛАЙН</span><span class="seg"><button class="chip on">24 ч</button><button class="chip">7 дней</button><button class="chip">месяц</button></span></div>
+<svg width="775" height="152" class="chart" aria-hidden="true"><line x1="24" y1="136.0" x2="775" y2="136.0" class="gl"></line><text x="18" y="139.0" text-anchor="end">0</text><line x1="24" y1="70.0" x2="775" y2="70.0" class="gl"></line><text x="18" y="73.0" text-anchor="end">40</text><line x1="24" y1="4.0" x2="775" y2="4.0" class="gl"></line><text x="18" y="7.0" text-anchor="end">80</text><text x="24.0" y="149" text-anchor="start">00</text><text x="211.8" y="149" text-anchor="middle">06</text><text x="399.5" y="149" text-anchor="middle">12</text><text x="587.2" y="149" text-anchor="middle">18</text><text x="775.0" y="149" text-anchor="end">24</text><line x1="24" y1="4" x2="775" y2="4" class="cl"></line><polygon points="24,136 24.0,106.3 39.6,101.3 55.3,111.2 70.9,117.8 86.6,109.6 102.2,108.0 117.9,117.8 133.5,116.2 149.2,106.3 164.8,108.0 180.5,116.2 196.1,109.6 211.8,99.7 227.4,104.7 243.0,108.0 258.7,98.1 274.3,91.4 290.0,98.1 305.6,96.4 321.3,83.2 336.9,83.2 352.6,89.8 368.2,83.2 383.9,71.7 399.5,76.6 415.1,81.6 430.8,71.7 446.4,65.0 462.1,73.3 477.7,74.9 493.4,65.0 509.0,66.7 524.7,76.6 540.3,74.9 556.0,66.7 571.6,56.8 587.2,66.7 602.9,61.8 618.5,58.5 634.2,68.4 649.8,74.9 665.5,68.4 681.1,70.0 696.8,83.2 712.4,101.3 728.1,93.1 743.7,99.7 759.4,111.2 775.0,108.0 775,136" class="ar"></polygon><polyline points="24.0,106.3 39.6,101.3 55.3,111.2 70.9,117.8 86.6,109.6 102.2,108.0 117.9,117.8 133.5,116.2 149.2,106.3 164.8,108.0 180.5,116.2 196.1,109.6 211.8,99.7 227.4,104.7 243.0,108.0 258.7,98.1 274.3,91.4 290.0,98.1 305.6,96.4 321.3,83.2 336.9,83.2 352.6,89.8 368.2,83.2 383.9,71.7 399.5,76.6 415.1,81.6 430.8,71.7 446.4,65.0 462.1,73.3 477.7,74.9 493.4,65.0 509.0,66.7 524.7,76.6 540.3,74.9 556.0,66.7 571.6,56.8 587.2,66.7 602.9,61.8 618.5,58.5 634.2,68.4 649.8,74.9 665.5,68.4 681.1,70.0 696.8,83.2 712.4,101.3 728.1,93.1 743.7,99.7 759.4,111.2 775.0,108.0" class="ln"></polyline></svg>
+<div class="sum"><span>пик<b>51</b></span><span>в среднем<b>27</b></span><span>доступность<b>99,6%</b></span><button class="btn"><span class="icon">&#xEB84;</span>Таблица</button></div>
+</section>
+<section class="hist">
+<div class="cap"><span>ЛАУНЧЕР</span><span></span></div>
+<div class="launch">
+<div class="lstats">
+<div><b>73</b><span>сейчас</span></div>
+<div><b>41</b><span>в игре</span></div>
+<div><b>96</b><span>пик за сутки</span></div>
+<div><b>188</b><span>рекорд</span></div>
+</div>
+<svg width="515" height="72" class="chart" aria-hidden="true"><line x1="24" y1="68.0" x2="515" y2="68.0" class="gl"></line><text x="18" y="71.0" text-anchor="end">0</text><line x1="24" y1="24.8" x2="515" y2="24.8" class="gl"></line><text x="18" y="27.8" text-anchor="end">50</text><polygon points="24,68 24.0,29.9 34.2,27.4 44.5,36.0 54.7,29.9 64.9,31.7 75.1,36.9 85.4,29.1 95.6,35.1 105.8,35.1 116.1,28.2 126.3,35.1 136.5,29.9 146.8,26.5 157.0,32.5 167.2,23.9 177.4,24.8 187.7,27.4 197.9,17.8 208.1,23.0 218.4,19.6 228.6,13.5 238.8,19.6 249.0,12.6 259.3,10.1 269.5,15.2 279.7,6.6 290.0,10.1 300.2,10.9 310.4,4.0 320.6,10.1 330.9,8.3 341.1,4.0 351.3,11.8 361.6,6.6 371.8,7.5 382.0,14.4 392.2,7.5 402.5,13.5 412.7,16.1 422.9,10.9 433.2,20.4 443.4,18.7 453.6,17.0 463.9,26.5 474.1,21.3 484.3,24.8 494.5,30.8 504.8,23.9 515.0,31.7 515,68" class="ar"></polygon><polyline points="24.0,29.9 34.2,27.4 44.5,36.0 54.7,29.9 64.9,31.7 75.1,36.9 85.4,29.1 95.6,35.1 105.8,35.1 116.1,28.2 126.3,35.1 136.5,29.9 146.8,26.5 157.0,32.5 167.2,23.9 177.4,24.8 187.7,27.4 197.9,17.8 208.1,23.0 218.4,19.6 228.6,13.5 238.8,19.6 249.0,12.6 259.3,10.1 269.5,15.2 279.7,6.6 290.0,10.1 300.2,10.9 310.4,4.0 320.6,10.1 330.9,8.3 341.1,4.0 351.3,11.8 361.6,6.6 371.8,7.5 382.0,14.4 392.2,7.5 402.5,13.5 412.7,16.1 422.9,10.9 433.2,20.4 443.4,18.7 453.6,17.0 463.9,26.5 474.1,21.3 484.3,24.8 494.5,30.8 504.8,23.9 515.0,31.7" class="ln"></polyline></svg>
+</div>
+</section>
+</main>
+
+</div>
+
+</div>
+</body>
+</html>

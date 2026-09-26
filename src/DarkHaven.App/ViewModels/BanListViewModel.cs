@@ -64,7 +64,7 @@ public partial class BanListViewModel(AppServices services, Action back) : ViewM
     [ObservableProperty] private string? _message;
     [ObservableProperty] private bool _canLoadMore;
 
-    public string TotalText => Total == 0 ? "" : $"Найдено: {Total}";
+    public string TotalText => Total == 0 ? "" : Total.ToString();
     partial void OnTotalChanged(long value) => OnPropertyChanged(nameof(TotalText));
 
     partial void OnSearchChanged(string value)

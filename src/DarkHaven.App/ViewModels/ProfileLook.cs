@@ -10,7 +10,7 @@ namespace DarkHaven.App.ViewModels;
 /// <summary>How a profile's colour and frame turn into brushes — shared by every card.</summary>
 public static class ProfileLook
 {
-    public const string DefaultAccent = "#3B82F6";
+    public const string DefaultAccent = "#3A3A3E";
     public static readonly string[] Frames = ["none", "blue", "gold", "cyan"];
     private static readonly Regex Hex = new("^#[0-9A-Fa-f]{6}$");
 
@@ -19,27 +19,22 @@ public static class ProfileLook
     public static Color Accent(string? hex) => Color.Parse(IsHex(hex) ? hex! : DefaultAccent);
 
     /// <summary>
-    /// The banner when there's no picture. A flat fill in a bright profile colour shouted over the
-    /// dark HUD; fading it into a darker shade of itself keeps the colour and loses the glare.
+    /// The banner when there's no picture: the profile colour, flat and muted, so a bright pick
+    /// doesn't shout over the monochrome launcher.
     /// </summary>
     public static IBrush BannerBrush(string? hex)
     {
         var c = Accent(hex);
-        var deep = Color.FromRgb((byte)(c.R * 0.3), (byte)(c.G * 0.3), (byte)(c.B * 0.3));
-        return new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-            GradientStops = { new GradientStop(c, 0), new GradientStop(deep, 1) },
-        };
+        return new SolidColorBrush(Color.FromRgb((byte)(c.R * 0.45), (byte)(c.G * 0.45), (byte)(c.B * 0.45)));
     }
 
     public static FrameBrushes Frame(string? frame) => frame switch
     {
         "gold" => new(Color.Parse("#F0B454"), Color.Parse("#3A2E12")),
         "cyan" => new(Color.Parse("#7FD4FF"), Color.Parse("#14313A")),
-        "none" => new(Color.Parse("#24365A"), Colors.Transparent),
-        _ => new(Color.Parse("#5AA0FF"), Color.Parse("#111A2E")),
+        "none" => new(Color.Parse("#323236"), Colors.Transparent),
+        "blue" => new(Color.Parse("#5AA0FF"), Color.Parse("#111A2E")),
+        _ => new(Color.Parse("#8A8A8F"), Color.Parse("#111113")),
     };
 }
 

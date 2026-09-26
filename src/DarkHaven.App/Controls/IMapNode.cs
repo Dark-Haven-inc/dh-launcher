@@ -1,6 +1,6 @@
 namespace DarkHaven.App.Controls;
 
-/// <summary>What <see cref="SectorMap"/> needs from each region to draw it.</summary>
+/// <summary>What <see cref="FlatMap"/> needs from each region to draw it.</summary>
 public interface IMapNode
 {
     string Name { get; }

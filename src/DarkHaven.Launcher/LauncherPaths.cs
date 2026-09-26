@@ -25,6 +25,9 @@ public static class LauncherPaths
     /// <summary>The launch before that — kept so a retry doesn't wipe the log of the run that failed.</summary>
     public static string PreviousClientLogPath => Path.Combine(LogsDir, "client.prev.log");
 
+    /// <summary>The engine loader's executable file name on this OS.</summary>
+    public static string LoaderFileName => OperatingSystem.IsWindows() ? "DarkHaven.Loader.exe" : "DarkHaven.Loader";
+
     /// <summary>The SS14 engine signing public key, shipped next to the launcher assembly.</summary>
     public static string SigningKeyPath =>
         Path.Combine(AppContext.BaseDirectory, "Assets", "signing_key");

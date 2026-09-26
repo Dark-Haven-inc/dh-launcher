@@ -32,6 +32,7 @@ public partial class AccountViewModel : ViewModelBase
     [ObservableProperty] private bool _needsTfa;
 
     public ObservableCollection<AccountRowViewModel> Accounts { get; } = [];
+    public bool HasAccounts => Accounts.Count > 0;
 
     public string AuthServerLine => $"Сервер авторизации: {_services.Auth.BaseUrl}";
 
@@ -108,5 +109,6 @@ public partial class AccountViewModel : ViewModelBase
         var active = _services.Accounts.Active;
         foreach (var a in _services.Accounts.Accounts)
             Accounts.Add(new AccountRowViewModel(a, active?.UserId == a.UserId));
+        OnPropertyChanged(nameof(HasAccounts));
     }
 }

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using DarkHaven.Launcher.Api;
 using Microsoft.Data.Sqlite;
 
@@ -27,6 +25,9 @@ public sealed record PlaytimeEntry(string Name, string Address, long TotalSecond
 public sealed class SettingsDatabase(string dbPath)
 {
     private const int SchemaVersion = 3;
+
+    private readonly TokenProtector _tokens = new(Path.Combine(
+        Path.GetDirectoryName(Path.GetFullPath(dbPath))!, Path.GetFileNameWithoutExtension(dbPath) + ".key"));
 
     private const string CreateV1 = """
         CREATE TABLE Login (
@@ -125,11 +126,7 @@ public sealed class SettingsDatabase(string dbPath)
         {
             // Pre-fix rows hold plaintext (Unprotect will fail on them, not throw) — drop those
             // silently rather than crash the whole login list; the player just signs in again.
-            // This whole app is Windows-only in practice (registry access, LocalAppData paths
-            // elsewhere) — CA1416 below is a false positive for an app with no other-OS build.
-#pragma warning disable CA1416
-            var token = Unprotect(reader.GetString(2));
-#pragma warning restore CA1416
+            var token = _tokens.Unprotect(reader.GetString(2));
             if (token is null) continue;
 
             list.Add(new StoredLogin(
@@ -153,31 +150,9 @@ public sealed class SettingsDatabase(string dbPath)
             """;
         cmd.Parameters.AddWithValue("$id", login.UserId.ToString());
         cmd.Parameters.AddWithValue("$name", login.UserName);
-#pragma warning disable CA1416 // Windows-only app, see the matching note in GetLogins() above
-        cmd.Parameters.AddWithValue("$token", Protect(login.Token));
-#pragma warning restore CA1416
+        cmd.Parameters.AddWithValue("$token", _tokens.Protect(login.Token));
         cmd.Parameters.AddWithValue("$expires", login.Expires.UtcDateTime);
         cmd.ExecuteNonQuery();
-    }
-
-    // The auth token is a bearer credential good for ~30 days — settings.db is a plain SQLite file
-    // any other process running as the same Windows user could otherwise just read. DPAPI ties it
-    // to this Windows user account, so copying the file alone is no longer enough to steal a session.
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static string Protect(string plain) =>
-        Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(plain), null, DataProtectionScope.CurrentUser));
-
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private static string? Unprotect(string stored)
-    {
-        try
-        {
-            return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(stored), null, DataProtectionScope.CurrentUser));
-        }
-        catch (Exception)
-        {
-            return null; // not a DPAPI blob (old plaintext row) or undecryptable (different user/machine) — treat as absent, not fatal
-        }
     }
 
     public void DeleteLogin(Guid userId)

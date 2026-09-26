@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Регионы</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.main{padding:0;flex-direction:row;gap:0}
+.map{position:relative;flex-grow:1;overflow:hidden}
+.map svg{position:absolute;left:0;top:0}
+.map .grid line{stroke:#141416;stroke-width:1}
+.map .links line{stroke:#3A3A3E;stroke-width:1;stroke-dasharray:4 4}
+.total{position:absolute;right:16px;top:12px;font-family:'JBM',monospace;font-size:10px;color:var(--dim)}
+.node{position:absolute;display:flex;align-items:flex-start;gap:8px;color:var(--dim);text-align:left}
+.node .sq{width:8px;height:8px;border:1px solid #6E6E73;background:var(--bg);flex-shrink:0}
+.node span{display:flex;flex-direction:column;gap:4px;margin-top:-4px}
+.node b{font-size:12px;font-weight:500;letter-spacing:.04em}
+.node:hover{color:var(--text)}
+.node.on{color:var(--text)}
+.node.on .sq{width:20px;height:20px;border-color:var(--text);display:flex;align-items:center;justify-content:center}
+.node.on .sq i{width:8px;height:8px;background:var(--text)}
+.node.on span{margin-top:0}
+.node.on b{font-size:14px;font-weight:600}
+.node.on .num{font-size:10px}
+.detail{width:272px;flex-shrink:0;border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:16px}
+.detail .kvs{border-top:1px solid var(--line)}
+.detail .acts{display:flex;flex-direction:column;gap:8px}
+.detail .acts .play{height:28px}
+.nb{height:24px;width:100%;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);font-size:12px;color:var(--dim)}
+.nb:hover{color:var(--text);background:var(--hover)}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html">Главная</a>
+<a href="regions.html" class="on">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html">Мониторинг</a>
+<a href="news.html">Новости</a>
+<a href="settings.html">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main">
+<div class="map">
+<svg width="542" height="568" aria-hidden="true"><g class="grid"><line x1="16" y1="0" x2="16" y2="568"></line><line x1="64" y1="0" x2="64" y2="568"></line><line x1="112" y1="0" x2="112" y2="568"></line><line x1="160" y1="0" x2="160" y2="568"></line><line x1="208" y1="0" x2="208" y2="568"></line><line x1="256" y1="0" x2="256" y2="568"></line><line x1="304" y1="0" x2="304" y2="568"></line><line x1="352" y1="0" x2="352" y2="568"></line><line x1="400" y1="0" x2="400" y2="568"></line><line x1="448" y1="0" x2="448" y2="568"></line><line x1="496" y1="0" x2="496" y2="568"></line><line x1="0" y1="8" x2="542" y2="8"></line><line x1="0" y1="56" x2="542" y2="56"></line><line x1="0" y1="104" x2="542" y2="104"></line><line x1="0" y1="152" x2="542" y2="152"></line><line x1="0" y1="200" x2="542" y2="200"></line><line x1="0" y1="248" x2="542" y2="248"></line><line x1="0" y1="296" x2="542" y2="296"></line><line x1="0" y1="344" x2="542" y2="344"></line><line x1="0" y1="392" x2="542" y2="392"></line><line x1="0" y1="440" x2="542" y2="440"></line><line x1="0" y1="488" x2="542" y2="488"></line><line x1="0" y1="536" x2="542" y2="536"></line></g><g class="links"><line x1="259" y1="284" x2="145" y2="190"></line><line x1="259" y1="284" x2="373" y2="180"></line><line x1="259" y1="284" x2="381" y2="388"></line><line x1="259" y1="284" x2="170" y2="416"></line></g></svg>
+<div class="total">в сети 42</div>
+<button class="node on" style="left:249px;top:274px"><i class="sq"><i></i></i><span><b>ХЕЙВЕН</b><span class="mono num ">42/80</span></span></button><button class="node" style="left:141px;top:186px" title="карантин"><i class="sq"></i><span><b>РУБЕЖ</b></span></button><button class="node" style="left:369px;top:176px" title="карантин"><i class="sq"></i><span><b>ВЕРФЬ</b></span></button><button class="node" style="left:377px;top:384px" title="карантин"><i class="sq"></i><span><b>КАРАНТИН</b></span></button><button class="node" style="left:166px;top:412px" title="карантин"><i class="sq"></i><span><b>ПОЛИГОН</b></span></button>
+</div>
+<div class="detail">
+<div style="display:flex;flex-direction:column;gap:4px">
+<h1 class="name">ХЕЙВЕН</h1>
+<div class="addr mono">ss14://95.31.51.216:1212</div>
+</div>
+<div class="kvs">
+<div class="kv"><span>Состояние</span><span style="display:flex;align-items:center;gap:8px"><i class="st on" title="в сети"></i>в сети</span></div>
+<div class="kv"><span>Игроков</span><span class="mono num ">42/80</span></div>
+<div class="kv"><span>Раунд</span><span class="mono">01:12</span></div>
+<div class="kv"><span>Отклик</span><span class="mono">38 мс</span></div>
+</div>
+<div class="acts">
+<a class="play" href="connecting.html"><span class="icon">&#xEB2C;</span>ИГРАТЬ</a>
+<button class="btn wide">Баны игроков</button>
+</div>
+<div>
+<div class="cap"><span>СОСЕДИ</span><span>4</span></div>
+<button class="nb"><i class="st q" title="карантин"></i><span>РУБЕЖ</span></button><button class="nb"><i class="st q" title="карантин"></i><span>ВЕРФЬ</span></button><button class="nb"><i class="st q" title="карантин"></i><span>КАРАНТИН</span></button><button class="nb"><i class="st q" title="карантин"></i><span>ПОЛИГОН</span></button>
+</div>
+</div>
+</main>
+
+</div>
+
+</div>
+</body>
+</html>

@@ -225,14 +225,14 @@ public sealed class AppServices : IDisposable
     {
         var here = AppContext.BaseDirectory;
         // Installed layout: loader sits under ./loader/. Dev layout: sibling build output.
-        var installed = Path.Combine(here, "loader", "DarkHaven.Loader.exe");
+        var installed = Path.Combine(here, "loader", LauncherPaths.LoaderFileName);
         if (File.Exists(installed))
-            return installed;
+            return LoaderCopy.Prepare(installed);
 
         foreach (var cfg in new[] { "Debug", "Release" })
         {
             var dev = Path.GetFullPath(Path.Combine(here, "..", "..", "..", "..",
-                "DarkHaven.Loader", "bin", cfg, "net10.0", "DarkHaven.Loader.exe"));
+                "DarkHaven.Loader", "bin", cfg, "net10.0", LauncherPaths.LoaderFileName));
             if (File.Exists(dev))
                 return dev;
         }

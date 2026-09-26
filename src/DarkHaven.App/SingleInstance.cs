@@ -11,8 +11,16 @@ namespace DarkHaven.App;
 /// </summary>
 public static class SingleInstance
 {
-    private const string MutexName = @"Local\Frontier15Launcher.SingleInstance";
-    private const string PipeName = "Frontier15Launcher.ipc";
+    // Windows: per logon session. Elsewhere "Local\" means the Unix session (setsid), and a launcher
+    // started by a browser for an ss14:// link is in another one, so the name is per user instead.
+    private static readonly string MutexName = OperatingSystem.IsWindows()
+        ? @"Local\Frontier15Launcher.SingleInstance"
+        : $@"Global\Frontier15Launcher.SingleInstance.{Environment.UserName}";
+
+    // A Unix domain socket in the shared temp directory on Unix: per user, so users don't collide.
+    private static readonly string PipeName = OperatingSystem.IsWindows()
+        ? "Frontier15Launcher.ipc"
+        : $"Frontier15Launcher.{Environment.UserName}.ipc";
 
     private static Mutex? _mutex;
 

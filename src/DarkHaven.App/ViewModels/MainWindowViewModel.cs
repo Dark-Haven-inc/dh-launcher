@@ -41,17 +41,23 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Signed-in account name for the top bar, or null.</summary>
     public string? AccountName => _services.Accounts.Active?.Username ?? _services.Accounts.Accounts.FirstOrDefault()?.Username;
 
-    public string VersionLine =>
-        $"ЛАУНЧЕР {DarkHaven.Launcher.LauncherInfo.Version}   ·   ДВИЖОК Robust {EngineVersionHint}";
+    public string LauncherVersion => DarkHaven.Launcher.LauncherInfo.Version;
 
-    private const string EngineVersionHint = "в комплекте";
+    /// <summary>The engine the launcher ships (the Frontier 15 fork); others download on demand.</summary>
+    public string EngineVersion => _services.Engines.BundledVersions.FirstOrDefault() ?? "—";
+
+    /// <summary>The quick switcher (Ctrl+K), while open.</summary>
+    [ObservableProperty] private PaletteViewModel? _palette;
+
+    public bool IsRegionsPage => Page is NavPage.Regions or NavPage.Bans;
+    public bool IsAccountPage => Page is NavPage.Account or NavPage.Profile;
 
     public MainWindowViewModel(AppServices services)
     {
         _services = services;
-        Home = new HomeViewModel(services, Connect, () => Page = NavPage.Regions, () => Page = NavPage.Servers);
         Regions = new RegionsViewModel(services, Connect);
         Servers = new ServerListViewModel(services, Connect);
+        Home = new HomeViewModel(services, Connect, Regions, Servers, ShowRegion);
         News = new NewsViewModel(services);
         Account = new AccountViewModel(services);
         Profile = new ProfileViewModel(services, () => Page = NavPage.Account);
@@ -124,7 +130,23 @@ public partial class MainWindowViewModel : ViewModelBase
         _ = CheckForUpdatesAsync();
     }
 
-    // --- Self-update banner ---
+    // --- Self-update, shown in the version block at the bottom of the rail ---
+
+    public bool ShowUpdateButton => UpdatePhase is UpdatePhase.Available or UpdatePhase.ReadyToRestart;
+    public string UpdateButtonText => UpdatePhase == UpdatePhase.ReadyToRestart
+        ? "перезапустить"
+        : $"{_services.Updater.PendingVersion} · обновить";
+    public bool ShowUpdateStatus => UpdatePhase is UpdatePhase.Downloading or UpdatePhase.Failed;
+    public string UpdateStatusText => UpdatePhase == UpdatePhase.Failed ? "не обновилось" : $"загрузка {UpdateProgress}%";
+
+    [RelayCommand]
+    private async Task UpdateAction()
+    {
+        if (UpdatePhase == UpdatePhase.ReadyToRestart)
+            RestartForUpdate();
+        else
+            await StartUpdate();
+    }
 
     public bool ShowUpdateBanner =>
         UpdatePhase is UpdatePhase.Available or UpdatePhase.Downloading or UpdatePhase.ReadyToRestart or UpdatePhase.Failed;
@@ -145,11 +167,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public bool ShowRegionBanner => RegionOnlineName is not null;
     public string RegionBannerText => _regionBannerIsSlot
-        ? $"🟢  На {RegionOnlineName} освободилось место"
-        : $"🟢  {RegionOnlineName} снова онлайн";
+        ? $"На {RegionOnlineName} освободилось место"
+        : $"{RegionOnlineName} снова в сети";
 
     // RegionBannerText too: it's computed, and without this the banner kept whatever it first read —
-    // "🟢   снова онлайн", with no region name in it.
+    // " снова в сети", with no region name in it.
     partial void OnRegionOnlineNameChanged(string? value)
     {
         OnPropertyChanged(nameof(ShowRegionBanner));
@@ -159,7 +181,7 @@ public partial class MainWindowViewModel : ViewModelBase
     // --- "waiting for a free slot" banner ---
 
     public bool ShowSlotWaitBanner => SlotWaitName is not null;
-    public string SlotWaitBannerText => $"⏳  Ждём место на {SlotWaitName} — подключим сами, как только освободится";
+    public string SlotWaitBannerText => $"Ждём место на {SlotWaitName}";
 
     partial void OnSlotWaitNameChanged(string? value)
     {
@@ -188,9 +210,17 @@ public partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(UpdateBannerText));
         OnPropertyChanged(nameof(CanStartUpdate));
         OnPropertyChanged(nameof(CanRestartForUpdate));
+        OnPropertyChanged(nameof(ShowUpdateButton));
+        OnPropertyChanged(nameof(UpdateButtonText));
+        OnPropertyChanged(nameof(ShowUpdateStatus));
+        OnPropertyChanged(nameof(UpdateStatusText));
     }
 
-    partial void OnUpdateProgressChanged(int value) => OnPropertyChanged(nameof(UpdateBannerText));
+    partial void OnUpdateProgressChanged(int value)
+    {
+        OnPropertyChanged(nameof(UpdateBannerText));
+        OnPropertyChanged(nameof(UpdateStatusText));
+    }
 
     public async Task CheckForUpdatesAsync()
     {
@@ -228,6 +258,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnPageChanged(NavPage value)
     {
+        OnPropertyChanged(nameof(IsRegionsPage));
+        OnPropertyChanged(nameof(IsAccountPage));
+
         // МОНИТОРИНГ polls servers every few seconds — only while it's on screen.
         if (value == NavPage.Monitoring)
             Monitoring.Activate();
@@ -260,6 +293,18 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand] private void Navigate(NavPage page) => Page = page;
+
+    [RelayCommand]
+    private void OpenPalette() => Palette ??= new PaletteViewModel(this);
+
+    public void ClosePalette() => Palette = null;
+
+    /// <summary>Opens the Regions page on one region (from the palette or the home strip).</summary>
+    public void ShowRegion(RegionNodeViewModel node)
+    {
+        Page = NavPage.Regions;
+        Regions.SelectFromMap(node);
+    }
     [RelayCommand] private void OpenAccount() => Page = NavPage.Profile;
     [RelayCommand] private void OpenDiscord() => SafeUrl.Open("https://discord.gg/");
     [RelayCommand] private void OpenSite() => SafeUrl.Open("https://spacestation14.com/");

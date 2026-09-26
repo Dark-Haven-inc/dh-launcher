@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Состояния</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+body{display:block;padding:32px 40px}
+.sheet{width:880px;display:flex;flex-direction:column;gap:24px}
+.sheet h2{margin:0 0 8px;font-family:'JBM',monospace;font-weight:400;font-size:10px;letter-spacing:.18em;color:var(--dim)}
+.line{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.item{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.item small{font-family:'JBM',monospace;font-size:9.5px;color:var(--faint)}
+.btn.h{border-color:var(--text)}
+.btn.p{background:var(--press)}
+.btn.primary.h{background:#FFFFFF}
+.btn.primary.p{background:var(--body)}
+.legend{display:flex;gap:24px;font-size:12px}
+.legend span{display:flex;align-items:center;gap:8px}
+.box3{width:200px;background:var(--bg);border:1px solid var(--line)}
+.sbox{height:96px;padding:0 8px 0 12px}
+.flash-static{background:var(--press)}
+.verbox{width:144px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="sheet">
+<section><h2>СТАТУС</h2>
+<div class="legend"><span><i class="st on" title="в сети"></i>в сети · готово · в игре</span><span><i class="st q" title="карантин"></i>карантин · ждёт · в лаунчере</span><span><i class="st full" title="полный"></i>полный · идёт</span><span><i class="st off" title="офлайн"></i>офлайн · ошибка · не в сети</span></div>
+</section>
+<section><h2>КНОПКИ</h2>
+<div class="line"><div class="item"><button class="btn ">Проверить</button><small>обычная</small></div><div class="item"><button class="btn h">Проверить</button><small>наведение</small></div><div class="item"><button class="btn focus">Проверить</button><small>фокус</small></div><div class="item"><button class="btn p">Проверить</button><small>нажата</small></div><div class="item"><button class="btn disabled">Проверить</button><small>недоступна</small></div></div>
+<div class="line" style="margin-top:12px"><div class="item"><button class="btn primary " style="width:128px">ИГРАТЬ</button><small>обычная</small></div><div class="item"><button class="btn primary h" style="width:128px">ИГРАТЬ</button><small>наведение</small></div><div class="item"><button class="btn primary focus" style="width:128px">ИГРАТЬ</button><small>фокус</small></div><div class="item"><button class="btn primary p" style="width:128px">ИГРАТЬ</button><small>нажата</small></div></div>
+</section>
+<section><h2>ПОЛЯ И ПЕРЕКЛЮЧАТЕЛИ</h2>
+<div class="line">
+<label class="field" style="width:200px"><span class="icon">&#xEA6D;</span><input placeholder="Поиск"></label>
+<label class="field" style="width:200px;border-color:var(--text)"><span class="icon">&#xEA6D;</span><input value="nova"></label>
+<span class="seg"><button class="chip">нет</button><button class="chip on">лёгкий</button><button class="chip on">средний</button></span>
+<label class="check on"><span class="box">&#xEAB2;</span>вкл</label>
+<label class="check"><span class="box"></span>выкл</label>
+</div>
+</section>
+<section><h2>ЗАГРУЗКА</h2>
+<div class="box3"><div class="loading"></div>
+<div class="skel"><i style="width:6px;margin-left:12px"></i><i style="width:96px"></i><i style="width:32px;margin-left:auto;margin-right:12px"></i></div>
+<div class="skel"><i style="width:6px;margin-left:12px"></i><i style="width:72px"></i><i style="width:32px;margin-left:auto;margin-right:12px"></i></div>
+<div class="skel"><i style="width:6px;margin-left:12px"></i><i style="width:112px"></i><i style="width:32px;margin-left:auto;margin-right:12px"></i></div>
+</div>
+</section>
+<section><h2>ПРОКРУТКА · ИЗМЕНИЛОСЬ ЧИСЛО</h2>
+<div class="line" style="align-items:flex-start">
+<div class="box3 scroll sbox"><button class="row"><i class="st on" title="в сети"></i><span>Сервер 1</span><span class="mono">11/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 2</span><span class="mono">12/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 3</span><span class="mono">13/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 4</span><span class="mono">14/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 5</span><span class="mono">15/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 6</span><span class="mono">16/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 7</span><span class="mono">17/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 8</span><span class="mono">18/40</span><span class="icon">&#xEAB6;</span></button><button class="row"><i class="st on" title="в сети"></i><span>Сервер 9</span><span class="mono">19/40</span><span class="icon">&#xEAB6;</span></button></div>
+<div class="item"><span class="mono flash-static" style="font-size:12px;padding:0 4px">43/80</span><small>подсветка 600 мс</small></div>
+</div>
+</section>
+<section><h2>ВЕРСИЯ</h2>
+<div class="line" style="align-items:flex-start">
+<div class="verbox"><div class="ver"><div><span>ЛАУНЧЕР</span>0.2.4</div><div><span>ДВИЖОК</span>275.1.0</div></div></div>
+<div class="verbox"><div class="ver"><div><span>ЛАУНЧЕР</span>0.2.4</div><div><span>ДВИЖОК</span>275.1.0</div><button class="upd">0.2.5 · обновить</button></div></div>
+</div>
+</section>
+</div>
+</body>
+</html>

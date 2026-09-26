@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia;
+using Avalonia.Media;
 using DarkHaven.Launcher;
 using Serilog;
 using Serilog.Core;
@@ -86,7 +87,8 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
+            // The bundled Inter (Assets/Fonts), so text looks the same on every machine.
+            .With(new FontManagerOptions { DefaultFamilyName = "avares://Frontier15Launcher/Assets/Fonts#Inter" })
             .LogToTrace();
 
     /// <summary>Decodes the <c>C&lt;hex&gt;</c> connect address out of a <c>--commands</c> redial batch.</summary>
@@ -109,9 +111,9 @@ internal static class Program
 
     private static void RegisterUriScheme()
     {
-        var exe = Environment.ProcessPath;
+        var exe = LauncherInfo.ExecutablePath;
         if (!string.IsNullOrEmpty(exe))
-            UriScheme.EnsureRegistered(exe);
+            UriScheme.EnsureRegistered(exe, Path.Combine(AppContext.BaseDirectory, "Assets", "emblem.png"));
     }
 
     /// <summary>True when running straight from <c>bin/Debug</c> or <c>bin/Release</c> build output.</summary>

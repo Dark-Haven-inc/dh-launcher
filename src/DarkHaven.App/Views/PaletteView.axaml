@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.PaletteView"
+             x:DataType="vm:PaletteViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.bare, TextBox.bare:pointerover, TextBox.bare:focus">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="TextBox.bare /template/ Border#PART_BorderElement, TextBox.bare:pointerover /template/ Border#PART_BorderElement, TextBox.bare:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.hit">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Button.hit:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.hit.selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Width="480" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,64,0,0"
+            Background="{StaticResource DhBgBrush}" BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1">
+        <StackPanel>
+            <Border Height="36" Padding="12,0" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*">
+                    <TextBlock Classes="icon dim" Text="&#xEA6D;" Margin="0,0,8,0" />
+                    <TextBox x:Name="Input" Grid.Column="1" Classes="bare" Text="{Binding Query}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Hits}" Margin="0,4">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PaletteItem">
+                        <Button Classes="hit" Classes.selected="{Binding IsSelected}" Click="OnHitClick">
+                            <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="12">
+                                <c:StatusGlyph Kind="{Binding Status}" IsVisible="{Binding HasStatus}" />
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                    <Run Text="{Binding Before}" /><Run Text="{Binding Match}" TextDecorations="Underline" /><Run Text="{Binding After}" />
+                                </TextBlock>
+                                <TextBlock Grid.Column="2" Classes="lbl" Text="{Binding KindLabel}" LetterSpacing="0.8" VerticalAlignment="Center" />
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</UserControl>

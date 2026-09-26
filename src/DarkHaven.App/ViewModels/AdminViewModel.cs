@@ -94,8 +94,8 @@ public sealed partial class AdminServerRowViewModel(PlatformAdminServer s) : Obs
 
     /// <summary>What the platform found when it pinged the server at submission.</summary>
     public string ProbeText => s.ProbedName is { } n
-        ? $"✔ при подаче отвечал как «{n}», игроков: {s.ProbedPlayers ?? 0}"
-        : "✖ при подаче не отвечал";
+        ? $"при подаче отвечал как «{n}», игроков: {s.ProbedPlayers ?? 0}"
+        : "при подаче не отвечал";
 
     public string ReviewText
     {

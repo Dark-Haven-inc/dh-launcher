@@ -3,47 +3,61 @@
              xmlns:vm="using:DarkHaven.App.ViewModels"
              x:Class="DarkHaven.App.Views.NewsView"
              x:DataType="vm:NewsViewModel">
+    <Grid ColumnDefinitions="280,*">
+        <!-- The list -->
+        <Border BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
+            <Panel>
+                <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
+                <TextBlock Classes="dim" Margin="16" Text="Новостей нет" IsVisible="{Binding IsEmpty}" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NewsItemViewModel">
+                                <Button Classes="row" Classes.selected="{Binding IsSelected}" Padding="16,8"
+                                        Command="{Binding $parent[ItemsControl].((vm:NewsViewModel)DataContext).SelectCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Classes="mono dim" FontSize="10" Text="{Binding DateText}" />
+                                            <TextBlock Classes="mono dim" FontSize="10" Text="{Binding TagCaps}" IsVisible="{Binding HasTag}" />
+                                            <TextBlock Classes="icon dim" FontSize="10" Text="&#xEBA0;" IsVisible="{Binding Pinned}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+        </Border>
 
-    <ScrollViewer>
-        <StackPanel Margin="40,36" Spacing="18" MaxWidth="680" HorizontalAlignment="Left">
-
-            <StackPanel Spacing="4">
-                <TextBlock Text="Новости" Classes="h1" />
-                <TextBlock Text="Обновления лаунчера и сети Frontier 15" Classes="dim" />
+        <!-- The selected one -->
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Margin="24,16" Spacing="12" MaxWidth="600" HorizontalAlignment="Left"
+                        IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Classes="mono dim" FontSize="10.5" Text="{Binding Selected.DateText}" />
+                    <TextBlock Classes="mono dim" FontSize="10.5" Text="{Binding Selected.TagCaps}" />
+                    <TextBlock Classes="icon dim" FontSize="10.5" Text="&#xEBA0;" IsVisible="{Binding Selected.Pinned}" />
+                </StackPanel>
+                <TextBlock Text="{Binding Selected.Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" LineHeight="22" />
+                <ItemsControl ItemsSource="{Binding Selected.Paragraphs}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <SelectableTextBlock Text="{Binding}" FontSize="12.5" LineHeight="20" TextWrapping="Wrap"
+                                                 Foreground="{StaticResource DhBodyBrush}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button HorizontalAlignment="Left" Command="{Binding Selected.OpenCommand}" IsVisible="{Binding Selected.HasLink}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Подробнее" VerticalAlignment="Center" />
+                        <TextBlock Classes="icon" Text="&#xEB14;" FontSize="11" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
-
-            <TextBlock Text="Загрузка…" Classes="dim" IsVisible="{Binding IsLoading}" />
-
-            <TextBlock IsVisible="{Binding IsEmpty}" Classes="dim" TextWrapping="Wrap"
-                       Text="Пока новостей нет." />
-
-            <ItemsControl ItemsSource="{Binding Items}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="14" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:NewsItemViewModel">
-                        <Border Classes="card" Padding="22">
-                            <StackPanel Spacing="8">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Border Background="{StaticResource DhBgElevatedBrush}"
-                                            BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1"
-                                            CornerRadius="3" Padding="6,2" IsVisible="{Binding HasTag}">
-                                        <TextBlock Text="{Binding Tag}" Classes="caps" FontSize="9" />
-                                    </Border>
-                                    <TextBlock Text="📌" FontSize="11" VerticalAlignment="Center" IsVisible="{Binding Pinned}" />
-                                    <TextBlock Text="{Binding DateText}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
-                                </StackPanel>
-
-                                <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding Body}" Classes="dim" TextWrapping="Wrap" LineHeight="20" />
-
-                                <Button Classes="ghost" Content="Подробнее →" HorizontalAlignment="Left"
-                                        Margin="0,4,0,0" IsVisible="{Binding HasLink}"
-                                        Command="{Binding OpenCommand}" />
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

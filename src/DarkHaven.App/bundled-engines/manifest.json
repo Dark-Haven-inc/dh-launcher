@@ -2,6 +2,12 @@
   "275.1.0": {
     "file": "275.1.0.zip",
     "sha256": "5C70F44A1C98091EED980F4B0F452D181CEE46DBCB45EFF127781152C3C28062",
-    "note": "Dark Haven forked RobustToolbox, built from c333ccb58145767922946bf08d919d8856bc1f40 (live server, медецина build)"
+    "note": "Dark Haven forked RobustToolbox, built from c333ccb58145767922946bf08d919d8856bc1f40 (live server, медецина build)",
+    "platforms": {
+      "linux-x64": {
+        "file": "275.1.0_linux-x64.zip",
+        "sha256": "95819E6689B4C5880A169DA4E17A99DDFD90AE1A85EA70D749BC10DE6BA8B163"
+      }
+    }
   }
 }

@@ -16,32 +16,11 @@
             <Setter Property="Foreground" Value="{StaticResource DhOnlineBrush}" />
         </Style>
         <!-- Role switches: same look as МОНИТОРИНГ's range switches — the chosen one is lit -->
-        <Style Selector="Button.pill">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Padding" Value="14,5" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
-        </Style>
-        <Style Selector="Button.pill:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
-        </Style>
-        <Style Selector="Button.pill.selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
-            <Setter Property="TextBlock.Foreground" Value="White" />
-        </Style>
     </UserControl.Styles>
 
     <ScrollViewer>
-        <StackPanel Margin="40,36" Spacing="22" MaxWidth="720" HorizontalAlignment="Left">
+        <StackPanel Margin="20,16" Spacing="16" MaxWidth="720" HorizontalAlignment="Left">
 
-            <StackPanel Spacing="4">
-                <TextBlock Text="Админ" Classes="h1" />
-                <TextBlock Text="Игроки, серверы, чат, новости, роли и журнал" Classes="dim" />
-            </StackPanel>
 
             <!-- Access gating -->
             <Border Classes="card" Padding="18" IsVisible="{Binding NotConnected}">
@@ -60,26 +39,26 @@
             <TextBlock Text="{Binding Status}" Classes="dim" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
             <!-- The host's emergency freeze (dh-platform Admin/Lockdown) -->
-            <Border Background="{StaticResource DhDangerBrush}" CornerRadius="6" Padding="14,10"
+            <Border Background="{StaticResource DhDangerBrush}" Padding="14,10"
                     IsVisible="{Binding LockdownText, Converter={x:Static ObjectConverters.IsNotNull}}">
-                <TextBlock Text="{Binding LockdownText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding LockdownText}" Foreground="{StaticResource DhBgBrush}" FontWeight="SemiBold" TextWrapping="Wrap" />
             </Border>
 
             <StackPanel Spacing="22" IsVisible="{Binding CanSeeAdmin}">
                 <!-- One section at a time instead of one endless page -->
                 <WrapPanel>
-                    <Button Classes="pill" Margin="0,0,6,6" Content="Игроки" Command="{Binding SetSectionCommand}" CommandParameter="players"
-                            IsVisible="{Binding CanModerate}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}" />
-                    <Button Classes="pill" Margin="0,0,6,6" Content="{Binding ServersTabTitle}" Command="{Binding SetSectionCommand}" CommandParameter="servers"
-                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=servers}" />
-                    <Button Classes="pill" Margin="0,0,6,6" Content="Чат" Command="{Binding SetSectionCommand}" CommandParameter="chat"
-                            IsVisible="{Binding CanModerate}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=chat}" />
-                    <Button Classes="pill" Margin="0,0,6,6" Content="Новости" Command="{Binding SetSectionCommand}" CommandParameter="news"
-                            IsVisible="{Binding CanEditNews}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
-                    <Button Classes="pill" Margin="0,0,6,6" Content="Роли и доступ" Command="{Binding SetSectionCommand}" CommandParameter="access"
-                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}" />
-                    <Button Classes="pill" Margin="0,0,6,6" Content="Журнал" Command="{Binding SetSectionCommand}" CommandParameter="journal"
-                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Игроки" Command="{Binding SetSectionCommand}" CommandParameter="players"
+                            IsVisible="{Binding CanModerate}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="{Binding ServersTabTitle}" Command="{Binding SetSectionCommand}" CommandParameter="servers"
+                            IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=servers}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Чат" Command="{Binding SetSectionCommand}" CommandParameter="chat"
+                            IsVisible="{Binding CanModerate}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=chat}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Новости" Command="{Binding SetSectionCommand}" CommandParameter="news"
+                            IsVisible="{Binding CanEditNews}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Роли и доступ" Command="{Binding SetSectionCommand}" CommandParameter="access"
+                            IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Журнал" Command="{Binding SetSectionCommand}" CommandParameter="journal"
+                            IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}" />
                 </WrapPanel>
 
                 <!-- СЕРВЕРЫ: what goes on the launcher's server list (admin/owner) -->
@@ -216,13 +195,13 @@
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{Binding SearchResult.Username}" FontWeight="Bold" FontSize="16" />
                                     <Border Background="{StaticResource DhBgElevatedBrush}" BorderBrush="{StaticResource DhBorderBrush}"
-                                            BorderThickness="1" CornerRadius="4" Padding="6,1"
+                                            BorderThickness="1" Padding="6,1"
                                             IsVisible="{Binding SearchResult.Role, Converter={x:Static ObjectConverters.IsNotNull}}">
                                         <TextBlock Text="{Binding SearchResult.Role}" FontSize="10" />
                                     </Border>
-                                    <Border Background="{StaticResource DhDangerBrush}" CornerRadius="4" Padding="6,1"
+                                    <Border Background="{StaticResource DhDangerBrush}" Padding="6,1"
                                             IsVisible="{Binding SearchResult.LauncherBanned}">
-                                        <TextBlock Text="ЗАБАНЕН" FontSize="10" Foreground="White" />
+                                        <TextBlock Text="ЗАБАНЕН" FontSize="10" Foreground="{StaticResource DhBgBrush}" />
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Classes="dim" FontSize="12">
@@ -405,7 +384,7 @@
                             <!-- Recent messages on the selected server/channel, polled every few seconds —
                                  writing blind with no way to see a reply isn't very useful. -->
                             <Border Background="{StaticResource DhBgBrush}" BorderBrush="{StaticResource DhBorderBrush}"
-                                    BorderThickness="1" CornerRadius="4" Height="160">
+                                    BorderThickness="1" Height="160">
                                 <ScrollViewer>
                                     <ItemsControl ItemsSource="{Binding ChatMessages}" Margin="8">
                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -583,14 +562,14 @@
                         <StackPanel Spacing="10">
                             <TextBox Text="{Binding RoleUsername}" Watermark="Ник игрока" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Classes="pill" Content="Редактор новостей" Command="{Binding SetRoleToGrantCommand}" CommandParameter="news"
-                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
-                                <Button Classes="pill" Content="Модератор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="moderator"
-                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=moderator}" />
-                                <Button Classes="pill" Content="Администратор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="admin"
-                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=admin}" />
-                                <Button Classes="pill" Content="Владелец" Command="{Binding SetRoleToGrantCommand}" CommandParameter="owner"
-                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=owner}" />
+                                <Button Classes="chip" Content="Редактор новостей" Command="{Binding SetRoleToGrantCommand}" CommandParameter="news"
+                                        Classes.on="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
+                                <Button Classes="chip" Content="Модератор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="moderator"
+                                        Classes.on="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=moderator}" />
+                                <Button Classes="chip" Content="Администратор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="admin"
+                                        Classes.on="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=admin}" />
+                                <Button Classes="chip" Content="Владелец" Command="{Binding SetRoleToGrantCommand}" CommandParameter="owner"
+                                        Classes.on="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=owner}" />
                             </StackPanel>
                             <TextBlock Text="{Binding RoleToGrantDescription}" Classes="dim" FontSize="12" TextWrapping="Wrap" />
                             <Button Classes="primary" HorizontalAlignment="Left"

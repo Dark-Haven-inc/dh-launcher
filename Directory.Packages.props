@@ -17,6 +17,12 @@
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
 
+    <!-- The engine's native libraries for the loader outside Windows (Windows ones are vendored).
+         Keep in step with RobustToolbox's Directory.Packages.props: Robust.Natives and the Sdl3 that
+         SpaceWizards.Sdl pulls in. libsodium already comes with NSec.Cryptography. -->
+    <PackageVersion Include="Robust.Natives" Version="0.2.3" />
+    <PackageVersion Include="Robust.Natives.Sdl3" Version="0.1.2-sdl3.4.0" />
+
     <!-- Self-update + installer -->
     <PackageVersion Include="Velopack" Version="1.2.0" />
 
@@ -28,7 +34,6 @@
     <PackageVersion Include="Avalonia" Version="11.3.20" />
     <PackageVersion Include="Avalonia.Desktop" Version="11.3.20" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.20" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.20" />
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.20" />
 
     <!-- Tests -->
