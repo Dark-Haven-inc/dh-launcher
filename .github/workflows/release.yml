@@ -12,6 +12,10 @@ on:
         description: 'Publish it (off: only build; the packages become artifacts of the run)'
         type: boolean
         default: true
+      only_linux:
+        description: 'Only the Linux build: add it to an existing release whose Linux job failed'
+        type: boolean
+        default: false
 
 # A tag always publishes; a manual run can build without releasing anything, to try the workflow.
 env:
@@ -23,6 +27,7 @@ concurrency:
 
 jobs:
   release:
+    if: ${{ !inputs.only_linux }}
     runs-on: windows-latest
     permissions:
       contents: write   # create the GitHub Release + upload assets
@@ -163,6 +168,8 @@ jobs:
   # engine needs a linux-x64 build in manifest.json ("platforms"), or pack-release.ps1 stops here.
   release-linux:
     needs: release
+    # With only_linux the Windows job is skipped on purpose and this one still runs.
+    if: ${{ !cancelled() && (needs.release.result == 'success' || (inputs.only_linux && needs.release.result == 'skipped')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -228,8 +235,10 @@ jobs:
       - name: Drop stale full packages
         shell: bash
         run: |
+          # The channel is in the name here: Frontier15Launcher-<version>-linux-full.nupkg.
           find artifacts/releases -name '*-full.nupkg' \
-            ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
+            ! -name "*-${{ steps.v.outputs.version }}-linux-full.nupkg" -delete || true
+          ls artifacts/releases/*-${{ steps.v.outputs.version }}-linux-full.nupkg
 
       - name: Keep the packages (build-only run)
         if: env.PUBLISH != 'true'

@@ -1,6 +1,7 @@
 using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -112,6 +113,7 @@ public sealed class LaunchBroker : IDisposable
             TryDelete(_socketPath);
     }
 
+    [SupportedOSPlatform("linux")]
     private static string SocketDirectory()
     {
         // The per-user runtime dir is private to the user (0700) and cleared at logout.
