@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DarkHaven.App.Themes;
 using DarkHaven.Launcher;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Engine;
@@ -24,6 +26,17 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private string _discordAppId;
     [ObservableProperty] private string? _status;
     [ObservableProperty] private string _cacheSummary = "…";
+    [ObservableProperty] private Theme _selectedTheme = Theme.Current;
+
+    public IReadOnlyList<Theme> ThemeChoices => Theme.All;
+
+    /// <summary>The theme's colors, next to the theme picker: the background every gray follows, and active buttons.</summary>
+    public HsvSetting BaseColor { get; } = new("ОБЩИЙ", shown: Theme.BackgroundFor);
+    public HsvSetting ActiveColor { get; } = new("АКТИВНЫЕ КНОПКИ", shown: Theme.AccentFill);
+
+    // A drag moves the sliders many times a second: recolor on each, write to the DB once it settles.
+    private readonly DispatcherTimer _saveColorsTimer;
+    private (Theme Theme, ThemeColors Colors)? _unsavedColors;
 
     public string DataDir => LauncherPaths.DataDir;
     public string VersionLine =>
@@ -43,6 +56,11 @@ public partial class SettingsViewModel : ViewModelBase
         _platformUrl = services.Settings.GetConfig("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
         _discordAppId = services.Settings.GetConfig("DiscordAppId") ?? "";
         ApplyVerboseLog(_verboseLog);
+
+        _saveColorsTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) => SaveColors());
+        ShowThemeColors();
+        BaseColor.Changed += () => EditColors(Theme.CurrentColors with { Base = BaseColor.Hsv });
+        ActiveColor.Changed += () => EditColors(Theme.CurrentColors with { Active = ActiveColor.Hsv });
         _ = LoadCacheSummaryAsync();
     }
 
@@ -70,6 +88,50 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnRegionsUrlChanged(string v) => _services.Settings.SetConfig("RegionsUrl", Trim(v));
     partial void OnPlatformUrlChanged(string v) => _services.Settings.SetConfig("PlatformApiUrl", Trim(v));
     partial void OnDiscordAppIdChanged(string v) => _services.Settings.SetConfig("DiscordAppId", Trim(v));
+
+    partial void OnSelectedThemeChanged(Theme value)
+    {
+        _services.Settings.SetConfig("Theme", value.Id);
+        // Once the picker's own input is done with: the switch closes the window it sits in.
+        Dispatcher.UIThread.Post(() =>
+        {
+            SaveColors();
+            App.SwitchTheme(value);
+            ShowThemeColors();
+        });
+    }
+
+    /// <summary>The editor shows the player's colors on the current theme, or its palette's own.</summary>
+    private void ShowThemeColors()
+    {
+        BaseColor.Set(Theme.CurrentColors.Base ?? Theme.PaletteBase);
+        ActiveColor.Set(Theme.CurrentColors.Active ?? Theme.PaletteActive);
+    }
+
+    private void EditColors(ThemeColors colors)
+    {
+        App.Recolor(colors);
+        ActiveColor.RefreshShown(); // a new background can move the accent more, or less
+        _unsavedColors = (Theme.Current, colors);
+        _saveColorsTimer.Stop();
+        _saveColorsTimer.Start();
+    }
+
+    private void SaveColors()
+    {
+        _saveColorsTimer.Stop();
+        if (_unsavedColors is not { } u)
+            return;
+        _unsavedColors = null;
+        u.Theme.SaveColors(_services.Settings, u.Colors);
+    }
+
+    [RelayCommand]
+    private void ResetColors()
+    {
+        EditColors(ThemeColors.None);
+        ShowThemeColors();
+    }
 
     private static string? Trim(string v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
 

@@ -1,0 +1,236 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Legacy.ServerListView"
+             x:DataType="vm:ServerListViewModel">
+
+    <DockPanel Margin="28,24">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+            <StackPanel>
+                <TextBlock Classes="h1" Text="Серверы" />
+                <TextBlock Classes="dim">
+                    <Run Text="{Binding Servers.Count}" /><Run Text=" из " /><Run Text="{Binding TotalCount}" /><Run Text=" — сервера, одобренные администрацией Frontier 15" />
+                </TextBlock>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Classes="nav" Command="{Binding ToggleApplyCommand}" Content="+ Разместить свой сервер" />
+                <Button Classes="nav" Command="{Binding RefreshCommand}" Content="↻ Обновить" />
+                <ToggleButton Classes="nav" IsChecked="{Binding MapView}" Content="Карта" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Asking for a server to be listed -->
+        <Border DockPanel.Dock="Top" Classes="card" Padding="16" Margin="0,14,0,0" IsVisible="{Binding ShowApply}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="ЗАЯВКА НА РАЗМЕЩЕНИЕ СЕРВЕРА" Classes="caps" />
+                <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap"
+                           Text="Сервер появится в списке, когда его одобрит владелец или администратор Frontier 15. Решение придёт в уведомления. Локальный сервер для тестов и маппинга сюда подавать не нужно." />
+                <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding !CanApply}"
+                           Text="Чтобы подать заявку, войдите в аккаунт." />
+                <StackPanel Spacing="8" IsVisible="{Binding CanApply}">
+                    <Grid ColumnDefinitions="*,8,*">
+                        <TextBox Grid.Column="0" Watermark="Название сервера" Text="{Binding ApplyName}" MaxLength="60" />
+                        <TextBox Grid.Column="2" Watermark="ss14://адрес:порт" Text="{Binding ApplyAddress}" MaxLength="200" />
+                    </Grid>
+                    <TextBox Watermark="Коротко о сервере: режим, правила, для кого" Text="{Binding ApplyDescription}"
+                             AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" MaxLength="500" />
+                    <TextBox Watermark="Как с вами связаться (Discord, ссылка)" Text="{Binding ApplyContact}" MaxLength="100" />
+                    <Button Classes="primary" HorizontalAlignment="Left" Content="Отправить заявку"
+                            Command="{Binding SubmitApplicationCommand}" IsEnabled="{Binding !ApplyBusy}" />
+                </StackPanel>
+                <TextBlock Text="{Binding ApplyStatus}" FontSize="12" TextWrapping="Wrap"
+                           IsVisible="{Binding ApplyStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <TextBlock Text="МОИ ЗАЯВКИ" Classes="caps" Margin="0,6,0,0" IsVisible="{Binding HasMyApplications}" />
+                <ItemsControl ItemsSource="{Binding MyApplications}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MyApplicationRow">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="1">
+                                    <TextBlock>
+                                        <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding StatusText}" />
+                                        <Run Text=" · " /><Run Text="{Binding WhenText}" Foreground="{StaticResource DhTextDimBrush}" />
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Note}" Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                               IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Classes="ghost" Content="Отозвать" VerticalAlignment="Center"
+                                        IsVisible="{Binding CanWithdraw}"
+                                        Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).WithdrawApplicationCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,14,0,0" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"
+                   Text="В списке пока нет одобренных серверов. Держите свой сервер — подайте заявку кнопкой «Разместить свой сервер»." />
+
+        <TextBox DockPanel.Dock="Top" Margin="0,14,0,0" Watermark="Поиск серверов…" Text="{Binding Search}" />
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="0,10,0,0">
+            <CheckBox Content="Скрыть пустые" IsChecked="{Binding HideEmpty}" />
+            <CheckBox Content="Скрыть полные" IsChecked="{Binding HideFull}" />
+            <CheckBox Content="Скрыть 18+" IsChecked="{Binding Hide18Plus}" />
+            <CheckBox Content="★ только избранное" IsChecked="{Binding FavoritesOnly}" />
+            <CheckBox Content="Сортировать по имени" IsChecked="{Binding SortByName}" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="14" Margin="0,6,0,0">
+            <TextBlock Text="RP:" Classes="dim" VerticalAlignment="Center" />
+            <CheckBox Content="без RP" IsChecked="{Binding RpNone}" />
+            <CheckBox Content="лёгкий" IsChecked="{Binding RpLow}" />
+            <CheckBox Content="средний" IsChecked="{Binding RpMed}" />
+            <CheckBox Content="высокий" IsChecked="{Binding RpHigh}" />
+        </StackPanel>
+
+        <Grid DockPanel.Dock="Top" Margin="0,10,0,0" ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" Watermark="ss14://адрес — прямое подключение" Text="{Binding DirectAddress}" />
+            <Button Grid.Column="1" Classes="nav" Margin="8,0,0,0" Content="Подключиться" Command="{Binding ConnectDirectCommand}" />
+        </Grid>
+
+        <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2" Margin="0,10"
+                     IsVisible="{Binding IsLoading}" Foreground="{StaticResource DhAccentBrush}" />
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhOfflineBrush}"
+                   IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,6" />
+
+        <Grid Margin="0,12,0,0">
+        <Grid ColumnDefinitions="*,16,360" IsVisible="{Binding MapView}">
+            <Border Grid.Column="0" Classes="panel" CornerRadius="8" ClipToBounds="True">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                            BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1" Padding="16,10">
+                        <TextBlock TextWrapping="Wrap">
+                            <Run Text="👆" /><Run Text=" Каждое цветное облако — сеть серверов, точки внутри — её сервера." />
+                            <Run Text=" Нажми на любую — справа появится описание и кнопка " FontWeight="Normal" />
+                            <Run Text="«Играть»" FontWeight="Bold" />
+                            <Run Text="." />
+                        </TextBlock>
+                    </Border>
+                    <c:SectorMap x:Name="Map" ItemsSource="{Binding MapNodes}" SelectedItem="{Binding SelectedServer}"
+                                 AutoRotate="False" Perspective="False" />
+                </DockPanel>
+            </Border>
+
+            <!-- Right: selected server detail — same "selected node" panel pattern as СЕКТОР FRONTIER 15 -->
+            <Border Grid.Column="2" Classes="panel" CornerRadius="8"
+                    IsVisible="{Binding SelectedServer, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <DockPanel Margin="20">
+                    <StackPanel DockPanel.Dock="Top" Spacing="2">
+                        <TextBlock Text="{Binding SelectedServer.RegionLabel}" Classes="caps" />
+                        <TextBlock Text="{Binding SelectedServer.Name}" Classes="h1" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <ItemsControl DockPanel.Dock="Top" Margin="0,10,0,0" ItemsSource="{Binding SelectedServer.VisibleTags}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource DhBgHoverBrush}" CornerRadius="4" Padding="6,1" Margin="0,0,6,6">
+                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid DockPanel.Dock="Top" Margin="0,10,0,0" ColumnDefinitions="*,8,*">
+                        <Border Grid.Column="0" Classes="card" Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="Игроков" Classes="dim" />
+                                <TextBlock Text="{Binding SelectedServer.Population}" FontSize="18" FontWeight="Bold" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="card" Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="Состояние" Classes="dim" />
+                                <TextBlock Text="{Binding SelectedServer.LegacyStateText}" FontSize="16" FontWeight="Bold"
+                                           Foreground="{Binding SelectedServer.IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedServer.RoundInfo}" Classes="dim" Margin="0,10,0,0"
+                               IsVisible="{Binding SelectedServer.RoundInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <Button DockPanel.Dock="Top" Classes="primary" Content="▶ ИГРАТЬ" Margin="0,16,0,0"
+                            HorizontalAlignment="Stretch" Command="{Binding SelectedServer.ConnectCommand}" />
+
+                    <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="{Binding SelectedServer.LegacySlotLabel}" Command="{Binding SelectedServer.WaitForSlotCommand}"
+                            IsVisible="{Binding SelectedServer.CanWaitForSlot}" />
+
+                    <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding SelectedServer.ToggleFavoriteCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding SelectedServer.IsFavorite, Converter={x:Static vm:FavGlyph.Stars}}" />
+                            <TextBlock Text="В избранное" />
+                        </StackPanel>
+                    </Button>
+                </DockPanel>
+            </Border>
+        </Grid>
+
+        <ScrollViewer IsVisible="{Binding !MapView}">
+            <ItemsControl ItemsSource="{Binding Groups}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="16" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ServerGroupViewModel">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontWeight="Bold" FontSize="14"
+                                           Foreground="{Binding IsMisc, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                <TextBlock Grid.Column="1" Text="{Binding LegacySummaryLine}" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Servers}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ServerRowViewModel">
+                                        <Border Classes="card" Padding="14,10">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                                <Button Grid.Column="0" Classes="ghost" BorderThickness="0" Padding="6,2" Margin="0,0,8,0"
+                                                        VerticalAlignment="Center" Command="{Binding ToggleFavoriteCommand}"
+                                                        Content="{Binding IsFavorite, Converter={x:Static vm:FavGlyph.Stars}}"
+                                                        Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.AccentText}}" />
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <ItemsControl ItemsSource="{Binding VisibleTags}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{StaticResource DhBgHoverBrush}" CornerRadius="4" Padding="6,1">
+                                                                    <TextBlock Text="{Binding}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding PingText}" VerticalAlignment="Center"
+                                                           Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Population}" VerticalAlignment="Center"
+                                                           Margin="12,0" Foreground="{StaticResource DhAccentBrush}" />
+                                                <Button Grid.Column="4" Classes="nav" Content="Играть" Command="{Binding ConnectCommand}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</UserControl>

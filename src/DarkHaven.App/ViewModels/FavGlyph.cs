@@ -4,12 +4,16 @@ using Avalonia.Data.Converters;
 namespace DarkHaven.App.ViewModels;
 
 /// <summary>Bool → a filled or hollow star, for the favourite toggle.</summary>
-public sealed class FavGlyph : IValueConverter
+public sealed class FavGlyph(string on, string off) : IValueConverter
 {
-    public static readonly FavGlyph Instance = new();
+    /// <summary>Nerd Font codicons star_full / star_empty: show it in DhMono.</summary>
+    public static readonly FavGlyph Instance = new("", "");
+
+    /// <summary>Plain ★ / ☆, for the legacy views' text fonts.</summary>
+    public static readonly FavGlyph Stars = new("★", "☆");
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? "\uEB59" : "\uEA6A"; // Nerd Font codicons star_full / star_empty: show it in DhMono
+        => value is true ? on : off;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

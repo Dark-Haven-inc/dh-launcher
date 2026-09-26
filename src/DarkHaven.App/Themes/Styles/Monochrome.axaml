@@ -1,0 +1,446 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:DarkHaven.App.Controls">
+    <!-- The monochrome layout: minimal, square, a 4 px grid, compact 24 px controls. Colors come from
+         the palette (Themes/Palettes); this file is shape, type and states. -->
+    <Styles.Resources>
+        <!-- Bundled fonts (Assets/Fonts): Inter for text, JetBrains Mono Nerd Font for numbers,
+             addresses, labels and icons (icons are its glyphs, e.g. U+EAA2 bell). -->
+        <FontFamily x:Key="DhSans">avares://Frontier15Launcher/Assets/Fonts#Inter</FontFamily>
+        <FontFamily x:Key="DhMono">avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+
+        <!-- Fluent theme: square corners. -->
+        <CornerRadius x:Key="ControlCornerRadius">0</CornerRadius>
+        <CornerRadius x:Key="OverlayCornerRadius">0</CornerRadius>
+
+        <!-- CheckBox: a 12 px square with a check glyph. Fluent's template fixes its box at 20 px,
+             which styles cannot override, so this replaces the template. -->
+        <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="MinHeight" Value="20" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid ColumnDefinitions="Auto,*" Background="{TemplateBinding Background}">
+                        <Border Name="box" Width="12" Height="12" VerticalAlignment="Center"
+                                BorderThickness="1" BorderBrush="{StaticResource DhBorderStrongBrush}">
+                            <TextBlock Name="mark" Text="&#xEAB2;" FontFamily="{StaticResource DhMono}" FontSize="9"
+                                       Foreground="{StaticResource DhBgBrush}" IsVisible="False"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ContentPresenter Name="PART_ContentPresenter" Grid.Column="1" Margin="8,0,0,0"
+                                          Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"
+                                          IsVisible="{TemplateBinding Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
+            <Style Selector="^:pointerover /template/ Border#box">
+                <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+            </Style>
+            <Style Selector="^:checked /template/ Border#box">
+                <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource DhActiveBrush}" />
+            </Style>
+            <Style Selector="^:checked /template/ TextBlock#mark">
+                <Setter Property="IsVisible" Value="True" />
+                <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+            </Style>
+            <Style Selector="^:focus-visible /template/ Border#box">
+                <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+            </Style>
+            <Style Selector="^:disabled">
+                <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+            </Style>
+        </ControlTheme>
+
+    </Styles.Resources>
+
+
+    <!-- ============================================================ text -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="TextBlock.h1">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.caps, TextBlock.statlabel">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="LetterSpacing" Value="1.8" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="TextBlock.lbl">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="LetterSpacing" Value="1.4" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="TextBlock.dim">
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="TextBlock.faint">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="TextBlock.body">
+        <Setter Property="Foreground" Value="{StaticResource DhBodyBrush}" />
+    </Style>
+    <Style Selector="TextBlock.mono, SelectableTextBlock.mono, TextBlock.statvalue">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="TextBlock.icon">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBlock.name">
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="LineHeight" Value="20" />
+    </Style>
+
+    <!-- ============================================================ surfaces -->
+    <Style Selector="Border.card, Border.panel">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <!-- A row separated from the next by a hairline. -->
+    <Style Selector="Border.hair">
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <!-- Section header: mono caps with a hairline under it. -->
+    <Style Selector="Border.cap">
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="0,0,0,4" />
+        <Setter Property="MinHeight" Value="20" />
+    </Style>
+    <Style Selector="FlyoutPresenter.dh">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MaxWidth" Value="420" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Padding" Value="8,4" />
+    </Style>
+
+    <!-- ============================================================ buttons
+         Default: a 24 px bordered button. .primary is the one inverted action on a screen. -->
+    <Style Selector="Button, ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button:pressed, ToggleButton:pressed">
+        <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button:focus-visible /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+    </Style>
+
+    <!-- Older class names, now the default look. -->
+    <Style Selector="Button.ghost, Button.nav, Button.pill, Button.danger">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <Style Selector="Button.small">
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="10.5" />
+    </Style>
+
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhActiveHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhActivePressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActivePressBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button.primary:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.primary TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+
+    <!-- Square icon button (a Nerd Font glyph as content). -->
+    <Style Selector="Button.icon">
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Text-only action: no border, dim until hovered. -->
+    <Style Selector="Button.link">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+
+    <!-- A whole list row that is clickable: flat, hairline under it, hover fill. -->
+    <Style Selector="Button.row">
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+    </Style>
+    <Style Selector="Button.row:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+    </Style>
+    <Style Selector="Button.row.selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+    </Style>
+
+    <!-- Left rail navigation. -->
+    <Style Selector="Button.navitem">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.navitem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.navitem.active">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.navitem Border.marker">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.navitem.active Border.marker">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- Top bar buttons (bell, account). -->
+    <Style Selector="Button.top">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="MinWidth" Value="24" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.top:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+    </Style>
+    <Style Selector="Button.top.active">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+    </Style>
+
+    <!-- Window controls: two small marks, not the OS caption buttons. -->
+    <Style Selector="Button.wc">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="MinHeight" Value="20" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.wc:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.wc Path">
+        <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+        <Setter Property="StrokeThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.wc.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhBgBrush}" />
+    </Style>
+
+    <!-- Toggle chips (filters, ranges, region switch). -->
+    <Style Selector="ToggleButton.chip, Button.chip">
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <!-- Chips in a row overlap by 1 px (Margin -1) to share borders; the selected one sits on top,
+         or its right edge would be under the next chip's. -->
+    <Style Selector="ToggleButton.chip:checked, Button.chip.on">
+        <Setter Property="ZIndex" Value="1" />
+    </Style>
+    <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter, Button.chip.on /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveLineBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+
+    <!-- ============================================================ inputs -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="SelectionBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox /template/ TextBlock#PART_Watermark, TextBox /template/ TextBlock#PART_FloatingWatermark">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ TextBlock#PART_Watermark">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- Loading: a 1 px line; indeterminate runs a short scan along it. -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="Background" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="MinHeight" Value="1" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <!-- Scrollbars: a thin thumb, no arrows, no track. -->
+    <Style Selector="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="AllowAutoHide" Value="True" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb">
+        <Setter Property="Background" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb:pointerover">
+        <Setter Property="Background" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="ScrollBar /template/ RepeatButton">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="Expander">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+    </Style>
+
+    <!-- ============================================================ canvases -->
+    <Style Selector="c|OnlineChart">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+    </Style>
+</Styles>

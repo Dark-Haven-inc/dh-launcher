@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using DarkHaven.App.Themes;
 using DarkHaven.Launcher;
 
 namespace DarkHaven.App.ViewModels;
@@ -18,21 +19,33 @@ public static class ProfileLook
 
     public static Color Accent(string? hex) => Color.Parse(IsHex(hex) ? hex! : DefaultAccent);
 
+    private static bool Legacy => Theme.Current.Layout == ThemeLayout.Legacy;
+
     /// <summary>
     /// The banner when there's no picture: the profile colour, flat and muted, so a bright pick
-    /// doesn't shout over the monochrome launcher.
+    /// doesn't shout over the monochrome launcher. The legacy design fades it into a darker shade
+    /// of itself instead.
     /// </summary>
     public static IBrush BannerBrush(string? hex)
     {
         var c = Accent(hex);
-        return new SolidColorBrush(Color.FromRgb((byte)(c.R * 0.45), (byte)(c.G * 0.45), (byte)(c.B * 0.45)));
+        if (!Legacy)
+            return new SolidColorBrush(Color.FromRgb((byte)(c.R * 0.45), (byte)(c.G * 0.45), (byte)(c.B * 0.45)));
+
+        var deep = Color.FromRgb((byte)(c.R * 0.3), (byte)(c.G * 0.3), (byte)(c.B * 0.3));
+        return new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            GradientStops = { new GradientStop(c, 0), new GradientStop(deep, 1) },
+        };
     }
 
     public static FrameBrushes Frame(string? frame) => frame switch
     {
         "gold" => new(Color.Parse("#F0B454"), Color.Parse("#3A2E12")),
         "cyan" => new(Color.Parse("#7FD4FF"), Color.Parse("#14313A")),
-        "none" => new(Color.Parse("#323236"), Colors.Transparent),
+        "none" => new(Color.Parse(Legacy ? "#24365A" : "#323236"), Colors.Transparent),
         "blue" => new(Color.Parse("#5AA0FF"), Color.Parse("#111A2E")),
         _ => new(Color.Parse("#8A8A8F"), Color.Parse("#111113")),
     };

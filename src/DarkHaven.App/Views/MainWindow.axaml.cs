@@ -21,13 +21,6 @@ public partial class MainWindow : Window
             grip.Background = Brushes.Transparent;
             grip.PointerPressed += OnGripPressed;
         }
-
-        // Kick off first loads once the window is shown.
-        Opened += async (_, _) =>
-        {
-            if (DataContext is MainWindowViewModel vm)
-                await vm.Regions.RefreshAsync();
-        };
     }
 
     private void OnTitleBarPressed(object? sender, PointerPressedEventArgs e)

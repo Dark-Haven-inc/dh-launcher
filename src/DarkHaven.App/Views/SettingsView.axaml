@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:themes="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
              x:Class="DarkHaven.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
@@ -15,10 +17,66 @@
         </Style>
     </UserControl.Styles>
 
+    <UserControl.DataTemplates>
+        <!-- One color in the theme's color editor: its name and value, then H, S, V. -->
+        <DataTemplate DataType="vm:HsvSetting">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <TextBlock Classes="caps" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="mono dim" FontSize="10.5" Text="{Binding Hex}" VerticalAlignment="Center" />
+                    <Border Grid.Column="2" Width="12" Height="12" Background="{Binding Swatch}"
+                            BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1" />
+                </Grid>
+                <Grid ColumnDefinitions="12,*,24" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                    <TextBlock Classes="lbl" Text="H" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Column="1" Maximum="360" Value="{Binding Hue}" Track="{Binding HueTrack}" />
+                    <TextBlock Grid.Column="2" Classes="mono" Text="{Binding HueText}" TextAlignment="Right" VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Row="1" Classes="lbl" Text="S" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Row="1" Grid.Column="1" Value="{Binding Saturation}" Track="{Binding SaturationTrack}" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Classes="mono" Text="{Binding SaturationText}" TextAlignment="Right" VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Row="2" Classes="lbl" Text="V" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Row="2" Grid.Column="1" Value="{Binding Value}" Track="{Binding ValueTrack}" />
+                    <TextBlock Grid.Row="2" Grid.Column="2" Classes="mono" Text="{Binding ValueText}" TextAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <ScrollViewer>
         <StackPanel Margin="20,16" Spacing="16" MaxWidth="600" HorizontalAlignment="Left">
             <TextBlock Text="{Binding Status}" TextWrapping="Wrap"
                        IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <StackPanel>
+                <Border Classes="cap"><TextBlock Classes="caps" Text="ВИД" /></Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Тема" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <ComboBox Width="152" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="themes:Theme"><TextBlock Text="{Binding Title}" /></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <!-- The theme's colors; applied as the sliders move. -->
+                            <Button Classes="icon" Content="&#xEB5C;" ToolTip.Tip="Цвета">
+                                <Button.Flyout>
+                                    <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="dh">
+                                        <StackPanel Width="264" Margin="12" Spacing="16">
+                                            <ContentControl Content="{Binding BaseColor}" />
+                                            <ContentControl Content="{Binding ActiveColor}" />
+                                            <Button Classes="small" Content="Сбросить" HorizontalAlignment="Left"
+                                                    Command="{Binding ResetColorsCommand}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
 
             <StackPanel>
                 <Border Classes="cap"><TextBlock Classes="caps" Text="ФАЙЛЫ" /></Border>

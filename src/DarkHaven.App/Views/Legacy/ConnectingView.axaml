@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.Legacy.ConnectingView"
+             x:DataType="vm:ConnectingViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border#Card">
+            <Setter Property="Width" Value="460" />
+        </Style>
+        <!-- Stack traces are long; give them room instead of wrapping every frame twice. -->
+        <Style Selector="Border#Card.wide">
+            <Setter Property="Width" Value="640" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border x:Name="Card" Classes="card" Classes.wide="{Binding HasLogTail}" Padding="0"
+            VerticalAlignment="Center" HorizontalAlignment="Center">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Margin="28,24,28,18" Spacing="3">
+                <TextBlock Text="{Binding LegacySubtitle}" Classes="caps" />
+                <TextBlock Text="{Binding Title}" Classes="h1" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Motd}" Classes="dim" TextWrapping="Wrap" Margin="0,4,0,0" MaxLines="3"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding Motd, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgPanelBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Padding="28,14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Classes="mono dim" VerticalAlignment="Center" FontSize="10"
+                               Text="{Binding BuildTag}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Button Classes="ghost" Content="Отмена" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+                        <Button Classes="ghost" Content="{Binding CopyLabel}" Command="{Binding CopyLogCommand}" IsVisible="{Binding HasLogTail}" />
+                        <Button Classes="ghost" Content="Логи" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
+                        <Button Classes="ghost" Content="Ещё раз" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
+                        <Button Classes="ghost" Content="Всё равно подключиться" Command="{Binding ConnectAnywayCommand}" IsVisible="{Binding CanConnectAnyway}" />
+                        <Button Classes="ghost" Content="Закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Margin="28,4,28,20" Spacing="14">
+                <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="14" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChecklistStepViewModel">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="24,*,Auto">
+                                    <!-- state glyph -->
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14"
+                                               Text="✓" Foreground="{StaticResource DhOnlineBrush}" IsVisible="{Binding IsDone}" />
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14"
+                                               Text="◐" Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsActive}" />
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14"
+                                               Text="✕" Foreground="{StaticResource DhDangerBrush}" IsVisible="{Binding IsFailed}" />
+                                    <Ellipse Grid.Column="0" Width="9" Height="9" HorizontalAlignment="Left" Margin="3,0,0,0"
+                                             Stroke="{StaticResource DhBorderBrightBrush}" StrokeThickness="1.5"
+                                             IsVisible="{Binding IsPending}" />
+
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center"
+                                               FontWeight="SemiBold"
+                                               Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="dim" VerticalAlignment="Center" />
+                                </Grid>
+                                <ProgressBar Value="{Binding Fraction}" Minimum="0" Maximum="100" Height="3"
+                                             Margin="24,0,0,0" IsVisible="{Binding ShowBar}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="{Binding SpeedEta}" Classes="mono dim" FontSize="11" Margin="24,0,0,0"
+                           IsVisible="{Binding SpeedEta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <TextBlock Text="{Binding ErrorText}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
+                           IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <!-- What the client itself said before it died — selectable, so a line can be
+                     quoted even without the copy button. -->
+                <StackPanel Spacing="6" IsVisible="{Binding HasLogTail}">
+                    <TextBlock Text="ВЫВОД ИГРЫ" Classes="caps" />
+                    <Border Background="{StaticResource DhBgPanelBrush}" BorderBrush="{StaticResource DhBorderBrush}"
+                            BorderThickness="1" CornerRadius="4" Padding="10,8" MaxHeight="200">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <SelectableTextBlock Text="{Binding LogTail}" FontFamily="{StaticResource DhMono}"
+                                                 FontSize="10" TextWrapping="Wrap"
+                                                 Foreground="{StaticResource DhTextDimBrush}" />
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</UserControl>

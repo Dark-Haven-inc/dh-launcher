@@ -22,7 +22,7 @@ public sealed partial class MonitorRegion(string name, string address) : Observa
 public sealed record HistoryRow(string When, string Average, string Peak, string Uptime);
 
 /// <summary>"ХЕЙВЕН — 12" under the launcher counter.</summary>
-public sealed record LauncherRegionRow(string Name, int Players)
+public sealed partial record LauncherRegionRow(string Name, int Players)
 {
     public string Text => $"{Name} {Players}";
 }
@@ -49,6 +49,7 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
 
     // Right now
     [ObservableProperty] private bool _isOnline;
+    [ObservableProperty] private RunLevel? _liveRunLevel;
     [ObservableProperty] private string _stateText = "…";
     [ObservableProperty] private string _playersText = "—";
     [ObservableProperty] private string _mapText = "—";
@@ -212,6 +213,7 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
             return; // switched regions while this was in flight
 
         IsOnline = status is not null;
+        LiveRunLevel = status?.RunLevel;
         if (status is null)
         {
             StateText = "офлайн";

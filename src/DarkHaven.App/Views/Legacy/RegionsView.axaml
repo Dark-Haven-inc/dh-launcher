@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Legacy.RegionsView"
+             x:DataType="vm:RegionsViewModel">
+
+    <Grid Margin="28,22" ColumnDefinitions="*,16,360">
+
+        <!-- Left: the living sector map -->
+        <Border Grid.Column="0" Classes="panel" CornerRadius="8" ClipToBounds="True">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="18,14">
+                    <TextBlock Text="◈ КАРТА СЕТИ" Classes="caps" />
+                    <TextBlock Grid.Column="1" Classes="dim">
+                        <Run Text="ИГРОКОВ В СЕТИ" /><Run Text=" " /><Run Text="{Binding TotalPlayers}" />
+                    </TextBlock>
+                </Grid>
+
+                <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2"
+                             IsVisible="{Binding IsLoading}" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhDangerBrush}"
+                           TextWrapping="Wrap" Margin="18,8"
+                           IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <c:SectorMap x:Name="Map" ItemsSource="{Binding Nodes}" SelectedItem="{Binding Selected}" />
+            </DockPanel>
+        </Border>
+
+        <!-- Right: selected region detail -->
+        <Border Grid.Column="2" Classes="panel" CornerRadius="8" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <DockPanel Margin="20">
+                <StackPanel DockPanel.Dock="Top" Spacing="2">
+                    <TextBlock Text="ВЫБРАННЫЙ РЕГИОН" Classes="caps" />
+                    <TextBlock Text="{Binding Selected.Name}" Classes="h1" />
+                    <TextBlock Text="{Binding Selected.Blurb}" Classes="dim" TextWrapping="Wrap" Margin="0,2,0,0" />
+                </StackPanel>
+
+                <Grid DockPanel.Dock="Top" Margin="0,16,0,0" ColumnDefinitions="*,8,*" RowDefinitions="Auto,8,Auto">
+                    <Border Grid.Row="0" Grid.Column="0" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Игроков" Classes="dim" /><TextBlock Text="{Binding Selected.Population}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="0" Grid.Column="2" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Отклик" Classes="dim" /><TextBlock Text="{Binding Selected.Ping}" FontSize="18" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="0" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Состояние" Classes="dim" />
+                            <TextBlock Text="{Binding Selected.LegacyStateText}" FontSize="16" FontWeight="Bold"
+                                       Foreground="{Binding Selected.IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" /></StackPanel>
+                    </Border>
+                    <Border Grid.Row="2" Grid.Column="2" Classes="card" Padding="12,10">
+                        <StackPanel><TextBlock Text="Раунд" Classes="dim" /><TextBlock Text="{Binding Selected.LegacyRoundText}" FontSize="14" FontWeight="Bold" /></StackPanel>
+                    </Border>
+                </Grid>
+
+                <Button DockPanel.Dock="Top" Classes="primary" Content="ИГРАТЬ" Margin="0,16,0,0"
+                        HorizontalAlignment="Stretch" Command="{Binding PlaySelectedCommand}"
+                        IsVisible="{Binding !Selected.IsQuarantine}"
+                        IsEnabled="{Binding Selected.CanConnect}" />
+
+                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Content="Баны игроков" Command="{Binding ShowBansCommand}"
+                        IsVisible="{Binding !Selected.IsQuarantine}" />
+
+                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Content="{Binding Selected.LegacySlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
+                        IsVisible="{Binding Selected.CanWaitForSlot}" />
+
+                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Content="{Binding Selected.LegacyWatchLabel}" Command="{Binding Selected.ToggleWatchCommand}"
+                        IsVisible="{Binding Selected.CanWatch}" />
+
+                <Border DockPanel.Dock="Top" Classes="card" Margin="0,16,0,0" Padding="14,12"
+                        IsVisible="{Binding Selected.IsQuarantine}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="🔒 РЕГИОН НА КАРАНТИНЕ" FontWeight="Bold"
+                                   Foreground="{StaticResource DhWarnBrush}" FontSize="12" LetterSpacing="1" />
+                        <TextBlock Classes="dim" TextWrapping="Wrap"
+                                   Text="Этот регион ещё не запущен. Он появится в сети позже — следите за новостями." />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock DockPanel.Dock="Top" Text="СОСЕДНИЕ РЕГИОНЫ" Classes="caps" Margin="0,18,0,8" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,9"
+                                        Command="{Binding SelectCommand}" Background="{StaticResource DhBgElevatedBrush}"
+                                        BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1" CornerRadius="5">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Blurb}" Classes="dim" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsOnline}" />
+                                        <TextBlock Grid.Column="1" Text="офлайн" Classes="dim" VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsOffline}" />
+                                        <TextBlock Grid.Column="1" Text="🔒" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource DhWarnBrush}"
+                                                   IsVisible="{Binding IsQuarantine}" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

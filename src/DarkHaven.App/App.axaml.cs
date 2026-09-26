@@ -6,8 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using DarkHaven.App.Themes;
 using DarkHaven.App.ViewModels;
-using DarkHaven.App.Views;
 
 namespace DarkHaven.App;
 
@@ -24,8 +24,16 @@ public partial class App : Application
             Services = new AppServices();
             desktop.ShutdownRequested += (_, _) => Services.Dispose();
 
+            var theme = Theme.Find(Services.Settings.GetConfig("Theme"));
+            Theme.Apply(this, theme, theme.LoadColors(Services.Settings));
             var vm = new MainWindowViewModel(Services);
-            desktop.MainWindow = new MainWindow { DataContext = vm };
+            var window = Theme.Current.CreateMainWindow();
+            window.DataContext = vm;
+            desktop.MainWindow = window;
+
+            // Kick off first loads once the window is shown (only this first one — a theme switch
+            // replaces the window, not the data).
+            window.Opened += async (_, _) => await vm.Regions.RefreshAsync();
 
             SingleInstance.StartListening(msg => Dispatcher.UIThread.Post(() => HandleForwarded(msg)));
 
@@ -34,6 +42,46 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Switches the look while running: the new theme's palette and styles, then a fresh main window
+    /// of its layout on the same view model, where the old one was. Views pick their resources up
+    /// once, when they load, so restyling the open window in place isn't an option.
+    /// </summary>
+    public static void SwitchTheme(Theme theme)
+    {
+        if (theme == Theme.Current || Current is null
+            || Current.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } old } desktop)
+            return;
+
+        Theme.Apply(Current, theme, theme.LoadColors(Services.Settings));
+
+        var window = theme.CreateMainWindow();
+        window.DataContext = old.DataContext;
+        window.WindowStartupLocation = WindowStartupLocation.Manual;
+        window.Position = old.Position;
+        if (old.WindowState == WindowState.Normal)
+        {
+            // The layouts have different minimum sizes.
+            window.Width = Math.Max(old.ClientSize.Width, window.MinWidth);
+            window.Height = Math.Max(old.ClientSize.Height, window.MinHeight);
+        }
+        else
+        {
+            window.WindowState = old.WindowState;
+        }
+
+        desktop.MainWindow = window;
+        window.Show();
+        old.Close();
+    }
+
+    /// <summary>The player's colors on the current theme, applied live (the color editor in НАСТРОЙКИ).</summary>
+    public static void Recolor(ThemeColors colors)
+    {
+        if (Current is not null)
+            Theme.Recolor(Current, colors);
     }
 
     /// <summary>A second launch forwarded us its argument — surface the window and act on it.</summary>

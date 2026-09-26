@@ -31,17 +31,37 @@ public sealed class OnlineChart : Control
     public static readonly StyledProperty<string?> EmptyTextProperty =
         AvaloniaProperty.Register<OnlineChart, string?>(nameof(EmptyText));
 
+    /// <summary>Set by the theme's styles: a 2 px round line, dots and a rounded tooltip (legacy), or a
+    /// thin square-cornered line with square marks (monochrome).</summary>
+    public static readonly StyledProperty<bool> RoundedProperty =
+        AvaloniaProperty.Register<OnlineChart, bool>(nameof(Rounded));
+
+    /// <summary>What the chart sits on, for the ring around the peak marker; DhBg when unset.</summary>
+    public static readonly StyledProperty<Color?> SurfaceProperty =
+        AvaloniaProperty.Register<OnlineChart, Color?>(nameof(Surface));
+
+    /// <summary>Label font, inherited like text; the theme's styles may set it.</summary>
+    public static readonly StyledProperty<FontFamily> FontFamilyProperty =
+        TextElement.FontFamilyProperty.AddOwner<OnlineChart>();
+
     public IReadOnlyList<OnlinePoint>? Points { get => GetValue(PointsProperty); set => SetValue(PointsProperty, value); }
     public int Capacity { get => GetValue(CapacityProperty); set => SetValue(CapacityProperty, value); }
     public string Range { get => GetValue(RangeProperty); set => SetValue(RangeProperty, value); }
     public string? EmptyText { get => GetValue(EmptyTextProperty); set => SetValue(EmptyTextProperty, value); }
+    public bool Rounded { get => GetValue(RoundedProperty); set => SetValue(RoundedProperty, value); }
+    public Color? Surface { get => GetValue(SurfaceProperty); set => SetValue(SurfaceProperty, value); }
+    public FontFamily FontFamily { get => GetValue(FontFamilyProperty); set => SetValue(FontFamilyProperty, value); }
 
     private const double PadLeft = 34, PadRight = 16, PadTop = 28, PadBottom = 26;
     private int? _hover;
 
+    // Colors come from the palette at render time; repaint when the player recolors it.
+    public OnlineChart() => ResourcesChanged += (_, _) => InvalidateVisual();
+
     static OnlineChart()
     {
-        AffectsRender<OnlineChart>(PointsProperty, CapacityProperty, RangeProperty, EmptyTextProperty);
+        AffectsRender<OnlineChart>(PointsProperty, CapacityProperty, RangeProperty, EmptyTextProperty,
+            RoundedProperty, SurfaceProperty, FontFamilyProperty);
         FocusableProperty.OverrideDefaultValue<OnlineChart>(true);
     }
 
@@ -67,10 +87,10 @@ public sealed class OnlineChart : Control
         var accent = Res("DhAccent", "#3B82F6");
         var text = new SolidColorBrush(Res("DhText", "#DCE6F5"));
         var dim = new SolidColorBrush(Res("DhTextDim", "#7C8DB0"));
-        var surface = Res("DhBg", "#0B0B0C");
+        var surface = Surface ?? Res("DhBg", "#0B0B0C");
         var grid = new Pen(new SolidColorBrush(Res("DhBorder", "#24365A")), 1);
         var gridStrong = new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1);
-        var typeface = new Typeface(this.TryFindResource("DhMono", out var mono) && mono is FontFamily f ? f : GetValue(TextElement.FontFamilyProperty));
+        var typeface = new Typeface(FontFamily);
         FormattedText Label(string s, IBrush brush, double size = 10, FontWeight weight = FontWeight.Normal) =>
             new(s, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
                 new Typeface(typeface.FontFamily, FontStyle.Normal, weight), size, brush);
@@ -115,8 +135,10 @@ public sealed class OnlineChart : Control
         DrawTimeAxis(ctx, plot, points, Label, dim);
 
         // The series: one stroke and one wash per run of consecutive values; a down stretch breaks it.
-        var wash = new SolidColorBrush(accent, 0.05);
-        var line = new Pen(new SolidColorBrush(accent), 1.25, lineCap: PenLineCap.Square, lineJoin: PenLineJoin.Miter);
+        var wash = new SolidColorBrush(accent, Rounded ? 0.12 : 0.05);
+        var line = Rounded
+            ? new Pen(new SolidColorBrush(accent), 2, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round)
+            : new Pen(new SolidColorBrush(accent), 1.25, lineCap: PenLineCap.Square, lineJoin: PenLineJoin.Miter);
         var accentBrush = new SolidColorBrush(accent);
         for (var i = 0; i < n;)
         {
@@ -128,7 +150,10 @@ public sealed class OnlineChart : Control
             if (end == start)
             {
                 var at = new Point(X(start), Y(points[start].Peak!.Value));
-                ctx.FillRectangle(accentBrush, new Rect(at.X - 2, at.Y - 2, 4, 4));
+                if (Rounded)
+                    ctx.DrawEllipse(accentBrush, null, at, 2.5, 2.5);
+                else
+                    ctx.FillRectangle(accentBrush, new Rect(at.X - 2, at.Y - 2, 4, 4));
                 continue;
             }
 
@@ -164,9 +189,15 @@ public sealed class OnlineChart : Control
             DrawHover(ctx, plot, points[h], X(h), Y, Label, text, dim, gridStrong, accentBrush, surface);
     }
 
-    private static void DrawMarker(DrawingContext ctx, Point at, IBrush fill, Color surface) =>
-        // 6px square with a 2px ring in the surface colour, so it stays legible on top of the line.
-        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(surface), 2), new Rect(at.X - 3, at.Y - 3, 6, 6));
+    // An 8px dot or a 6px square, with a 2px ring in the surface colour so it stays legible on top of the line.
+    private void DrawMarker(DrawingContext ctx, Point at, IBrush fill, Color surface)
+    {
+        var ring = new Pen(new SolidColorBrush(surface), 2);
+        if (Rounded)
+            ctx.DrawEllipse(fill, ring, at, 4, 4);
+        else
+            ctx.DrawRectangle(fill, ring, new Rect(at.X - 3, at.Y - 3, 6, 6));
+    }
 
     private void DrawTimeAxis(DrawingContext ctx, Rect plot, IReadOnlyList<OnlinePoint> points,
         Func<string, IBrush, double, FontWeight, FormattedText> label, IBrush dim)
@@ -235,7 +266,8 @@ public sealed class OnlineChart : Control
         var box = new Rect(Math.Max(0, left), plot.Top + 4, width, height);
 
         var fill = new SolidColorBrush(Res("DhBgHover", "#1B2942"));
-        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1), box);
+        var radius = Rounded ? 4 : 0;
+        ctx.DrawRectangle(fill, new Pen(new SolidColorBrush(Res("DhBorderBright", "#3C5C96")), 1), box, radius, radius);
         var ty = box.Top + pad;
         foreach (var l in lines)
         {
