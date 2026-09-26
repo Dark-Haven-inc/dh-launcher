@@ -36,9 +36,10 @@ The engine native libs (`SDL3`, `OpenAL`, …) are vendored in `src/DarkHaven.Lo
 and copied to the loader output automatically — no SS14 install needed. On Linux they come from the
 engine's own `Robust.Natives` NuGet packages; the system provides freetype, EGL and zlib.
 
-Linux (x64) is supported: `dotnet run` works as above, releases ship as an AppImage
-(`docs/RELEASING.md`), `ss14://` links go through a desktop entry, and the saved account token is
-encrypted with a per-user key file next to `settings.db` instead of Windows DPAPI.
+Linux (x64) is supported: `dotnet run` works as above, releases ship as an AppImage that installs
+itself on first run, with a one-line `install.sh` and an AUR package (`docs/RELEASING.md`); `ss14://`
+links go through a desktop entry, and the saved account token is encrypted with a per-user key file
+next to `settings.db` instead of Windows DPAPI.
 
 ## Release
 

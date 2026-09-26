@@ -4,11 +4,20 @@ The launcher ships as a [Velopack](https://velopack.io/) app:
 
 * **First install** — one `DarkHavenLauncher-win-Setup.exe`. No admin, installs per-user to
   `%LocalAppData%\DarkHavenLauncher`, makes Start-menu + Desktop shortcuts, registers `ss14://`.
-* **First install on Linux** — one `Frontier15Launcher.AppImage` (x64). Players make it executable
-  and run it; it registers `ss14://` and adds itself to the application menu
-  (`~/.local/share/applications/frontier15-launcher.desktop`). Data lives in
-  `~/.local/share/DarkHavenLauncher`. The game is started from a copy of the loader there, so it
-  keeps running when the launcher (and its AppImage mount) is closed.
+* **First install on Linux** — either the one-liner
+
+  ```
+  curl -fsSL https://github.com/Dark-Haven-inc/frontier15-launcher/releases/latest/download/install.sh | sh
+  ```
+
+  (`… | sh -s -- --uninstall` removes it), or the `Frontier15Launcher.AppImage` itself: made executable
+  and run from wherever it was downloaded, it copies itself to
+  `~/.local/share/Frontier15Launcher/` and restarts from there (`AppImageInstall`; `F15_PORTABLE=1`
+  keeps it where it is). Either way it then adds itself to the application menu, registers `ss14://`,
+  and keeps its data in `~/.local/share/DarkHavenLauncher`. The game runs from a copy of the loader
+  there, so it keeps running when the launcher is closed. Arch users can take the AUR package
+  (below). The AppImage needs FUSE (`fusermount3`/`fusermount`, present on nearly every desktop);
+  without it the installer runs it with `APPIMAGE_EXTRACT_AND_RUN=1`.
 * **Every later version** — the running launcher notices the new GitHub Release, downloads a
   **delta** (only the changed files), and applies it on restart. The blue banner at the top of the
   window drives this. Windows and Linux are separate Velopack channels (`win`, `linux`) in the same
@@ -50,8 +59,9 @@ reinstall). After the flip the mirror step sees the repo is private and does not
 3. `.github/workflows/release.yml` builds it on `windows-latest` and publishes the GitHub Release
    (installer + delta + `RELEASES` manifest) to the releases repo, and mirrors it here while this
    repo is public. Then the `release-linux` job builds the AppImage on `ubuntu-latest` and adds it
-   to the same release (channel `linux`). It can also be run from the Actions tab
-   (`workflow_dispatch`) with an explicit version.
+   to the same release (channel `linux`), with `install.sh`. It can also be run from the Actions tab
+   (`workflow_dispatch`) with an explicit version; untick **publish** there to only build (on any
+   branch) and download the packages from the run's artifacts, nothing released.
 
 ### The bundled engine
 
@@ -85,6 +95,21 @@ When the live server moves to a new RT commit:
 3. Update `src/DarkHaven.App/bundled-engines/manifest.json` — the version key, `file`, `sha256`,
    `note`, and `platforms.linux-x64`. Commit it.
 4. Cut a normal `vX.Y.Z` release. Every installed launcher pulls the new engine as a delta.
+
+### AUR package (`frontier15-launcher-bin`)
+
+`packaging/aur/` holds the PKGBUILD: the release AppImage under `/opt/frontier15-launcher`, a
+`frontier15-launcher` command, the menu entry and icon. Installed there the launcher neither copies
+nor updates itself (it can't write to /opt) — new versions come through the package. After a release,
+on Arch or in an `archlinux` container:
+
+```
+packaging/aur/update.sh 0.3.0     # pkgver, checksums, .SRCINFO
+```
+
+then commit `PKGBUILD`, `.SRCINFO`, `frontier15-launcher.desktop` and `LICENSE` to
+`ssh://aur@aur.archlinux.org/frontier15-launcher-bin.git` (an AUR account with an SSH key; set the
+Maintainer line in the PKGBUILD before the first push).
 
 ## Local test of the update flow
 

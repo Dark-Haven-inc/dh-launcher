@@ -1,0 +1,39 @@
+# Maintainer: Frontier 15 <set before the first AUR push>
+#
+# Frontier 15 Launcher, packaged from the release AppImage. `./update.sh <version>` bumps it for a
+# release (see docs/RELEASING.md). Installed under /opt, the launcher doesn't copy or update itself:
+# pacman owns the file, and updates come with the package.
+pkgname=frontier15-launcher-bin
+pkgver=0.2.9
+pkgrel=1
+pkgdesc='Frontier 15 launcher for Space Station 14'
+arch=('x86_64')
+url='https://github.com/Dark-Haven-inc/frontier15-launcher'
+license=('MIT')
+depends=('fuse3' 'icu' 'fontconfig' 'freetype2' 'libglvnd' 'libx11')
+provides=('frontier15-launcher')
+conflicts=('frontier15-launcher')
+options=('!strip' '!debug')
+_appimage="$pkgname-$pkgver.AppImage"
+source=("$_appimage::$url/releases/download/v$pkgver/Frontier15Launcher.AppImage"
+        'frontier15-launcher.desktop'
+        'LICENSE')
+noextract=("$_appimage")
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP')
+
+prepare() {
+    chmod +x "$_appimage"
+    # Just the icon out of the AppImage.
+    ./"$_appimage" --appimage-extract Frontier15Launcher.png >/dev/null
+}
+
+package() {
+    install -Dm755 "$_appimage" "$pkgdir/opt/frontier15-launcher/Frontier15Launcher.AppImage"
+    install -dm755 "$pkgdir/usr/bin"
+    ln -s /opt/frontier15-launcher/Frontier15Launcher.AppImage "$pkgdir/usr/bin/frontier15-launcher"
+    install -Dm644 frontier15-launcher.desktop "$pkgdir/usr/share/applications/frontier15-launcher.desktop"
+    install -Dm644 squashfs-root/Frontier15Launcher.png "$pkgdir/usr/share/pixmaps/frontier15-launcher.png"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

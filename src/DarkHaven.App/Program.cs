@@ -2,6 +2,7 @@ using System.Text;
 using Avalonia;
 using Avalonia.Media;
 using DarkHaven.Launcher;
+using DarkHaven.Launcher.Update;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -44,6 +45,15 @@ internal static class Program
             .WriteTo.File(Path.Combine(LauncherPaths.LogsDir, "launcher-.log"),
                 rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
             .CreateLogger();
+
+        // Linux: a first run from wherever the AppImage was downloaded to puts it in its permanent
+        // place and restarts from there (see AppImageInstall).
+        if (!IsDevBuild() && AppImageInstall.InstallIfNeeded() is { } installed)
+        {
+            AppImageInstall.StartInstalled(installed, args);
+            Log.CloseAndFlush();
+            return 0;
+        }
 
         // Keep the ss14:// association pointed at the current install on every normal launch.
         // Skipped for a dev build so `dotnet run` doesn't hijack the scheme from an install.
