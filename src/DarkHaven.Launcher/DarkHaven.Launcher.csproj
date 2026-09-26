@@ -21,6 +21,22 @@
     <PackageReference Include="DiscordRichPresence" />
   </ItemGroup>
 
+  <!--
+    The launch-proof signing key (Security/LaunchProof.cs). Release builds get it from the DH_LAUNCH_SIGNING_KEY CI
+    secret through -p:DhLaunchKey=...; every other build gets an empty one and signs nothing. Never commit the key.
+  -->
+  <Target Name="DhGenerateLaunchKey" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_DhLaunchKeyFile>$(IntermediateOutputPath)DhLaunchKey.g.cs</_DhLaunchKeyFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_DhLaunchKeyFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="namespace DarkHaven.Launcher.Security%3B;public static partial class LaunchSigningKey { private const string Sealed = &quot;$(DhLaunchKey)&quot;%3B }" />
+    <ItemGroup>
+      <Compile Include="$(_DhLaunchKeyFile)" />
+      <FileWrites Include="$(_DhLaunchKeyFile)" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <None Include="Assets\signing_key" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Assets\dh-regions.json" CopyToOutputDirectory="PreserveNewest" />

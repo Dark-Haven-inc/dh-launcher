@@ -61,6 +61,12 @@ try
         case "platform":
             await ShowPlatform(positional.ElementAtOrDefault(1));
             break;
+        case "launch-key":
+            NewLaunchKey();
+            break;
+        case "launch-proof":
+            ShowLaunchProof(positional.ElementAtOrDefault(1));
+            break;
         default:
             Log.Information("Frontier 15 Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
             Log.Information("  probe <ss14://addr> [--hub] [--via-hub]   fetch a server's /info");
@@ -72,6 +78,8 @@ try
             Log.Information("  servers [--search X] [--rp low,med] [--lang en] [--no-empty]");
             Log.Information("  regions                                   Frontier 15 sector, live");
             Log.Information("  platform <api-base-url>                   sign in to DarkHaven.Platform.Api with the active account, dump the profile");
+            Log.Information("  launch-key                                new launch-proof key pair: CI secret + server public key");
+            Log.Information("  launch-proof [user-guid]                  whether this build can sign launch proofs, and a sample one");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -87,6 +95,37 @@ finally
 }
 
 return 0;
+
+// A fresh key pair for launch proofs (see Security/LaunchProof.cs). The private half goes into the
+// DH_LAUNCH_SIGNING_KEY secret of the release workflow, the public half into the game servers'
+// anticheat.launch.public_keys (next to the previous release's key, until players have updated).
+void NewLaunchKey()
+{
+    using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+    var secret = DarkHaven.Launcher.Security.LaunchSigningKey.Seal(key.ExportPkcs8PrivateKey());
+    var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
+
+    Console.WriteLine("CI secret DH_LAUNCH_SIGNING_KEY (keep private, never commit):");
+    Console.WriteLine(secret);
+    Console.WriteLine();
+    Console.WriteLine("Game server cvar anticheat.launch.public_keys (append, comma-separated):");
+    Console.WriteLine(publicKey);
+}
+
+// Checks a build: does it carry a signing key, and what proof would it hand the game for this account.
+void ShowLaunchProof(string? user)
+{
+    var userId = Guid.TryParse(user, out var parsed) ? parsed : Guid.Empty;
+    using var key = DarkHaven.Launcher.Security.LaunchSigningKey.TryLoad();
+    if (key == null)
+    {
+        Console.WriteLine("This build has no launch-proof signing key (built without -p:DhLaunchKey).");
+        return;
+    }
+
+    Console.WriteLine($"Public key: {Convert.ToBase64String(key.ExportSubjectPublicKeyInfo())}");
+    Console.WriteLine($"Proof for {userId}: {DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId)}");
+}
 
 async Task Probe(string? target)
 {
