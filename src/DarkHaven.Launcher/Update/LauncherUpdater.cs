@@ -18,14 +18,17 @@ public enum UpdatePhase
 
 /// <summary>
 /// Thin wrapper over Velopack's <see cref="UpdateManager"/>. Releases live as GitHub Releases on
-/// <c>Dark-Haven-inc/dh-launcher</c> by default; the feed is overridable via the
-/// <c>UpdateFeedUrl</c> config key (a GitHub repo URL or a plain static-file base URL).
+/// the public, releases-only <c>Dark-Haven-inc/frontier15-launcher</c> (the source repo can then be
+/// private: the updater reads the feed anonymously). Launchers up to 0.3.4 still read
+/// <c>Dark-Haven-inc/dh-launcher</c>, which is why release.yml mirrors there while it's public.
+/// The feed is overridable via the <c>UpdateFeedUrl</c> config key (a GitHub repo URL or a plain
+/// static-file base URL).
 /// Self-update only works from an installed build — a dev <c>dotnet run</c> reports
 /// <see cref="Supported"/> <c>false</c> and every call is a no-op.
 /// </summary>
 public sealed class LauncherUpdater
 {
-    public const string DefaultFeedUrl = "https://github.com/Dark-Haven-inc/dh-launcher";
+    public const string DefaultFeedUrl = "https://github.com/Dark-Haven-inc/frontier15-launcher";
 
     private readonly UpdateManager? _mgr;
     private UpdateInfo? _pending;
