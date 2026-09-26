@@ -3,10 +3,18 @@
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:views="using:DarkHaven.App.Views"
              xmlns:api="using:DarkHaven.Launcher.Api"
+             xmlns:sys="using:System"
              x:Class="DarkHaven.App.Views.AdminView"
              x:DataType="vm:AdminViewModel">
 
     <UserControl.Styles>
+        <!-- ВЕРСИИ ЛАУНЧЕРА verdict: amber while someone is left on the old feed, green once nobody is -->
+        <Style Selector="TextBlock.verdict">
+            <Setter Property="Foreground" Value="{StaticResource DhWarnBrush}" />
+        </Style>
+        <Style Selector="TextBlock.verdict.ready">
+            <Setter Property="Foreground" Value="{StaticResource DhOnlineBrush}" />
+        </Style>
         <!-- Role switches: same look as МОНИТОРИНГ's range switches — the chosen one is lit -->
         <Style Selector="Button.pill">
             <Setter Property="Background" Value="Transparent" />
@@ -221,6 +229,8 @@
                                     <Run Text="На платформе с" /><Run Text=" " /><Run Text="{Binding SearchResult.MemberSince, Converter={x:Static vm:RuDateConverter.Instance}}" />
                                     <Run Text=" · последний раз " /><Run Text="{Binding SearchResult.LastSeen, Converter={x:Static vm:RuDateConverter.Instance}}" />
                                 </TextBlock>
+                                <TextBlock Classes="dim" FontSize="12" Text="{Binding SearchResult.LauncherVersion, StringFormat='Лаунчер: {0}'}"
+                                           IsVisible="{Binding SearchResult.LauncherVersion, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                 <TextBlock Classes="dim" FontSize="12">
                                     <Run Text="Наиграно на серверах DH:" /><Run Text=" " /><Run Text="{Binding SearchResult.TotalPlaytimeSeconds, Converter={x:Static vm:DurationConverter.Instance}}" />
                                 </TextBlock>
@@ -453,8 +463,39 @@
                 </Panel>
 
                 <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}">
+                <StackPanel Spacing="22" IsVisible="{Binding CanAdmin}">
+                <!-- Launcher versions: is anyone still updating from dh-launcher, or can it go private? -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ВЕРСИИ ЛАУНЧЕРА" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="verdict" Classes.ready="{Binding VersionsReady}" Text="{Binding VersionsVerdict}"
+                                       TextWrapping="Wrap" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding VersionCounts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="sys:String">
+                                        <TextBlock Text="{Binding}" FontSize="12" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Spacing="2" IsVisible="{Binding HasVersionStragglers}">
+                                <TextBlock Text="Ещё на старой версии:" Classes="dim" FontSize="11" Margin="0,4,0,0" />
+                                <ItemsControl ItemsSource="{Binding VersionStragglers}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="sys:String">
+                                            <TextBlock Text="{Binding}" Classes="dim" FontSize="12" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                       Text="Считаются игроки с аккаунтом, которые открывали лаунчер за последние 14 дней. Кто играет без аккаунта, сюда не попадает." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
                 <!-- Audit log: admin/owner only -->
-                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                <StackPanel Spacing="10">
                     <TextBlock Text="ЖУРНАЛ" Classes="caps" />
                     <ItemsControl ItemsSource="{Binding AuditLog}">
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -475,6 +516,7 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </StackPanel>
                 </StackPanel>
                 </Panel>
 

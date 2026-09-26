@@ -220,6 +220,13 @@ public partial class AdminViewModel : ViewModelBase
 
     [ObservableProperty] private string _announcementText = "";
 
+    // ВЕРСИИ ЛАУНЧЕРА (admin/owner): is anyone still on a release that updates from dh-launcher?
+    [ObservableProperty] private string? _versionsVerdict;
+    [ObservableProperty] private bool _versionsReady;
+    public ObservableCollection<string> VersionCounts { get; } = [];
+    public ObservableCollection<string> VersionStragglers { get; } = [];
+    public bool HasVersionStragglers => VersionStragglers.Count > 0;
+
     public ObservableCollection<AdminNewsRowViewModel> News { get; } = [];
     public ObservableCollection<AdminBanRowViewModel> Bans { get; } = [];
     public ObservableCollection<AdminRoleRowViewModel> Roles { get; } = [];
@@ -359,6 +366,7 @@ public partial class AdminViewModel : ViewModelBase
                 foreach (var a in audit)
                     AuditLog.Add(new AdminAuditRowViewModel(a));
 
+                ShowLauncherVersions(await _services.Platform.GetLauncherVersionsAsync());
                 await ReloadGameAccessAsync();
             }
 
@@ -375,6 +383,33 @@ public partial class AdminViewModel : ViewModelBase
         {
             IsLoading = false;
         }
+    }
+
+    private void ShowLauncherVersions(PlatformLauncherVersions? v)
+    {
+        VersionCounts.Clear();
+        VersionStragglers.Clear();
+        VersionsReady = false;
+
+        if (v is null)
+            VersionsVerdict = "Платформа не ответила — версии не загрузились.";
+        else if (v.Total == 0)
+            VersionsVerdict = "Пока пусто: версия записывается, когда игрок с аккаунтом открывает лаунчер.";
+        else if (v.OnOldFeed == 0)
+        {
+            VersionsReady = true;
+            VersionsVerdict = $"Все, кто заходил за {RuText.Plural(v.Days, "день", "дня", "дней")}, уже на {v.NewFeedSince} или новее. " +
+                              "Репозиторий dh-launcher можно закрывать — обновления у всех идут из нового.";
+        }
+        else
+            VersionsVerdict = $"На старой версии {v.OnOldFeed} из {v.Total}. Пока dh-launcher открыт, у них обновление придёт само; " +
+                              "после закрытия им придётся скачать установщик заново.";
+
+        foreach (var c in v?.Versions ?? [])
+            VersionCounts.Add($"{c.Label} — {RuText.Plural(c.Players, "игрок", "игрока", "игроков")}");
+        foreach (var s in v?.Stragglers ?? [])
+            VersionStragglers.Add($"{s.Username} · {s.Version} · {RuText.DayTime(s.SeenAt.ToLocalTime())}");
+        OnPropertyChanged(nameof(HasVersionStragglers));
     }
 
     // --- СЕРВЕРЫ: what goes on the launcher's server list (admin/owner) ---

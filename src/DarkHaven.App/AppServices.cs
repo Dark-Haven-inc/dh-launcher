@@ -104,7 +104,9 @@ public sealed class AppServices : IDisposable
     public AppServices()
     {
         Http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
-        Http.DefaultRequestHeaders.Add("User-Agent", "Frontier15Launcher/0.2");
+        // The real version: the platform counts who is still on an old release (АДМИН → Журнал).
+        // Up to 0.3.4 this was a fixed "0.2", which the platform reads as "0.3.4 or older".
+        Http.DefaultRequestHeaders.Add("User-Agent", $"Frontier15Launcher/{LauncherInfo.Version}");
 
         Settings = new SettingsDatabase(LauncherPaths.SettingsDbPath);
         Settings.Initialize();

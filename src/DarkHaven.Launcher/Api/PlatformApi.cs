@@ -499,6 +499,11 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     public Task<IReadOnlyList<PlatformAuditEntry>> GetAuditLogAsync(CancellationToken cancel = default) =>
         GetAuthedList<PlatformAuditEntry>("/api/admin/audit", cancel);
 
+    /// <summary>Which launcher versions signed-in players came in with lately, and who is still on a
+    /// release that updates from the old repo (admin/owner).</summary>
+    public Task<PlatformLauncherVersions?> GetLauncherVersionsAsync(CancellationToken cancel = default) =>
+        GetAuthed<PlatformLauncherVersions>("/api/admin/launcher-versions", cancel);
+
     // --- Announcements (admin/owner only) ---
 
     public async Task<bool> PostAnnouncementAsync(string text, CancellationToken cancel = default) =>
@@ -710,7 +715,8 @@ public sealed record PlatformBan(
 public sealed record PlatformPlayerInfo(
     Guid UserId, string Username, DateTimeOffset MemberSince, DateTimeOffset LastSeen, string? Role,
     long TotalPlaytimeSeconds, bool LauncherBanned, string? LauncherBanReason, DateTimeOffset? LauncherBanExpires,
-    PlatformGameBan[]? GameBans = null, string? GameAdminRank = null, PlatformDiscordLink? Discord = null);
+    PlatformGameBan[]? GameBans = null, string? GameAdminRank = null, PlatformDiscordLink? Discord = null,
+    string? LauncherVersion = null);
 
 /// <summary>The Discord account a player linked through the "Дозорный" bot.</summary>
 public sealed record PlatformDiscordLink(string DiscordId, string? DiscordName, DateTimeOffset LinkedAt)
@@ -764,6 +770,14 @@ public sealed record PlatformAdminServer(
 public sealed record PlatformAdminStatus(bool Lockdown, string? Reason, DateTimeOffset? Since);
 
 public sealed record PlatformChatMessage(string Sender, string Text, DateTimeOffset AtUtc);
+
+public sealed record PlatformLauncherVersions(
+    int Days, string NewFeedSince, int Total, int OnOldFeed,
+    PlatformLauncherVersionCount[] Versions, PlatformLauncherStraggler[] Stragglers);
+
+public sealed record PlatformLauncherVersionCount(string Version, string Label, int Players, bool OldFeed);
+
+public sealed record PlatformLauncherStraggler(string Username, string Version, DateTimeOffset SeenAt);
 
 public sealed record PlatformAuditEntry(
     int Id, Guid ActorUserId, string ActorUsername, string Action,

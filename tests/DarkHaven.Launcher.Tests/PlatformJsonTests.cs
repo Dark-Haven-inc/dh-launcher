@@ -140,4 +140,27 @@ public class PlatformJsonTests
         var who = JsonSerializer.Deserialize<PlatformPlayerInfo>(card, LauncherJson.Options)!;
         Assert.Equal("1234567890", who.Discord!.Display); // no name → the id
     }
+
+    [Fact]
+    public void Reads_who_is_still_on_an_old_launcher()
+    {
+        const string json = """
+        {"days":14,"newFeedSince":"0.3.5","total":3,"onOldFeed":1,
+         "versions":[{"version":"0.3.5","label":"0.3.5","players":2,"oldFeed":false},
+                     {"version":"0.2","label":"0.3.4 или старее","players":1,"oldFeed":true}],
+         "stragglers":[{"username":"Cadet_Nova","version":"0.3.4 или старее","seenAt":"2026-09-26T10:00:00+00:00"}]}
+        """;
+        var v = JsonSerializer.Deserialize<PlatformLauncherVersions>(json, LauncherJson.Options)!;
+        Assert.Equal((3, 1, "0.3.5"), (v.Total, v.OnOldFeed, v.NewFeedSince));
+        Assert.True(v.Versions[1].OldFeed);
+        Assert.Equal(("Cadet_Nova", "0.3.4 или старее"), (v.Stragglers[0].Username, v.Stragglers[0].Version));
+
+        const string card = """
+        {"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"Cadet_Nova",
+         "memberSince":"2026-09-01T00:00:00+00:00","lastSeen":"2026-09-25T00:00:00+00:00","role":null,
+         "totalPlaytimeSeconds":0,"launcherBanned":false,"launcherBanReason":null,"launcherBanExpires":null,
+         "launcherVersion":"0.3.5"}
+        """;
+        Assert.Equal("0.3.5", JsonSerializer.Deserialize<PlatformPlayerInfo>(card, LauncherJson.Options)!.LauncherVersion);
+    }
 }
