@@ -102,7 +102,8 @@ return 0;
 void NewLaunchKey()
 {
     using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
-    var secret = DarkHaven.Launcher.Security.LaunchSigningKey.Seal(key.ExportPkcs8PrivateKey());
+    var scalar = key.ExportParameters(true).D!; // the 32-byte private scalar; the build splits it into shares
+    var secret = DarkHaven.Launcher.Security.LaunchSigningKey.SealScalar(scalar);
     var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
 
     Console.WriteLine("CI secret DH_LAUNCH_SIGNING_KEY (keep private, never commit):");
@@ -116,15 +117,16 @@ void NewLaunchKey()
 void ShowLaunchProof(string? user)
 {
     var userId = Guid.TryParse(user, out var parsed) ? parsed : Guid.Empty;
-    using var key = DarkHaven.Launcher.Security.LaunchSigningKey.TryLoad();
-    if (key == null)
+    var proof = DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId);
+    if (proof == null)
     {
         Console.WriteLine("This build has no launch-proof signing key (built without -p:DhLaunchKey).");
         return;
     }
 
-    Console.WriteLine($"Public key: {Convert.ToBase64String(key.ExportSubjectPublicKeyInfo())}");
-    Console.WriteLine($"Proof for {userId}: {DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId)}");
+    var shareCount = DarkHaven.Launcher.Security.LaunchSigningKey.Shares!.Count;
+    Console.WriteLine($"This build carries the signing key as {shareCount} shares.");
+    Console.WriteLine($"Proof for {userId}: {proof}");
 }
 
 async Task Probe(string? target)

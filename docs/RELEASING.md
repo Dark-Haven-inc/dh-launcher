@@ -114,8 +114,11 @@ Maintainer line in the PKGBUILD before the first push).
 
 Frontier 15 servers can require that players come through this launcher: when it starts the game it signs a
 launch proof for the account (`src/DarkHaven.Launcher/Security/LaunchProof.cs`), and the server checks the signature
-(`anticheat.launch.*` cvars on the game server). The private key is built into release builds from the
-`DH_LAUNCH_SIGNING_KEY` repository secret; local and CI builds without it sign nothing.
+(`anticheat.launch.*` cvars on the game server). The signing key is built into release builds from the
+`DH_LAUNCH_SIGNING_KEY` repository secret; local and CI builds without it sign nothing. In the build the key is
+split into shares (the `DarkHaven.Launcher.KeyGen` source generator) and never stored or reconstructed whole, and
+the layout changes whenever the key is rotated - so the key cannot be lifted out of a build as one value, and a
+tool written to scrape one release does not carry to the next.
 
 Set up or rotate the key:
 
@@ -123,8 +126,9 @@ Set up or rotate the key:
 2. The first value goes into the `DH_LAUNCH_SIGNING_KEY` secret of this repo. Never commit it.
 3. The second value is appended to `anticheat.launch.public_keys` on every game server (comma-separated). Keep the
    previous key there until players have updated past the release that used it, then remove it.
-4. Cut a release. `dotnet run --project src/DarkHaven.Cli --property:DhLaunchKey=<secret> -- launch-proof` checks
-   locally that a build carries the key.
+4. Cut a release. `dotnet build src/DarkHaven.Cli -p:DhLaunchKey=<secret>` then
+   `dotnet run --no-build --project src/DarkHaven.Cli -- launch-proof` checks locally that a build carries the key
+   (it prints how many shares the key was split into and a sample proof).
 
 The key ships inside every copy of the launcher, so a determined person can dig it out; rotating it with releases
 limits how long a leaked key is any use. Servers start in `anticheat.launch.mode log` - watch the admin log for
