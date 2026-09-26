@@ -110,6 +110,25 @@ packaging/aur/update.sh 0.3.0     # pkgver, checksums, .SRCINFO
 then commit `PKGBUILD`, `.SRCINFO`, `frontier15-launcher.desktop` and `LICENSE` to
 `ssh://aur@aur.archlinux.org/frontier15-launcher-bin.git` (an AUR account with an SSH key; set the
 Maintainer line in the PKGBUILD before the first push).
+### Launch-proof signing key
+
+Frontier 15 servers can require that players come through this launcher: when it starts the game it signs a
+launch proof for the account (`src/DarkHaven.Launcher/Security/LaunchProof.cs`), and the server checks the signature
+(`anticheat.launch.*` cvars on the game server). The private key is built into release builds from the
+`DH_LAUNCH_SIGNING_KEY` repository secret; local and CI builds without it sign nothing.
+
+Set up or rotate the key:
+
+1. `dotnet run --project src/DarkHaven.Cli -- launch-key` prints a new pair.
+2. The first value goes into the `DH_LAUNCH_SIGNING_KEY` secret of this repo. Never commit it.
+3. The second value is appended to `anticheat.launch.public_keys` on every game server (comma-separated). Keep the
+   previous key there until players have updated past the release that used it, then remove it.
+4. Cut a release. `dotnet run --project src/DarkHaven.Cli --property:DhLaunchKey=<secret> -- launch-proof` checks
+   locally that a build carries the key.
+
+The key ships inside every copy of the launcher, so a determined person can dig it out; rotating it with releases
+limits how long a leaked key is any use. Servers start in `anticheat.launch.mode log` - watch the admin log for
+players still arriving without a proof before switching to `enforce`.
 
 ## Local test of the update flow
 

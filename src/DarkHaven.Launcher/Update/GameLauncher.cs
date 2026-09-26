@@ -89,6 +89,10 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
             env["ROBUST_AUTH_USERID"] = account.UserId.ToString();
             env["ROBUST_AUTH_PUBKEY"] = server.Info.Auth.PublicKey ?? "";
             env["ROBUST_AUTH_SERVER"] = "https://auth.spacestation14.com/";
+
+            // Tells Frontier 15 servers this client was started by the genuine launcher. Release builds only.
+            if (Security.LaunchProof.TryCreate(account.UserId) is { } proof)
+                env[Security.LaunchProof.EnvVar] = proof;
         }
 
         foreach (var (name, version) in launch.Modules)
