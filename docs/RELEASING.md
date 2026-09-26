@@ -112,9 +112,13 @@ then commit `PKGBUILD`, `.SRCINFO`, `frontier15-launcher.desktop` and `LICENSE` 
 Maintainer line in the PKGBUILD before the first push).
 ### Launch-proof signing key
 
-Frontier 15 servers can require that players come through this launcher: when it starts the game it signs a
-launch proof for the account (`src/DarkHaven.Launcher/Security/LaunchProof.cs`), and the server checks the signature
-(`anticheat.launch.*` cvars on the game server). The signing key is built into release builds from the
+Frontier 15 servers can require that players come through this launcher. While the game runs, the launcher keeps
+a local endpoint open (`src/DarkHaven.Launcher/Security/LaunchBroker.cs`: a named pipe on Windows, a Unix socket on
+Linux) that answers only the game process it started; at every login the game asks it to sign a launch proof over
+the server's nonce and the session's auth hash (`Security/LaunchProof.cs`), and the server checks the signature and
+that the proof was made for this very login (`anticheat.launch.*` cvars on the game server). A proof is good for
+one connection, so one lifted from the game is worthless. Closing the launcher while the game runs means the next
+reconnect has no proof. The signing key is built into release builds from the
 `DH_LAUNCH_SIGNING_KEY` repository secret; local and CI builds without it sign nothing. In the build the key is
 split into shares (the `DarkHaven.Launcher.KeyGen` source generator) and never stored or reconstructed whole, and
 the layout changes whenever the key is rotated - so the key cannot be lifted out of a build as one value, and a
@@ -128,11 +132,16 @@ Set up or rotate the key:
    previous key there until players have updated past the release that used it, then remove it.
 4. Cut a release. `dotnet build src/DarkHaven.Cli -p:DhLaunchKey=<secret>` then
    `dotnet run --no-build --project src/DarkHaven.Cli -- launch-proof` checks locally that a build carries the key
-   (it prints how many shares the key was split into and a sample proof).
+   (it prints how many shares the key was split into and a sample proof for a random login challenge).
 
 The key ships inside every copy of the launcher, so a determined person can dig it out; rotating it with releases
 limits how long a leaked key is any use. Servers start in `anticheat.launch.mode log` - watch the admin log for
 players still arriving without a proof before switching to `enforce`.
+
+The launcher still also puts an old-style proof (signed once at start, valid for hours) in `DH_LAUNCH_PROOF`, for
+servers that predate login-bound proofs. Servers only take it with `anticheat.launch.accept_v1 true` (off by
+default). Order of rollout: release the launcher first, then update the servers; once no server needs it, drop
+`TryCreateV1` from `GameLauncher`.
 
 ## Local test of the update flow
 

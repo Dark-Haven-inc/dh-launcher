@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using System.Net.Sockets;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
 using DarkHaven.Launcher.Engine;
 using DarkHaven.Launcher.Models;
+using DarkHaven.Launcher.Security;
 using Serilog;
 
 namespace DarkHaven.Launcher.Update;
@@ -83,6 +85,11 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
         env["DOTNET_TieredPGO"] = "1";
         env["DOTNET_ReadyToRun"] = "0";
 
+        // Never pass on our own (a redial may have started us with the previous game's).
+        env.Remove(LaunchBroker.EnvVar);
+        env.Remove(LaunchProof.EnvVar);
+
+        LaunchBroker? broker = null;
         if (account is not null && server.Info.Auth.Mode != AuthMode.Disabled)
         {
             env["ROBUST_AUTH_TOKEN"] = account.Token;
@@ -90,9 +97,18 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
             env["ROBUST_AUTH_PUBKEY"] = server.Info.Auth.PublicKey ?? "";
             env["ROBUST_AUTH_SERVER"] = "https://auth.spacestation14.com/";
 
-            // Tells Frontier 15 servers this client was started by the genuine launcher. Release builds only.
-            if (Security.LaunchProof.TryCreate(account.UserId) is { } proof)
-                env[Security.LaunchProof.EnvVar] = proof;
+            // Tells Frontier 15 servers this client was started by the genuine launcher: the game asks the broker
+            // for a proof at each login. Release builds only.
+            if (LaunchSigningKey.Shares is { Count: > 0 })
+            {
+                broker = StartBroker(account.UserId);
+                if (broker is not null)
+                    env[LaunchBroker.EnvVar] = broker.Endpoint;
+
+                // For servers from before login-bound proofs.
+                if (LaunchProof.TryCreateV1(account.UserId) is { } proof)
+                    env[LaunchProof.EnvVar] = proof;
+            }
         }
 
         foreach (var (name, version) in launch.Modules)
@@ -102,6 +118,38 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
         }
 
         Log.Debug("Launching: {File} {Args}", psi.FileName, string.Join(' ', psi.ArgumentList));
-        return Process.Start(psi) ?? throw new InvalidOperationException("Failed to start loader process");
+        Process process;
+        try
+        {
+            process = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start loader process");
+        }
+        catch
+        {
+            broker?.Dispose();
+            throw;
+        }
+
+        if (broker is not null)
+        {
+            // The broker answers this process only, and for as long as it runs.
+            broker.Admit(process.Id);
+            process.Exited += (_, _) => broker.Dispose();
+            process.EnableRaisingEvents = true;
+        }
+
+        return process;
+    }
+
+    private static LaunchBroker? StartBroker(Guid userId)
+    {
+        try
+        {
+            return LaunchBroker.Start(userId, (user, challenge) => LaunchProof.TryCreate(user, challenge));
+        }
+        catch (Exception e) when (e is IOException or SocketException or UnauthorizedAccessException)
+        {
+            Log.Error(e, "Could not start the launch broker; Frontier 15 servers will not let this game in");
+            return null;
+        }
     }
 }

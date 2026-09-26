@@ -65,7 +65,7 @@ try
             NewLaunchKey();
             break;
         case "launch-proof":
-            ShowLaunchProof(positional.ElementAtOrDefault(1));
+            ShowLaunchProof(positional.ElementAtOrDefault(1), positional.ElementAtOrDefault(2));
             break;
         default:
             Log.Information("Frontier 15 Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
@@ -79,7 +79,7 @@ try
             Log.Information("  regions                                   Frontier 15 sector, live");
             Log.Information("  platform <api-base-url>                   sign in to DarkHaven.Platform.Api with the active account, dump the profile");
             Log.Information("  launch-key                                new launch-proof key pair: CI secret + server public key");
-            Log.Information("  launch-proof [user-guid]                  whether this build can sign launch proofs, and a sample one");
+            Log.Information("  launch-proof [user-guid] [challenge]      whether this build can sign launch proofs, and a sample one");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -113,11 +113,24 @@ void NewLaunchKey()
     Console.WriteLine(publicKey);
 }
 
-// Checks a build: does it carry a signing key, and what proof would it hand the game for this account.
-void ShowLaunchProof(string? user)
+// Checks a build: does it carry a signing key, and what proof would it hand the game for this account's login with
+// the given challenge (base64url, 64 bytes; random if omitted).
+void ShowLaunchProof(string? user, string? challengeText)
 {
     var userId = Guid.TryParse(user, out var parsed) ? parsed : Guid.Empty;
-    var proof = DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId);
+    byte[] challenge;
+    if (challengeText is null)
+    {
+        challenge = System.Security.Cryptography.RandomNumberGenerator.GetBytes(DarkHaven.Launcher.Security.LaunchProof.ChallengeLength);
+    }
+    else if (!DarkHaven.Launcher.Security.LaunchProof.TryFromBase64Url(challengeText, out challenge) ||
+             challenge.Length != DarkHaven.Launcher.Security.LaunchProof.ChallengeLength)
+    {
+        Console.WriteLine($"A challenge is {DarkHaven.Launcher.Security.LaunchProof.ChallengeLength} bytes, base64url.");
+        return;
+    }
+
+    var proof = DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId, challenge);
     if (proof == null)
     {
         Console.WriteLine("This build has no launch-proof signing key (built without -p:DhLaunchKey).");

@@ -5,55 +5,103 @@ using System.Text;
 namespace DarkHaven.Launcher.Security;
 
 /// <summary>
-/// The token this launcher signs when it starts the game, so a Frontier 15 server can tell its players came through
-/// the genuine launcher and not the official one, a Marsey build or a hand-rolled client. The game server's
-/// <c>LaunchProof</c> (dh-sector-frontier, Content.Server/_DH/AntiCheat/Launcher) verifies it; both must agree:
+/// The token this launcher signs so a Frontier 15 server can tell its players came through the genuine launcher and
+/// not the official one, a Marsey build or a hand-rolled client. The game server's <c>LaunchProof</c>
+/// (dh-sector-frontier, Content.Server/_DH/AntiCheat/Launcher) verifies it; both must agree:
 /// <code>
 /// token     = base64url(payload) "." base64url(signature)
-/// payload   = "dh-launch/1\n" userId(guid, "D") "\n" unixSeconds "\n" launcherVersion      (UTF-8)
+/// payload   = "dh-launch/2\n" userId(guid, "D") "\n" base64url(challenge) "\n" launcherVersion      (UTF-8)
 /// signature = ECDSA P-256 over SHA-256 of the payload bytes, IEEE P1363 (r || s, 64 bytes)
 /// </code>
+/// The challenge is the server's nonce for one login followed by that session's auth hash; the game asks for the
+/// proof mid-handshake through <see cref="LaunchBroker"/>, so each proof is good for exactly one connection.
 /// </summary>
 /// <remarks>
+/// Version 1 (<c>"dh-launch/1\n" userId "\n" unixSeconds "\n" launcherVersion</c>) is signed once at start and put
+/// in <see cref="EnvVar"/> for servers that predate version 2; it goes once they all verify version 2.
 /// The signing key is built into release builds from a CI secret (see <see cref="LaunchSigningKey"/>), kept as split
-/// shares and never held whole (see <see cref="SplitEcdsa"/>). A proof is bound to the account, so a leaked one is
-/// useless to anyone else. Someone determined can still recover the key from a build; rotating it with releases and
-/// trusting only recent keys is what limits that.
+/// shares and never held whole (see <see cref="SplitEcdsa"/>).
 /// </remarks>
 public static class LaunchProof
 {
-    /// <summary>Environment variable the engine reads the proof from (<c>NetManager.LaunchProofEnvVar</c>).</summary>
+    /// <summary>Environment variable the engine reads a version 1 proof from (<c>NetManager.LaunchProofEnvVar</c>).</summary>
     public const string EnvVar = "DH_LAUNCH_PROOF";
 
-    public const string Magic = "dh-launch/1";
+    public const string MagicV1 = "dh-launch/1";
+    public const string Magic = "dh-launch/2";
 
-    /// <summary>Signs a proof with a whole key. Used by tests and the CLI; production uses the split shares.</summary>
-    public static string Create(ECDsa key, Guid userId, DateTimeOffset issued, string launcherVersion)
+    /// <summary>Bytes in a challenge: the server's 32-byte nonce and the 32-byte auth hash.</summary>
+    public const int ChallengeLength = 64;
+
+    /// <summary>Signs a proof for a login with a whole key. Used by tests; production uses the split shares.</summary>
+    public static string Create(ECDsa key, Guid userId, ReadOnlySpan<byte> challenge, string launcherVersion)
     {
-        var payload = Payload(userId, issued, launcherVersion);
+        var payload = Payload(userId, challenge, launcherVersion);
+        var signature = key.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        return $"{ToBase64Url(payload)}.{ToBase64Url(signature)}";
+    }
+
+    /// <summary>Signs a version 1 proof with a whole key. Used by tests and the CLI.</summary>
+    public static string CreateV1(ECDsa key, Guid userId, DateTimeOffset issued, string launcherVersion)
+    {
+        var payload = PayloadV1(userId, issued, launcherVersion);
         var signature = key.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         return $"{ToBase64Url(payload)}.{ToBase64Url(signature)}";
     }
 
     /// <summary>
-    /// A proof for this account from this build's split signing key, or null if the build has none (dev builds).
+    /// A proof for this account's login with <paramref name="challenge"/>, from this build's split signing key, or
+    /// null if the build has none (dev builds).
     /// </summary>
-    public static string? TryCreate(Guid userId)
+    public static string? TryCreate(Guid userId, ReadOnlySpan<byte> challenge)
     {
         if (LaunchSigningKey.Shares is not { Count: > 0 } shares)
             return null;
 
-        var payload = Payload(userId, DateTimeOffset.UtcNow, LauncherInfo.Version);
-        var signature = SplitEcdsa.SignData(shares, payload);
-        return $"{ToBase64Url(payload)}.{ToBase64Url(signature)}";
+        var payload = Payload(userId, challenge, LauncherInfo.Version);
+        return $"{ToBase64Url(payload)}.{ToBase64Url(SplitEcdsa.SignData(shares, payload))}";
     }
 
-    private static byte[] Payload(Guid userId, DateTimeOffset issued, string launcherVersion) =>
-        Encoding.UTF8.GetBytes(
-            $"{Magic}\n{userId:D}\n{issued.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)}\n{launcherVersion}");
+    /// <summary>A version 1 proof for this account, or null in a build without a key.</summary>
+    public static string? TryCreateV1(Guid userId)
+    {
+        if (LaunchSigningKey.Shares is not { Count: > 0 } shares)
+            return null;
 
-    private static string ToBase64Url(byte[] data) =>
+        var payload = PayloadV1(userId, DateTimeOffset.UtcNow, LauncherInfo.Version);
+        return $"{ToBase64Url(payload)}.{ToBase64Url(SplitEcdsa.SignData(shares, payload))}";
+    }
+
+    private static byte[] Payload(Guid userId, ReadOnlySpan<byte> challenge, string launcherVersion)
+    {
+        if (challenge.Length != ChallengeLength)
+            throw new ArgumentException($"A challenge is {ChallengeLength} bytes", nameof(challenge));
+
+        return Encoding.UTF8.GetBytes($"{Magic}\n{userId:D}\n{ToBase64Url(challenge.ToArray())}\n{launcherVersion}");
+    }
+
+    private static byte[] PayloadV1(Guid userId, DateTimeOffset issued, string launcherVersion) =>
+        Encoding.UTF8.GetBytes(
+            $"{MagicV1}\n{userId:D}\n{issued.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)}\n{launcherVersion}");
+
+    internal static string ToBase64Url(byte[] data) =>
         Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    public static bool TryFromBase64Url(string text, out byte[] data)
+    {
+        data = [];
+        var padded = text.Replace('-', '+').Replace('_', '/');
+        padded += (padded.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
+        try
+        {
+            data = Convert.FromBase64String(padded);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
 }
 
 /// <summary>
