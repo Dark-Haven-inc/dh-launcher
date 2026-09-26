@@ -79,17 +79,21 @@
             <StackPanel>
                 <Border Classes="cap"><TextBlock Classes="caps" Text="ПОДКЛЮЧЕНИЕ" /></Border>
                 <Border Classes="hair">
-                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="4">
-                        <TextBlock Text="Авторизация" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding AuthUrl}" VerticalAlignment="Center" />
-                        <Button Grid.Column="2" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetAuthUrlCommand}" />
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Авторизация" />
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding AuthUrl}" />
+                            <Button Grid.Column="1" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetAuthUrlCommand}" />
+                        </Grid>
                     </Grid>
                 </Border>
                 <Border Classes="hair">
-                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="4">
-                        <TextBlock Text="Сборки движка" Margin="0,0,8,0" />
-                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding BuildsUrl}" VerticalAlignment="Center" />
-                        <Button Grid.Column="2" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetBuildsUrlCommand}" />
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Сборки движка" />
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding BuildsUrl}" />
+                            <Button Grid.Column="1" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetBuildsUrlCommand}" />
+                        </Grid>
                     </Grid>
                 </Border>
                 <Border Classes="hair">
