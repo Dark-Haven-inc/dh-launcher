@@ -109,6 +109,35 @@ public sealed class LocalServerTests : IDisposable
         Assert.Empty(Directory.GetFiles(_dir));
     }
 
+    [Fact]
+    public async Task Builds_sharing_a_folder_prefix_are_not_mistaken_for_each_other()
+    {
+        var zip = ServerZip();
+        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir);
+        var sha = Convert.ToHexString(SHA256.HashData(zip));
+        await store.InstallAsync(new LocalBuild("875c455c3c49aaaa", DateTimeOffset.UtcNow, "http://cdn/a.zip", sha, null));
+
+        Assert.EndsWith("875c455c3c49", store.PathFor("875c455c3c49aaaa")); // 12 characters, not 40
+        Assert.True(store.IsInstalled("875c455c3c49aaaa"));
+        Assert.False(store.IsInstalled("875c455c3c49bbbb")); // same folder, different build
+    }
+
+    [Fact]
+    public void A_build_too_deep_for_windows_is_refused_with_a_reason()
+    {
+        var zipPath = Path.Combine(_dir, "deep.zip");
+        Directory.CreateDirectory(_dir);
+        using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            zip.CreateEntry("Resources/Locale/ru-RU/" + new string('x', 130) + ".ftl");
+
+        var deep = Path.Combine(_dir, new string('d', 120));
+        var e = Assert.Throws<InvalidOperationException>(() => LocalBuildStore.EnsurePathsFit(zipPath, deep, longPathsEnabled: false));
+        Assert.Contains("260 символов", e.Message);
+
+        LocalBuildStore.EnsurePathsFit(zipPath, deep, longPathsEnabled: true); // Windows set up for long paths: fine
+        LocalBuildStore.EnsurePathsFit(zipPath, Path.Combine(_dir, "b"), longPathsEnabled: false); // short enough: fine
+    }
+
     [Theory]
     [InlineData("875c455c3c4961f63c2d555bfe96743f9a180fb3", "875c455c3c4961f63c2d555bfe96743f9a180fb3")]
     [InlineData("../../evil", ".._.._evil")]
@@ -172,6 +201,7 @@ public sealed class LocalServerTests : IDisposable
         Assert.Contains("bindto = \"127.0.0.1\"", toml);
         Assert.Contains("bind = \"127.0.0.1:1251\"", toml);
         Assert.Contains("[hub]\nadvertise = false", toml.Replace("\r\n", "\n"));
+        Assert.Contains("[auth]\nmode = 0", toml.Replace("\r\n", "\n")); // Optional: works offline too
         Assert.Contains("hostname = \"Локалка: Тест\"", toml);
         Assert.Contains("soft_max_players = 4", toml);
         Assert.Contains("loginlocal = true", toml);

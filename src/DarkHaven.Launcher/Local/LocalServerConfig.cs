@@ -24,6 +24,10 @@ public static class LocalServerConfig
         Value(s, "bind", $"127.0.0.1:{p.Port}");
         Section(s, "hub");
         Value(s, "advertise", false);
+        // Optional, not the engine's Required: a server only this PC reaches still works offline or
+        // with the SS14 auth server down; a signed-in player is verified all the same.
+        Section(s, "auth");
+        Value(s, "mode", 0);
 
         Section(s, "game");
         Value(s, "hostname", $"Локалка: {p.Name}");

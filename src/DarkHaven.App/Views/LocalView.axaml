@@ -54,12 +54,19 @@
             <Setter Property="TextBlock.Foreground" Value="White" />
         </Style>
 
-        <Style Selector="TextBox.console">
+        <!-- The server console: its own scroll area, so following new lines never scrolls the page -->
+        <Style Selector="Border.console">
+            <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
+        </Style>
+        <Style Selector="SelectableTextBlock.console">
             <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="IsReadOnly" Value="True" />
             <Setter Property="TextWrapping" Value="Wrap" />
-            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="Margin" Value="10,8" />
         </Style>
     </UserControl.Styles>
 
@@ -235,8 +242,15 @@
                         <!-- Console: the server's own output, and a line to type commands -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="КОНСОЛЬ СЕРВЕРА" Classes="caps" />
-                            <TextBox Classes="console" x:Name="ConsoleBox" Height="260" Text="{Binding ConsoleText}"
-                                     Watermark="Здесь появится вывод сервера после запуска." />
+                            <Border Classes="console" Height="260">
+                                <Panel>
+                                    <TextBlock Classes="dim" Margin="10,8" FontSize="11" Text="Здесь появится вывод сервера после запуска."
+                                               IsVisible="{Binding ConsoleText, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                                    <ScrollViewer Classes="console">
+                                        <SelectableTextBlock Classes="console" Text="{Binding ConsoleText}" />
+                                    </ScrollViewer>
+                                </Panel>
+                            </Border>
                             <Grid ColumnDefinitions="*,8,Auto" IsEnabled="{Binding HasConsole}">
                                 <TextBox Text="{Binding Command}" Watermark="Команда сервера, например savemap 1 /Maps/мой_шаттл.yml">
                                     <TextBox.KeyBindings>

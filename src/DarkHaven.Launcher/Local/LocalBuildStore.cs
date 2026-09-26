@@ -10,23 +10,50 @@ namespace DarkHaven.Launcher.Local;
 /// counts as installed only once its zip matched the CDN's SHA-256 and unpacked completely — a
 /// download cut off halfway never looks like a usable server.
 /// </summary>
+/// <remarks>
+/// Folders are named by the first <see cref="FolderLength"/> characters of the version (a commit
+/// hash), not all 40: the server's resources nest deep (120 characters and growing), and Windows
+/// without long paths enabled can't open anything past 259. The full version is kept in the
+/// marker file, so two builds sharing a prefix are never mistaken for each other.
+/// </remarks>
 public sealed partial class LocalBuildStore(HttpClient http, string root)
 {
     private const string CompleteMarker = ".complete";
     private const string ServerExe = "Robust.Server.exe";
+    internal const int FolderLength = 12;
 
-    public string PathFor(string version) => Path.Combine(root, Safe(version));
+    /// <summary>Longest full path Windows opens when long paths aren't enabled (MAX_PATH minus the terminator).</summary>
+    internal const int MaxPath = 259;
 
-    public bool IsInstalled(string version) => File.Exists(Path.Combine(PathFor(version), CompleteMarker));
+    public string PathFor(string version)
+    {
+        var safe = Safe(version);
+        return Path.Combine(root, safe.Length > FolderLength ? safe[..FolderLength] : safe);
+    }
 
+    public bool IsInstalled(string version) => MarkerVersion(PathFor(version)) == version;
+
+    /// <summary>The versions on disk, as the CDN names them.</summary>
     public IReadOnlyList<string> Installed() =>
         Directory.Exists(root)
             ? Directory.GetDirectories(root)
-                .Where(d => File.Exists(Path.Combine(d, CompleteMarker)))
-                .Select(Path.GetFileName)
+                .Select(MarkerVersion)
                 .OfType<string>()
                 .ToList()
             : [];
+
+    private static string? MarkerVersion(string dir)
+    {
+        var marker = Path.Combine(dir, CompleteMarker);
+        try
+        {
+            return File.Exists(marker) ? File.ReadAllText(marker).Trim() : null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>Where the server's executable is inside an installed build, or null if it isn't there.</summary>
     public string? ServerExecutable(string version)
@@ -81,20 +108,21 @@ public sealed partial class LocalBuildStore(HttpClient http, string root)
             return;
 
         Directory.CreateDirectory(root);
-        var safe = Safe(build.Version);
-        var zip = Path.Combine(root, $".download-{safe}.zip");
-        var unpack = Path.Combine(root, $".unpack-{safe}");
+        var target = PathFor(build.Version);
+        var folder = Path.GetFileName(target);
+        var zip = Path.Combine(root, $".download-{folder}.zip");
+        var unpack = Path.Combine(root, $".u-{folder}");
         try
         {
             await DownloadVerifiedAsync(build, zip, progress, cancel);
+            EnsurePathsFit(zip, target, LongPathsEnabled());
 
             if (Directory.Exists(unpack))
                 Directory.Delete(unpack, recursive: true);
             // ExtractToDirectory refuses entries that would land outside the folder ("zip slip").
             await Task.Run(() => ZipFile.ExtractToDirectory(zip, unpack), cancel);
-            await File.WriteAllTextAsync(Path.Combine(unpack, CompleteMarker), build.Sha256, cancel);
+            await File.WriteAllTextAsync(Path.Combine(unpack, CompleteMarker), build.Version, cancel);
 
-            var target = PathFor(build.Version);
             if (Directory.Exists(target))
                 Directory.Delete(target, recursive: true);
             Directory.Move(unpack, target);
@@ -104,6 +132,37 @@ public sealed partial class LocalBuildStore(HttpClient http, string root)
             TryDelete(zip);
             if (Directory.Exists(unpack))
                 try { Directory.Delete(unpack, recursive: true); } catch { /* next install cleans it */ }
+        }
+    }
+
+    /// <summary>
+    /// The server reads its resources with ordinary Windows paths: one that doesn't fit makes it die at
+    /// start with "Path does not exist in the VFS". Say so plainly instead, before unpacking anything.
+    /// </summary>
+    internal static void EnsurePathsFit(string zipPath, string target, bool longPathsEnabled)
+    {
+        if (longPathsEnabled)
+            return;
+        using var archive = ZipFile.OpenRead(zipPath);
+        var longest = archive.Entries.Select(e => e.FullName).MaxBy(n => n.Length);
+        if (longest is not null && Path.GetFullPath(target).Length + 1 + longest.Length > MaxPath)
+            throw new InvalidOperationException(
+                "Папка лаунчера лежит слишком глубоко: пути к файлам сервера выходят за 260 символов, а Windows такие не открывает. " +
+                "Включите в Windows длинные пути (параметр LongPathsEnabled) или перенесите папку данных лаунчера ближе к корню диска.");
+    }
+
+    private static bool LongPathsEnabled()
+    {
+        if (!OperatingSystem.IsWindows())
+            return true;
+        try
+        {
+            return Microsoft.Win32.Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem", "LongPathsEnabled", 0) is 1;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
