@@ -21,8 +21,23 @@ jobs:
 
     env:
       GH_TOKEN: ${{ github.token }}
+      # Players download and update from here: a public repo that holds nothing but releases, so this
+      # source repo can be private. Writing to it needs the RELEASES_TOKEN secret (docs/RELEASING.md).
+      RELEASE_REPO: Dark-Haven-inc/frontier15-launcher
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
 
     steps:
+      # Fail in the first seconds, not after the build, if the token is missing or has expired.
+      - name: Check the releases-repo token
+        shell: bash
+        run: |
+          if [ -z "$RELEASES_TOKEN" ]; then
+            echo "::error::Secret RELEASES_TOKEN is missing: it must be able to write releases to $RELEASE_REPO (docs/RELEASING.md)."
+            exit 1
+          fi
+          GH_TOKEN="$RELEASES_TOKEN" gh api "repos/$RELEASE_REPO" --jq .full_name \
+            || { echo "::error::RELEASES_TOKEN can't reach $RELEASE_REPO: expired, or scoped to the wrong repo."; exit 1; }
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -59,16 +74,26 @@ jobs:
           echo "Bundled engines present:"
           ls -lh src/DarkHaven.App/bundled-engines/*.zip
 
-      # Prior releases in the delta channel, so vpk can build a delta from the last version.
+      # Prior releases in the delta channel, so vpk can build a delta from the last version. The
+      # releases repo is empty until its first release; then the last release is still here, in the
+      # source repo, and that's the version players are on.
       - name: Fetch previous releases
         shell: bash
         run: |
           mkdir -p artifacts/releases
           dotnet vpk download github \
-            --repoUrl "https://github.com/${{ github.repository }}" \
+            --repoUrl "https://github.com/$RELEASE_REPO" \
             --channel win \
             --outputDir artifacts/releases \
-            --token "${{ github.token }}" || echo "no prior release yet — first cut"
+            --token "$RELEASES_TOKEN" || true
+          if [ ! -f artifacts/releases/releases.win.json ]; then
+            echo "Nothing in $RELEASE_REPO yet: taking the previous release from ${{ github.repository }}"
+            dotnet vpk download github \
+              --repoUrl "https://github.com/${{ github.repository }}" \
+              --channel win \
+              --outputDir artifacts/releases \
+              --token "${{ github.token }}" || echo "no prior release yet — first cut"
+          fi
 
       - name: Pack release
         run: pwsh scripts/pack-release.ps1 -Version ${{ steps.v.outputs.version }}
@@ -79,13 +104,33 @@ jobs:
           find artifacts/releases -name '*-full.nupkg' \
             ! -name "*-${{ steps.v.outputs.version }}-full.nupkg" -delete || true
 
-      - name: Publish to GitHub Releases
+      - name: Publish to the releases repo
         run: >
           dotnet vpk upload github
-          --repoUrl https://github.com/${{ github.repository }}
+          --repoUrl https://github.com/${{ env.RELEASE_REPO }}
           --publish
           --releaseName "Frontier 15 Launcher ${{ steps.v.outputs.version }}"
           --tag v${{ steps.v.outputs.version }}
           --channel win
-          --token ${{ github.token }}
+          --token ${{ env.RELEASES_TOKEN }}
           --outputDir artifacts/releases
+
+      # Launchers up to 0.3.4 update from THIS repo. While it's public, publish here too, so they
+      # reach a version that reads the releases repo. Runs after the releases repo on purpose: an old
+      # launcher only moves over once the new feed already has the release. Once this repo is
+      # private, old launchers can't read it anyway, and the step does nothing.
+      - name: Mirror to this repo while it is public
+        shell: bash
+        run: |
+          if [ "$(gh api "repos/${{ github.repository }}" --jq .private)" = "true" ]; then
+            echo "${{ github.repository }} is private: nothing to mirror."
+            exit 0
+          fi
+          dotnet vpk upload github \
+            --repoUrl "https://github.com/${{ github.repository }}" \
+            --publish \
+            --releaseName "Frontier 15 Launcher ${{ steps.v.outputs.version }}" \
+            --tag "v${{ steps.v.outputs.version }}" \
+            --channel win \
+            --token "${{ github.token }}" \
+            --outputDir artifacts/releases

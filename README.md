@@ -37,7 +37,8 @@ and copied to the loader output automatically — no SS14 install needed.
 
 ## Release
 
-Releases are [GitHub Releases](https://github.com/Dark-Haven-inc/dh-launcher/releases): players run
+Releases are GitHub Releases on the public, releases-only
+[`frontier15-launcher`](https://github.com/Dark-Haven-inc/frontier15-launcher/releases): players run
 `Setup.exe` once, every later version arrives as a small in-app delta (Velopack). Push a `v*` tag to
 build one (`.github/workflows/release.yml`), or run `scripts/pack-release.ps1 -Version x.y.z`
 locally. Details in [`docs/RELEASING.md`](docs/RELEASING.md).

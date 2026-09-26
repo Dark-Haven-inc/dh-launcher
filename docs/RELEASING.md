@@ -8,9 +8,28 @@ The launcher ships as a [Velopack](https://velopack.io/) app:
   **delta** (only the changed files), and applies it on restart. The blue banner at the top of the
   window drives this.
 
-Releases live as **GitHub Releases on `Dark-Haven-inc/dh-launcher`**. The release feed URL is
-overridable at runtime with the `UpdateFeedUrl` config key (a GitHub repo URL, or a plain
-static-file base URL for a self-hosted feed); `UpdateChannel` overrides the channel.
+Releases live as **GitHub Releases on [`Dark-Haven-inc/frontier15-launcher`](https://github.com/Dark-Haven-inc/frontier15-launcher)**,
+a public repo that holds nothing but releases — so this source repo can be private (the updater
+reads the feed anonymously and can't see a private repo). The release feed URL is overridable at
+runtime with the `UpdateFeedUrl` config key (a GitHub repo URL, or a plain static-file base URL for
+a self-hosted feed); `UpdateChannel` overrides the channel.
+
+### The releases-repo token
+
+CI writes to the releases repo with the **`RELEASES_TOKEN`** secret of this repo: a fine-grained
+personal access token, resource owner `Dark-Haven-inc`, access to `frontier15-launcher` only,
+permission **Contents: Read and write**. The workflow's first step checks it, so a missing or
+expired token fails the release in seconds, not after the build. When it expires, make a new one
+the same way and replace the secret.
+
+### Moving players off the old feed (0.3.5)
+
+Launchers up to 0.3.4 read their updates from `Dark-Haven-inc/dh-launcher` itself. While that repo
+is public, `release.yml` publishes every release there too (after the releases repo), so they update
+to a version that reads the new feed. **Make `dh-launcher` private only once АДМИН → Журнал →
+ВЕРСИИ ЛАУНЧЕРА is green** (nobody seen in 14 days is below 0.3.5) — anyone still older after that
+stops getting updates and has to reinstall from the releases repo (settings and content survive a
+reinstall). After the flip the mirror step sees the repo is private and does nothing.
 
 ## Cut a release
 
@@ -23,7 +42,8 @@ static-file base URL for a self-hosted feed); `UpdateChannel` overrides the chan
    ```
 
 3. `.github/workflows/release.yml` builds it on `windows-latest` and publishes the GitHub Release
-   (installer + delta + `RELEASES` manifest). It can also be run from the Actions tab
+   (installer + delta + `RELEASES` manifest) to the releases repo, and mirrors it here while this
+   repo is public. It can also be run from the Actions tab
    (`workflow_dispatch`) with an explicit version.
 
 ### The bundled engine
