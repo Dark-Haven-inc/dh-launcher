@@ -15,14 +15,14 @@ public static class LocalServerConfig
     private const int AuthOptional = 0;
     private const int AuthRequired = 1;
 
-    public static string Toml(LocalServerProfile p, string logsDir)
+    public static string Toml(LocalServerProfile p, string logsDir, bool shared = false)
     {
         var s = new StringBuilder();
         s.AppendLine("# Written by the Frontier 15 launcher (ЛОКАЛКА) on every start — change the server there, not here.");
 
         Section(s, "net");
         Value(s, "port", p.Port);
-        if (p.Shared)
+        if (shared)
         {
             // Open to invited players: every interface, and ask the router to forward the port (the
             // engine maps both UDP and TCP; the console says whether it worked — LocalServerHost reads it).
@@ -47,8 +47,8 @@ public static class LocalServerConfig
         // server down, and a signed-in player is verified all the same. Open to others: real accounts
         // only, and only whitelisted ones (the owner and whoever they let in).
         Section(s, "auth");
-        Value(s, "mode", p.Shared ? AuthRequired : AuthOptional);
-        if (p.Shared)
+        Value(s, "mode", shared ? AuthRequired : AuthOptional);
+        if (shared)
         {
             Section(s, "whitelist");
             Value(s, "enabled", true);

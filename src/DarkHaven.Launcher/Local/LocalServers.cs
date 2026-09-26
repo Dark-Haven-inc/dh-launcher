@@ -16,6 +16,13 @@ public sealed class LocalServers
     private readonly HttpClient _http;
     private readonly ConcurrentDictionary<string, LocalServerHost> _hosts = new();
 
+    /// <summary>
+    /// "Пускать приглашённых" (servers open to other players). Built and on the platform, but off until
+    /// there are testers to try it with (user, 2026-09-27): ЛОКАЛКА is single-player for now. Off hides it
+    /// everywhere and every server starts for this PC only, whatever its profile says.
+    /// </summary>
+    public static bool SharingEnabled { get; } = false;
+
     public LocalBuildCatalog Catalog { get; }
     public LocalBuildStore Builds { get; }
     public DotnetRuntime Runtime { get; }
@@ -71,7 +78,7 @@ public sealed class LocalServers
 
             Profiles.Save(p);
             Directory.CreateDirectory(Profiles.LogsDirFor(p.Id));
-            await File.WriteAllTextAsync(Profiles.ConfigPathFor(p.Id), LocalServerConfig.Toml(p, Profiles.LogsDirFor(p.Id)), cancel);
+            await File.WriteAllTextAsync(Profiles.ConfigPathFor(p.Id), LocalServerConfig.Toml(p, Profiles.LogsDirFor(p.Id), shared: SharingEnabled && p.Shared), cancel);
             p.LastStartedAt = DateTimeOffset.UtcNow;
             Profiles.Save(p);
 
@@ -109,7 +116,7 @@ public sealed class LocalServers
         var list = await Catalog.GetAsync(cancel);
         var build = p.Build is { } wanted
             ? list.Builds.FirstOrDefault(b => b.Version == wanted)
-              ?? throw new InvalidOperationException($"Сборки {Short(wanted)} больше нет на CDN. Выберите другую в настройках сервера.")
+              ?? throw new InvalidOperationException($"Сборки {Short(wanted)} больше нет в списке. Выберите другую в настройках сервера.")
             : list.Builds.FirstOrDefault();
 
         if (build is null)
@@ -119,7 +126,7 @@ public sealed class LocalServers
                 .OrderByDescending(v => Directory.GetCreationTimeUtc(Builds.PathFor(v)))
                 .FirstOrDefault();
             return installed ?? throw new InvalidOperationException(list.WithoutServer > 0
-                ? "На CDN пока нет серверной сборки под Windows — её должна выпустить сборка игры. Как только появится, сервер запустится."
+                ? "Сборки для локалки под эту систему пока нет. Как только выйдет, сервер запустится."
                 : "Не удалось получить список сборок, а скачанных пока нет. Проверьте интернет.");
         }
 

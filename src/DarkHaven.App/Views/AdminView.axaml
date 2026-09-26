@@ -58,7 +58,7 @@
                     <Button Classes="chip" Margin="0,0,6,6" Content="Роли и доступ" Command="{Binding SetSectionCommand}" CommandParameter="access"
                             IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}" />
                     <Button Classes="chip" Margin="0,0,6,6" Content="Локалки" Command="{Binding SetSectionCommand}" CommandParameter="local"
-                            IsVisible="{Binding CanModerate}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=local}" />
+                            IsVisible="{Binding ShowLocalShares}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=local}" />
                     <Button Classes="chip" Margin="0,0,6,6" Content="Журнал" Command="{Binding SetSectionCommand}" CommandParameter="journal"
                             IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}" />
                 </WrapPanel>

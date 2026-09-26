@@ -211,10 +211,19 @@ public sealed class LocalServerTests : IDisposable
     }
 
     [Fact]
+    public void Sharing_is_off_for_now_so_every_server_stays_on_this_pc()
+    {
+        Assert.False(LocalServers.SharingEnabled);
+        var toml = LocalServerConfig.Toml(new LocalServerProfile { Shared = true }, "logs");
+        Assert.Contains("bindto = \"127.0.0.1\"", toml);
+        Assert.DoesNotContain("upnp", toml);
+    }
+
+    [Fact]
     public void A_server_open_to_others_is_reachable_but_only_for_whitelisted_accounts()
     {
         var p = new LocalServerProfile { Port = 1252, Shared = true };
-        var toml = LocalServerConfig.Toml(p, "logs").Replace("\r\n", "\n");
+        var toml = LocalServerConfig.Toml(p, "logs", shared: true).Replace("\r\n", "\n");
 
         Assert.Contains("bindto = \"::,0.0.0.0\"", toml);
         Assert.Contains("upnp = true", toml);

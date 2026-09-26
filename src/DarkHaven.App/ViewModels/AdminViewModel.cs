@@ -251,6 +251,8 @@ public partial class AdminViewModel : ViewModelBase
     /// <summary>ЛОКАЛКИ open to other players right now (moderator+).</summary>
     public ObservableCollection<AdminLocalShareRowViewModel> LocalShares { get; } = [];
     public bool HasLocalShares => LocalShares.Count > 0;
+    /// <summary>The Локалки section only exists while ЛОКАЛКА sharing is switched on.</summary>
+    public bool ShowLocalShares => CanModerate && DarkHaven.Launcher.Local.LocalServers.SharingEnabled;
     public ObservableCollection<string> GameServers { get; } = [];
     public ObservableCollection<AdminChatMessageViewModel> ChatMessages { get; } = [];
     public ObservableCollection<AdminGameAdminRowViewModel> GameAdmins { get; } = [];

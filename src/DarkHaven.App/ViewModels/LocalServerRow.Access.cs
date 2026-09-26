@@ -38,9 +38,10 @@ public sealed partial class LocalServerRow
     [ObservableProperty] private string? _accessError;
     [ObservableProperty] private string _inviteName = "";
 
-    public bool ShowAccess => IsRunning && Profile.Shared;
+    public bool ShowAccess => LocalServers.SharingEnabled && IsRunning && Profile.Shared;
+    public bool SharingAvailable => LocalServers.SharingEnabled;
     public bool HasMembers => Members.Count > 0;
-    public string SharedText => Profile.Shared ? " · открыт для приглашённых" : "";
+    public string SharedText => LocalServers.SharingEnabled && Profile.Shared ? " · открыт для приглашённых" : "";
 
     /// <summary>What the router and the outside world said, in one line for the owner.</summary>
     public string ReachText => (Host.Upnp, Reachable) switch
@@ -65,7 +66,7 @@ public sealed partial class LocalServerRow
     /// <summary>Called on every state change of the server: opens access when it comes up, closes it when it goes.</summary>
     private void AccessFollowState()
     {
-        if (IsRunning && Profile.Shared && _report is null)
+        if (LocalServers.SharingEnabled && IsRunning && Profile.Shared && _report is null)
             BeginAccess();
         else if (!IsRunning && _report is not null)
             EndAccess();

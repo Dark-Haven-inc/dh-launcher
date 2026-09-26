@@ -14,13 +14,17 @@ public sealed record LocalBuild(string Version, DateTimeOffset Time, string Url,
 public sealed record LocalBuildList(IReadOnlyList<LocalBuild> Builds, int WithoutServer, DateTimeOffset? StaleSince);
 
 /// <summary>
-/// The server builds the DH CDN (Robust.Cdn) publishes for our fork, filtered to those with a server
-/// for this platform. It's the same manifest the live server is deployed from, so the newest build
-/// here is what the live server runs. The last manifest that loaded is kept on disk for offline use.
+/// The server builds ЛОКАЛКА may run, from a manifest in Robust.Cdn's format, filtered to those with a
+/// server for this platform. They are NOT the CDN's builds: those carry the server-side anti-cheat,
+/// which players must not get their hands on. Local builds are made without it (dh-sector-frontier's
+/// DhLocalServer build) and published by <c>scripts/publish-local-server.ps1</c> to the
+/// <c>local-servers</c> pre-release of the public releases repo — a pre-release, so the launcher's own
+/// updater never looks at it. The last manifest that loaded is kept on disk for offline use.
 /// </summary>
 public sealed class LocalBuildCatalog(HttpClient http, string manifestUrl, string cachePath)
 {
-    public const string DefaultManifestUrl = "https://cdn.dark-haven.xyz/fork/Dark-Haven/manifest";
+    public const string DefaultManifestUrl =
+        "https://github.com/Dark-Haven-inc/frontier15-launcher/releases/download/local-servers/manifest.json";
 
     /// <summary>The only server platform ЛОКАЛКА runs today.</summary>
     public const string Rid = "win-x64";

@@ -202,7 +202,7 @@ public partial class LocalViewModel : ViewModelBase
     public ObservableCollection<LocalBuildChoice> BuildChoices { get; } = [];
     /// <summary>Friends' open servers and ones I'm invited to.</summary>
     public ObservableCollection<LocalAvailableRow> Available { get; } = [];
-    public bool HasAvailable => Available.Count > 0;
+    public bool HasAvailable => LocalServers.SharingEnabled && Available.Count > 0;
     [ObservableProperty] private string? _availableMessage;
 
     [ObservableProperty] private LocalServerRow? _selected;
@@ -233,7 +233,8 @@ public partial class LocalViewModel : ViewModelBase
     public void Activate()
     {
         _ = LoadBuildsAsync();
-        _ = LoadAvailableAsync();
+        if (LocalServers.SharingEnabled)
+            _ = LoadAvailableAsync();
     }
 
     [RelayCommand]
@@ -284,10 +285,10 @@ public partial class LocalViewModel : ViewModelBase
             BuildsMessage = list switch
             {
                 { Builds.Count: 0, WithoutServer: > 0 } =>
-                    "На CDN есть сборки игры, но серверной под Windows среди них пока нет — её добавит обновлённая публикация игры. " +
-                    "Как только она выйдет, сервер можно будет запустить.",
+                    "Сборок для локалки под эту систему пока нет. " +
+                    "Как только появится, сервер можно будет запустить.",
                 { Builds.Count: 0 } => "Не удалось получить список сборок. Проверьте интернет и нажмите «Обновить».",
-                { StaleSince: { } since } => $"CDN не отвечает — показан список от {RuText.DayTime(since.ToLocalTime())}.",
+                { StaleSince: { } since } => $"Список сборок не обновился — показан от {RuText.DayTime(since.ToLocalTime())}.",
                 _ => null,
             };
         }
@@ -306,7 +307,7 @@ public partial class LocalViewModel : ViewModelBase
         if (choice is null && version is not null)
         {
             // Pinned to a build the CDN no longer lists (it may still be on disk) — keep showing it.
-            choice = new LocalBuildChoice(version, $"{(version.Length > 8 ? version[..8] : version)} (нет на CDN)");
+            choice = new LocalBuildChoice(version, $"{(version.Length > 8 ? version[..8] : version)} (нет в списке)");
             BuildChoices.Add(choice);
         }
         row.BuildChoice = choice ?? BuildChoices[0];
@@ -331,7 +332,7 @@ public partial class LocalViewModel : ViewModelBase
     {
         row ??= Selected;
         if (row is null || !row.IsStopped) return;
-        if (row.Profile.Shared && !_services.Platform.IsSignedIn)
+        if (LocalServers.SharingEnabled && row.Profile.Shared && !_services.Platform.IsSignedIn)
         {
             row.Host.Failed("Чтобы пускать других, войдите в аккаунт: без него белый список сервера не пустит даже вас.");
             return;
