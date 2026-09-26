@@ -26,21 +26,20 @@ public sealed class LaunchProofTests
     }
 
     [Fact]
-    public void SealedKeyRoundTrips()
+    public void SealedScalarRoundTrips()
     {
-        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
-        var pkcs8 = key.ExportPkcs8PrivateKey();
-        var sealedKey = LaunchSigningKey.Seal(pkcs8);
+        var scalar = ECDsa.Create(ECCurve.NamedCurves.nistP256).ExportParameters(true).D!;
+        var sealedScalar = LaunchSigningKey.SealScalar(scalar);
 
-        Assert.NotEqual(Convert.ToBase64String(pkcs8), sealedKey);
-        Assert.Equal(pkcs8, LaunchSigningKey.Unseal(sealedKey));
+        Assert.NotEqual(Convert.ToBase64String(scalar), sealedScalar);
+        Assert.Equal(scalar, LaunchSigningKey.UnsealScalar(sealedScalar));
     }
 
     [Fact]
     public void DevelopmentBuildsHaveNoKey()
     {
         // Tests are built without -p:DhLaunchKey, like every non-release build.
-        Assert.Null(LaunchSigningKey.TryLoad());
+        Assert.Null(LaunchSigningKey.Shares);
         Assert.Null(LaunchProof.TryCreate(Guid.NewGuid()));
     }
 

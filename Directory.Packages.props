@@ -26,6 +26,9 @@
     <!-- Self-update + installer -->
     <PackageVersion Include="Velopack" Version="1.2.0" />
 
+    <!-- Build-time source generator (DarkHaven.Launcher.KeyGen) -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+
     <!-- Discord Rich Presence (optional integration) -->
     <PackageVersion Include="DiscordRichPresence" Version="1.6.1.70" />
 
