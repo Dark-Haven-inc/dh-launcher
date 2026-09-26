@@ -27,7 +27,8 @@ jobs:
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
 
     steps:
-      # Fail in the first seconds, not after the build, if the token is missing or has expired.
+      # Fail in the first seconds, not after the build, if the token can't write releases. Reading
+      # proves nothing (the repo is public); generate-notes needs Contents: write and creates nothing.
       - name: Check the releases-repo token
         shell: bash
         run: |
@@ -35,8 +36,9 @@ jobs:
             echo "::error::Secret RELEASES_TOKEN is missing: it must be able to write releases to $RELEASE_REPO (docs/RELEASING.md)."
             exit 1
           fi
-          GH_TOKEN="$RELEASES_TOKEN" gh api "repos/$RELEASE_REPO" --jq .full_name \
-            || { echo "::error::RELEASES_TOKEN can't reach $RELEASE_REPO: expired, or scoped to the wrong repo."; exit 1; }
+          GH_TOKEN="$RELEASES_TOKEN" gh api -X POST "repos/$RELEASE_REPO/releases/generate-notes" \
+              -f tag_name=v0.0.0-token-check --jq .name > /dev/null \
+            || { echo "::error::RELEASES_TOKEN can't write releases to $RELEASE_REPO: not approved by an org owner yet, expired, or scoped to the wrong repo."; exit 1; }
 
       - uses: actions/checkout@v4
         with:
