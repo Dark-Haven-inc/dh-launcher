@@ -1,4 +1,4 @@
-# Publishes a server build for ЛОКАЛКА: the launcher's local servers (src/DarkHaven.Launcher/Local).
+﻿# Publishes a server build for ЛОКАЛКА: the launcher's local servers (src/DarkHaven.Launcher/Local).
 #
 # The build must be a LOCAL-SERVER build of dh-sector-frontier — made with the server-side anti-cheat left out,
 # since it goes to every player who opens ЛОКАЛКА — and self-contained, with the client content inside
@@ -30,6 +30,23 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# gh writes to stderr for answers we expect ("release not found", no manifest yet). Windows PowerShell 5.1 turns
+# any native stderr into a terminating error under "Stop", so those calls run through here.
+function Invoke-Soft([scriptblock] $Block) {
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & $Block 2>$null | Out-Null } finally { $ErrorActionPreference = $saved }
+    return $LASTEXITCODE
+}
+
+# The same for calls that must succeed: output shown, the exit code decides.
+function Invoke-Gh([scriptblock] $Block, [string] $What) {
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { & $Block 2>&1 | ForEach-Object { "$_" } | Write-Host } finally { $ErrorActionPreference = $saved }
+    if ($LASTEXITCODE) { throw "$What failed" }
+}
 
 if (-not (Test-Path $Zip)) { throw "No such file: $Zip" }
 if ($Version -notmatch '^[A-Za-z0-9._-]{1,64}$') { throw "Version should be the game's commit hash: $Version" }
@@ -65,17 +82,15 @@ try {
     $size = (Get-Item $staged).Length
 
     # The pre-release, made once.
-    gh release view $Tag --repo $Repo *> $null
-    if ($LASTEXITCODE -ne 0) {
+    if ((Invoke-Soft { gh release view $Tag --repo $Repo }) -ne 0) {
         Write-Host "-- creating the $Tag pre-release" -ForegroundColor DarkCyan
-        gh release create $Tag --repo $Repo --prerelease --title "Сборки для локалки" `
-            --notes "Серверные сборки Frontier 15 для вкладки ЛОКАЛКА в лаунчере (без серверного античита). Скачивать вручную не нужно: лаунчер делает это сам."
-        if ($LASTEXITCODE) { throw "gh release create failed" }
+        Invoke-Gh { gh release create $Tag --repo $Repo --prerelease --title "Сборки для локалки" `
+            --notes "Серверные сборки Frontier 15 для вкладки ЛОКАЛКА в лаунчере (без серверного античита). Скачивать вручную не нужно: лаунчер делает это сам." } "gh release create"
     }
 
     # The manifest as it is now, or a fresh one. (Works in Windows PowerShell 5.1 as well as pwsh.)
     $manifestPath = Join-Path $work "manifest.json"
-    gh release download $Tag --repo $Repo --pattern manifest.json --dir $work 2>$null
+    Invoke-Soft { gh release download $Tag --repo $Repo --pattern manifest.json --dir $work } | Out-Null
     $builds = [ordered]@{}
     if (Test-Path $manifestPath) {
         $parsed = Get-Content $manifestPath -Raw | ConvertFrom-Json
@@ -83,8 +98,7 @@ try {
     }
 
     Write-Host "-- uploading $asset ($([math]::Round($size / 1MB)) MB)" -ForegroundColor DarkCyan
-    gh release upload $Tag $staged --repo $Repo --clobber
-    if ($LASTEXITCODE) { throw "upload failed" }
+    Invoke-Gh { gh release upload $Tag $staged --repo $Repo --clobber } "upload"
 
     $url = "https://github.com/$Repo/releases/download/$Tag/$asset"
     $builds[$Version] = [pscustomobject]@{
@@ -98,15 +112,14 @@ try {
         foreach ($server in $old.Value.server.PSObject.Properties) {
             $oldAsset = ($server.Value.url -split '/')[-1]
             Write-Host "-- dropping old build $($old.Key) ($oldAsset)" -ForegroundColor DarkGray
-            gh release delete-asset $Tag $oldAsset --repo $Repo --yes 2>$null
+            Invoke-Soft { gh release delete-asset $Tag $oldAsset --repo $Repo --yes } | Out-Null
         }
         $builds.Remove($old.Key)
     }
 
     $json = [pscustomobject]@{ builds = [pscustomobject]$builds } | ConvertTo-Json -Depth 8
     [System.IO.File]::WriteAllText($manifestPath, $json, (New-Object System.Text.UTF8Encoding $false))
-    gh release upload $Tag $manifestPath --repo $Repo --clobber
-    if ($LASTEXITCODE) { throw "manifest upload failed" }
+    Invoke-Gh { gh release upload $Tag $manifestPath --repo $Repo --clobber } "manifest upload"
 
     Write-Host "-- published $Version for $Rid; manifest: https://github.com/$Repo/releases/download/$Tag/manifest.json" -ForegroundColor DarkGreen
 }
