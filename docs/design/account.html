@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Аккаунт</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.main{align-items:center;justify-content:center}
+.form{width:260px;display:flex;flex-direction:column;gap:12px}
+.fl{display:flex;flex-direction:column;gap:4px}
+.links{display:flex;justify-content:space-between;font-size:11px;color:var(--dim)}
+.links a:hover{color:var(--text)}
+.saved{width:260px;margin-top:8px}
+.acc{height:28px;display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);font-size:12px}
+.acc .mono{font-size:10px;color:var(--dim)}
+.acc button{font-size:10.5px;color:var(--dim)}
+.acc button:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn on" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html">Главная</a>
+<a href="regions.html">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html">Мониторинг</a>
+<a href="news.html">Новости</a>
+<a href="settings.html">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main">
+<form class="form" onsubmit="return false">
+<label class="fl"><span class="lbl">ЛОГИН</span><span class="field"><input autocomplete="username"></span></label>
+<label class="fl"><span class="lbl">ПАРОЛЬ</span><span class="field"><input type="password" autocomplete="current-password"></span></label>
+<button class="btn primary wide" style="height:28px">ВОЙТИ</button>
+<div class="links"><a href="#">Создать аккаунт</a><a href="#">Забыли пароль?</a></div>
+</form>
+<div class="saved">
+<div class="cap"><span>АККАУНТЫ</span><span>2</span></div>
+<div class="acc"><span>Kestrel</span><span class="mono">сохранён</span><button>Выбрать</button><button class="icon" aria-label="Выйти">&#xEA76;</button></div>
+<div class="acc"><span>Kestrel_2</span><span class="mono">истёк</span><button>Выбрать</button><button class="icon" aria-label="Выйти">&#xEA76;</button></div>
+</div>
+</main>
+
+</div>
+
+</div>
+</body>
+</html>

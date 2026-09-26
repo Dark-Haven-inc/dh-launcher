@@ -4,88 +4,117 @@
              x:Class="DarkHaven.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-    <DockPanel Margin="28,22">
-        <Border DockPanel.Dock="Bottom" Classes="panel" CornerRadius="6" Padding="18,12" Margin="0,16,0,0">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding VersionLine}" Classes="mono dim" FontSize="10" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Classes="ghost" Content="Проверить обновления" Command="{Binding CheckForUpdatesCommand}" />
-            </Grid>
-        </Border>
+    <UserControl.Styles>
+        <!-- One setting: its name on the left, the control on the right. -->
+        <Style Selector="Grid.srow">
+            <Setter Property="MinHeight" Value="28" />
+        </Style>
+        <Style Selector="Grid.srow > TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
 
-        <ScrollViewer>
-            <StackPanel Spacing="22" MaxWidth="720">
+    <ScrollViewer>
+        <StackPanel Margin="20,16" Spacing="16" MaxWidth="600" HorizontalAlignment="Left">
+            <TextBlock Text="{Binding Status}" TextWrapping="Wrap"
+                       IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
-                <StackPanel Spacing="12">
-                    <TextBlock Text="ФАЙЛЫ" Classes="caps" />
-                    <Grid ColumnDefinitions="140,*,Auto,Auto" RowDefinitions="Auto,14,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Папка игры" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DataDir}" IsReadOnly="True" />
-                        <Button Grid.Row="0" Grid.Column="3" Classes="ghost" Content="Открыть" Margin="8,0,0,0"
-                                Command="{Binding OpenDataDirCommand}" />
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Кэш контента" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CacheSummary}" VerticalAlignment="Center" FontWeight="SemiBold" />
-                        <Button Grid.Row="2" Grid.Column="3" Classes="ghost" Content="Очистить" Margin="8,0,0,0"
-                                Command="{Binding ClearContentCacheCommand}" />
+            <StackPanel>
+                <Border Classes="cap"><TextBlock Classes="caps" Text="ФАЙЛЫ" /></Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="Папка" />
+                        <TextBlock Grid.Column="1" Classes="mono" Foreground="{StaticResource DhTextBrush}" Text="{Binding DataDir}"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEA83;" ToolTip.Tip="Открыть" Command="{Binding OpenDataDirCommand}" />
                     </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="Кэш контента" />
+                        <TextBlock Grid.Column="1" Classes="mono" Foreground="{StaticResource DhTextBrush}" Text="{Binding CacheSummary}"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Content="Очистить" Command="{Binding ClearContentCacheCommand}" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair" Padding="0,8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Classes="ghost" Content="Проверить кэш" Command="{Binding VerifyContentCommand}" />
-                        <Button Classes="ghost" Content="Удалить старые сборки движка" Command="{Binding CullEnginesCommand}" />
-                        <Button Classes="ghost" Content="Собрать логи для саппорта" Command="{Binding CollectLogsCommand}" />
+                        <Button Content="Проверить кэш" Command="{Binding VerifyContentCommand}" />
+                        <Button Content="Удалить старые движки" Command="{Binding CullEnginesCommand}" />
+                        <Button Content="Собрать логи" Command="{Binding CollectLogsCommand}" />
                     </StackPanel>
-                    <TextBlock Text="{Binding Status}" Classes="dim"
-                               IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                </StackPanel>
-
-                <StackPanel Spacing="10">
-                    <TextBlock Text="ПОВЕДЕНИЕ" Classes="caps" />
-                    <CheckBox Content="Обновлять контент автоматически" IsChecked="{Binding AutoUpdate}" />
-                    <CheckBox Content="Сворачивать лаунчер при запуске игры" IsChecked="{Binding MinimizeOnLaunch}" />
-                    <CheckBox IsChecked="{Binding VerboseLog}">
-                        <TextBlock><Run Text="Подробный журнал" /><Run Foreground="#7C8DB0" Text=" — нужен, только если просят разработчики" /></TextBlock>
-                    </CheckBox>
-                    <CheckBox Content="Режим совместимости рендера (GLES2)" IsChecked="{Binding CompatMode}" />
-                    <Grid ColumnDefinitions="Auto,120,Auto" ColumnSpacing="8">
-                        <TextBlock Grid.Column="0" Text="Лимит скорости загрузки" VerticalAlignment="Center" />
-                        <TextBox Grid.Column="1" Text="{Binding DownloadLimit}" Watermark="без лимита" />
-                        <TextBlock Grid.Column="2" Text="КБ/с" Classes="dim" VerticalAlignment="Center" />
-                    </Grid>
-                </StackPanel>
-
-                <StackPanel Spacing="12">
-                    <TextBlock Text="ПОДКЛЮЧЕНИЕ" Classes="caps" />
-                    <Grid ColumnDefinitions="150,*,Auto" RowDefinitions="Auto,12,Auto,12,Auto,12,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Сервер авторизации" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding AuthUrl}" />
-                        <Button Grid.Row="0" Grid.Column="2" Classes="ghost" Content="По умолчанию" Margin="8,0,0,0"
-                                Command="{Binding ResetAuthUrlCommand}" />
-
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Сборки движка" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BuildsUrl}" />
-                        <Button Grid.Row="2" Grid.Column="2" Classes="ghost" Content="По умолчанию" Margin="8,0,0,0"
-                                Command="{Binding ResetBuildsUrlCommand}" />
-
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Список регионов (URL)" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding RegionsUrl}" Watermark="необязательно" />
-
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Платформа Frontier 15" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding PlatformUrl}"
-                                 Watermark="необязательно — https://api.darkhaven.games" />
-                    </Grid>
-                </StackPanel>
-
-                <StackPanel Spacing="10">
-                    <TextBlock Text="ИНТЕГРАЦИИ" Classes="caps" />
-                    <Grid ColumnDefinitions="150,*" RowDefinitions="Auto,4,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Discord — статус" VerticalAlignment="Center" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DiscordAppId}"
-                                 Watermark="ID приложения Discord — необязательно" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Classes="dim" TextWrapping="Wrap" FontSize="11"
-                                   Text="Покажет «В игре — ХЕЙВЕН» в вашем профиле Discord. ID берётся на discord.com/developers/applications. Применяется после перезапуска лаунчера." />
-                    </Grid>
-                </StackPanel>
-
+                </Border>
             </StackPanel>
-        </ScrollViewer>
-    </DockPanel>
+
+            <StackPanel>
+                <Border Classes="cap"><TextBlock Classes="caps" Text="ПОВЕДЕНИЕ" /></Border>
+                <Border Classes="hair" Padding="0,8">
+                    <StackPanel Spacing="8">
+                        <CheckBox Content="Обновлять контент автоматически" IsChecked="{Binding AutoUpdate}" />
+                        <CheckBox Content="Сворачивать при запуске игры" IsChecked="{Binding MinimizeOnLaunch}" />
+                        <CheckBox Content="Совместимость рендера (GLES2)" IsChecked="{Binding CompatMode}" />
+                        <CheckBox Content="Подробный журнал" IsChecked="{Binding VerboseLog}" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Лимит загрузки" />
+                        <Grid Grid.Column="1" Width="152" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding DownloadLimit}" Watermark="—" Padding="8,4,44,4" />
+                            <TextBlock Classes="mono dim" FontSize="10.5" Text="КБ/с" HorizontalAlignment="Right" Margin="0,0,8,0"
+                                       VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Обновления" />
+                        <Button Grid.Column="1" Content="Проверить" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Command="{Binding CheckForUpdatesCommand}" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <StackPanel>
+                <Border Classes="cap"><TextBlock Classes="caps" Text="ПОДКЛЮЧЕНИЕ" /></Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="4">
+                        <TextBlock Text="Авторизация" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding AuthUrl}" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetAuthUrlCommand}" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*,Auto" ColumnSpacing="4">
+                        <TextBlock Text="Сборки движка" Margin="0,0,8,0" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding BuildsUrl}" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="По умолчанию" Command="{Binding ResetBuildsUrlCommand}" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Список регионов" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding RegionsUrl}" Watermark="—" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="Платформа" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding PlatformUrl}" Watermark="https://api.darkhaven.games" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <StackPanel>
+                <Border Classes="cap"><TextBlock Classes="caps" Text="DISCORD" /></Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
+                        <TextBlock Text="ID приложения" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding DiscordAppId}" Watermark="—" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

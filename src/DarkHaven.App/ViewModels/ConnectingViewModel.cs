@@ -25,12 +25,22 @@ public partial class ChecklistStepViewModel(LaunchStep step, string title) : Vie
     public bool IsPending => State == StepState.Pending;
     public bool IsFailed => State == StepState.Failed;
 
+    /// <summary>The <see cref="Controls.StatusGlyph"/> kind: ■ done, ◧ running, □ waiting, ✕ failed.</summary>
+    public string GlyphKind => State switch
+    {
+        StepState.Done => "on",
+        StepState.Active => "full",
+        StepState.Failed => "off",
+        _ => "q",
+    };
+
     partial void OnStateChanged(StepState value)
     {
         OnPropertyChanged(nameof(IsActive));
         OnPropertyChanged(nameof(IsDone));
         OnPropertyChanged(nameof(IsPending));
         OnPropertyChanged(nameof(IsFailed));
+        OnPropertyChanged(nameof(GlyphKind));
     }
 }
 
@@ -91,7 +101,7 @@ public partial class ConnectingViewModel : ViewModelBase
         _services = services;
         _server = server;
         _title = server.DisplayName;
-        _subtitle = server.IsDarkHavenRegion ? "Переход в регион" : "Подключение к серверу";
+        _subtitle = server.IsDarkHavenRegion ? "ПЕРЕХОД В РЕГИОН" : "ПОДКЛЮЧЕНИЕ";
     }
 
     public async void Start()

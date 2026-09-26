@@ -176,7 +176,7 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             if (await _services.Updater.CheckAsync())
-                Status = $"Доступно обновление {_services.Updater.PendingVersion}. Баннер вверху обновит лаунчер.";
+                Status = $"Доступно обновление {_services.Updater.PendingVersion}";
             else
                 Status = $"Установлена последняя версия ({_services.Updater.CurrentVersion}).";
         }

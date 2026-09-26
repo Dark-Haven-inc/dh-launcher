@@ -34,7 +34,7 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
     private static readonly string[] Frames = ProfileLook.Frames;
 
     [ObservableProperty] private Bitmap? _avatar;
-    [ObservableProperty] private string _frame = "blue";
+    [ObservableProperty] private string _frame = "none";
     [ObservableProperty] private string _totalPlaytime = "—";
     [ObservableProperty] private string _memberSince = "—";
     [ObservableProperty] private int _favoritesCount;
@@ -81,7 +81,7 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
 
         try
         {
-            Frame = services.Settings.GetConfig("ProfileFrame") is { } f && Frames.Contains(f) ? f : "blue";
+            Frame = services.Settings.GetConfig("ProfileFrame") is { } f && Frames.Contains(f) ? f : "none";
             LoadAvatar(services.Settings.GetConfig("ProfileAvatarPath"));
             LoadLook();
 
@@ -165,7 +165,7 @@ public partial class ProfileViewModel(AppServices services, Action openAccounts)
 
     /// <summary>Only in the editor now — kept on "Сохранить" (see ProfileViewModel.Look.cs).</summary>
     [RelayCommand]
-    private void SetFrame(string frame) => Frame = Frames.Contains(frame) ? frame : "blue";
+    private void SetFrame(string frame) => Frame = Frames.Contains(frame) ? frame : "none";
 
     [RelayCommand] private void ManageAccounts() => openAccounts();
 

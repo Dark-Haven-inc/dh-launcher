@@ -4,115 +4,105 @@
              xmlns:c="using:DarkHaven.App.Controls"
              x:Class="DarkHaven.App.Views.RegionsView"
              x:DataType="vm:RegionsViewModel">
+    <Grid ColumnDefinitions="*,272">
+        <!-- The sector map -->
+        <Panel Grid.Column="0">
+            <c:FlatMap x:Name="Map" ItemsSource="{Binding Nodes}" SelectedItem="{Binding Selected}" />
+            <TextBlock Classes="mono dim" FontSize="10" Margin="16,12" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Run Text="в сети " /><Run Text="{Binding TotalPlayers}" />
+            </TextBlock>
+            <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
+            <TextBlock Text="{Binding Error}" Classes="dim" TextWrapping="Wrap" Margin="16,12" VerticalAlignment="Bottom"
+                       IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </Panel>
 
-    <Grid Margin="28,22" ColumnDefinitions="*,16,360">
-
-        <!-- Left: the living sector map -->
-        <Border Grid.Column="0" Classes="panel" CornerRadius="8" ClipToBounds="True">
-            <DockPanel>
-                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="18,14">
-                    <TextBlock Text="◈ КАРТА СЕТИ" Classes="caps" />
-                    <TextBlock Grid.Column="1" Classes="dim">
-                        <Run Text="ИГРОКОВ В СЕТИ" /><Run Text=" " /><Run Text="{Binding TotalPlayers}" />
-                    </TextBlock>
-                </Grid>
-
-                <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="2"
-                             IsVisible="{Binding IsLoading}" />
-                <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource DhDangerBrush}"
-                           TextWrapping="Wrap" Margin="18,8"
-                           IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
-
-                <c:SectorMap x:Name="Map" ItemsSource="{Binding Nodes}" SelectedItem="{Binding Selected}" />
-            </DockPanel>
-        </Border>
-
-        <!-- Right: selected region detail -->
-        <Border Grid.Column="2" Classes="panel" CornerRadius="8" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
-            <DockPanel Margin="20">
-                <StackPanel DockPanel.Dock="Top" Spacing="2">
-                    <TextBlock Text="ВЫБРАННЫЙ РЕГИОН" Classes="caps" />
-                    <TextBlock Text="{Binding Selected.Name}" Classes="h1" />
-                    <TextBlock Text="{Binding Selected.Blurb}" Classes="dim" TextWrapping="Wrap" Margin="0,2,0,0" />
-                </StackPanel>
-
-                <Grid DockPanel.Dock="Top" Margin="0,16,0,0" ColumnDefinitions="*,8,*" RowDefinitions="Auto,8,Auto">
-                    <Border Grid.Row="0" Grid.Column="0" Classes="card" Padding="12,10">
-                        <StackPanel><TextBlock Text="Игроков" Classes="dim" /><TextBlock Text="{Binding Selected.Population}" FontSize="18" FontWeight="Bold" /></StackPanel>
-                    </Border>
-                    <Border Grid.Row="0" Grid.Column="2" Classes="card" Padding="12,10">
-                        <StackPanel><TextBlock Text="Отклик" Classes="dim" /><TextBlock Text="{Binding Selected.Ping}" FontSize="18" FontWeight="Bold" /></StackPanel>
-                    </Border>
-                    <Border Grid.Row="2" Grid.Column="0" Classes="card" Padding="12,10">
-                        <StackPanel><TextBlock Text="Состояние" Classes="dim" />
-                            <TextBlock Text="{Binding Selected.StateText}" FontSize="16" FontWeight="Bold"
-                                       Foreground="{Binding Selected.IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" /></StackPanel>
-                    </Border>
-                    <Border Grid.Row="2" Grid.Column="2" Classes="card" Padding="12,10">
-                        <StackPanel><TextBlock Text="Раунд" Classes="dim" /><TextBlock Text="{Binding Selected.RoundText}" FontSize="14" FontWeight="Bold" /></StackPanel>
-                    </Border>
-                </Grid>
-
-                <Button DockPanel.Dock="Top" Classes="primary" Content="ИГРАТЬ" Margin="0,16,0,0"
-                        HorizontalAlignment="Stretch" Command="{Binding PlaySelectedCommand}"
-                        IsVisible="{Binding !Selected.IsQuarantine}"
-                        IsEnabled="{Binding Selected.CanConnect}" />
-
-                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Content="Баны игроков" Command="{Binding ShowBansCommand}"
-                        IsVisible="{Binding !Selected.IsQuarantine}" />
-
-                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Content="{Binding Selected.SlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
-                        IsVisible="{Binding Selected.CanWaitForSlot}" />
-
-                <Button DockPanel.Dock="Top" Classes="ghost" Margin="0,8,0,0"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Content="{Binding Selected.WatchLabel}" Command="{Binding Selected.ToggleWatchCommand}"
-                        IsVisible="{Binding Selected.CanWatch}" />
-
-                <Border DockPanel.Dock="Top" Classes="card" Margin="0,16,0,0" Padding="14,12"
-                        IsVisible="{Binding Selected.IsQuarantine}">
+        <!-- The selected region -->
+        <Border Grid.Column="1" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1,0,0,0" Padding="16">
+            <ScrollViewer IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="16">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="🔒 РЕГИОН НА КАРАНТИНЕ" FontWeight="Bold"
-                                   Foreground="{StaticResource DhWarnBrush}" FontSize="12" LetterSpacing="1" />
-                        <TextBlock Classes="dim" TextWrapping="Wrap"
-                                   Text="Этот регион ещё не запущен. Он появится в сети позже — следите за новостями." />
+                        <TextBlock Classes="name" Text="{Binding Selected.Name}" TextWrapping="Wrap" />
+                        <TextBlock Classes="mono dim" FontSize="10.5" Text="{Binding Selected.Address}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
-                </Border>
 
-                <TextBlock DockPanel.Dock="Top" Text="СОСЕДНИЕ РЕГИОНЫ" Classes="caps" Margin="0,18,0,8" />
-                <ScrollViewer>
-                    <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:RegionNodeViewModel">
-                                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,9"
-                                        Command="{Binding SelectCommand}" Background="{StaticResource DhBgElevatedBrush}"
-                                        BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1" CornerRadius="5">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Blurb}" Classes="dim" />
-                                        </StackPanel>
-                                        <TextBlock Grid.Column="1" Text="{Binding Population}" VerticalAlignment="Center"
-                                                   Foreground="{StaticResource DhAccentBrush}" IsVisible="{Binding IsOnline}" />
-                                        <TextBlock Grid.Column="1" Text="офлайн" Classes="dim" VerticalAlignment="Center"
-                                                   IsVisible="{Binding IsOffline}" />
-                                        <TextBlock Grid.Column="1" Text="🔒" VerticalAlignment="Center"
-                                                   Foreground="{StaticResource DhWarnBrush}"
-                                                   IsVisible="{Binding IsQuarantine}" />
-                                    </Grid>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
+                    <Border BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0">
+                        <StackPanel>
+                            <Border Classes="hair" Height="24">
+                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                    <TextBlock Classes="dim" Text="Состояние" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                        <c:StatusGlyph IsOnline="{Binding Selected.IsOnline}" IsOffline="{Binding Selected.IsOffline}"
+                                                       IsQuarantine="{Binding Selected.IsQuarantine}" IsFull="{Binding Selected.IsFull}" />
+                                        <TextBlock Text="{Binding Selected.StateText}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Classes="hair" Height="24" IsVisible="{Binding Selected.IsOnline}">
+                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                    <TextBlock Classes="dim" Text="Игроков" />
+                                    <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding Selected.Population}" />
+                                </Grid>
+                            </Border>
+                            <Border Classes="hair" Height="24" IsVisible="{Binding Selected.IsOnline}">
+                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                    <TextBlock Classes="dim" Text="Раунд" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Selected.RoundText}" />
+                                </Grid>
+                            </Border>
+                            <Border Classes="hair" Height="24" IsVisible="{Binding !Selected.IsQuarantine}">
+                                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                                    <TextBlock Classes="dim" Text="Отклик" />
+                                    <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding Selected.Ping}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="8" IsVisible="{Binding !Selected.IsQuarantine}">
+                        <Button Classes="primary" Height="28" HorizontalAlignment="Stretch" Command="{Binding PlaySelectedCommand}"
+                                IsEnabled="{Binding Selected.CanConnect}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Classes="icon" Text="&#xEB2C;" FontSize="11" />
+                                <TextBlock Text="ИГРАТЬ" LetterSpacing="1.8" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.SlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
+                                IsVisible="{Binding Selected.CanWaitForSlot}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.WatchLabel}" Command="{Binding Selected.ToggleWatchCommand}"
+                                IsVisible="{Binding Selected.CanWatch}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Баны игроков" Command="{Binding ShowBansCommand}" />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding HasNeighbours}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="caps" Text="СОСЕДИ" />
+                                <TextBlock Grid.Column="1" Classes="caps" Text="{Binding SelectedNeighbours.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                    <Button Classes="row" Command="{Binding SelectCommand}"
+                                            Foreground="{Binding IsOnline, Converter={x:Static vm:BoolBrush.TextOrDim}}">
+                                        <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="8">
+                                            <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}"
+                                                           IsQuarantine="{Binding IsQuarantine}" IsFull="{Binding IsFull}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Classes="mono" FontSize="10.5" Text="{Binding Population}"
+                                                       Foreground="{Binding $parent[Button].Foreground}"
+                                                       IsVisible="{Binding IsOnline}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </UserControl>

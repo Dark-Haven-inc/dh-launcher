@@ -9,7 +9,7 @@ public sealed class FavGlyph : IValueConverter
     public static readonly FavGlyph Instance = new();
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? "★" : "☆";
+        => value is true ? "\uEB59" : "\uEA6A"; // Nerd Font codicons star_full / star_empty: show it in DhMono
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

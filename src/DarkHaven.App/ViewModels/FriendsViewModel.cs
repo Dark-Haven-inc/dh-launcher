@@ -36,7 +36,7 @@ public partial class FriendItemViewModel(PlatformFriend f, AppServices services)
 
     /// <summary>First click on ✕ arms it, the second one within a few seconds unfriends.</summary>
     [ObservableProperty] private bool _confirmingRemove;
-    public string RemoveLabel => ConfirmingRemove ? "Удалить?" : "✕";
+    public string RemoveLabel => ConfirmingRemove ? "удалить?" : "\uEA76"; // cod-close
     partial void OnConfirmingRemoveChanged(bool value) => OnPropertyChanged(nameof(RemoveLabel));
 }
 
@@ -67,7 +67,7 @@ public partial class FriendsViewModel : ViewModelBase
     public bool HasOutgoing => Outgoing.Count > 0;
     public bool IsEmpty => !HasFriends && !HasIncoming && !HasOutgoing;
     public bool HasAddStatus => AddStatus is not null;
-    public string OnlineSummary => Friends.Count(f => f.Online) is var n and > 0 ? $"{n} в сети" : "";
+    public string OnlineSummary => Friends.Count == 0 ? "" : $"{Friends.Count(f => f.Online)}/{Friends.Count}";
 
     partial void OnAddStatusChanged(string? value) => OnPropertyChanged(nameof(HasAddStatus));
 

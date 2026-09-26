@@ -40,7 +40,7 @@ public partial class ServerRowViewModel : ViewModelBase, IMapNode
 
     public string PingText => Entry.PingMs is { } p ? $"{p} мс" : "";
 
-    public string StateText => IsOnline ? "ОНЛАЙН" : "офлайн";
+    public string StateText => IsOnline ? (IsFull ? "полный" : "в сети") : "офлайн";
 
     public string RoundInfo => Entry.RunLevel switch
     {
@@ -51,7 +51,18 @@ public partial class ServerRowViewModel : ViewModelBase, IMapNode
     };
 
     public IEnumerable<string> VisibleTags =>
-        Entry.Tags.Where(t => !t.StartsWith("region:", StringComparison.OrdinalIgnoreCase)).Take(4);
+        Entry.Tags.Where(t => !t.StartsWith("region:", StringComparison.OrdinalIgnoreCase)).Take(4).Select(TagText);
+
+    /// <summary>Hub tags as a player reads them: "rp:med" → "RP: средний", "lang:ru" → "RU".</summary>
+    private static string TagText(string tag) => tag.ToLowerInvariant() switch
+    {
+        "rp:none" => "без RP",
+        "rp:low" => "RP: лёгкий",
+        "rp:med" => "RP: средний",
+        "rp:high" => "RP: высокий",
+        var t when t.StartsWith("lang:") => t["lang:".Length..].ToUpperInvariant(),
+        _ => tag,
+    };
 
     [RelayCommand] private void Connect() => _connect(Entry);
 
@@ -59,7 +70,7 @@ public partial class ServerRowViewModel : ViewModelBase, IMapNode
     public bool IsFull => IsOnline && SlotWatcher.IsFull(Entry.Players, Entry.SoftMaxPlayers);
     public bool IsWaitingForSlot => _services.SlotWatch.IsWatchingAddress(Address);
     public bool CanWaitForSlot => IsFull || IsWaitingForSlot;
-    public string SlotLabel => IsWaitingForSlot ? "⏳ Ждём место — отменить" : "Ждать свободного места";
+    public string SlotLabel => IsWaitingForSlot ? "Ждём место · отменить" : "Ждать места";
 
     [RelayCommand]
     private void WaitForSlot()

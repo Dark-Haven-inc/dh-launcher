@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Быстрый переход</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.hero{height:52px;flex-shrink:0;display:flex;align-items:stretch;border:1px solid var(--line)}
+.hero-name{flex-grow:1;padding:0 16px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}
+.stat{width:88px;padding:0 12px;border-left:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:4px}
+.stat b{font-family:'JBM',monospace;font-weight:400;font-size:12px}
+.stat > span:not(.num){font-size:10.5px;color:var(--dim)}
+.stat .num{font-size:12px}
+.hero .play{width:128px}
+.regions{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-top:-8px}
+.reg{height:28px;padding:0 12px;border-left:1px solid var(--line);display:flex;align-items:center;gap:8px;color:var(--dim);text-align:left}
+.reg:first-child{border-left:0}
+.reg:hover{background:var(--hover)}
+.reg.on{color:var(--text);outline:1px solid var(--text);outline-offset:-1px;background:var(--panel)}
+.reg b{flex-grow:1;font-size:11.5px;font-weight:500}
+.reg .mono{font-size:10px}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.friends{width:200px;flex-shrink:0;border-left:1px solid var(--line);display:flex;flex-direction:column}
+.friends .cap{height:28px;padding:0 12px}
+.fr{height:28px;padding:0 4px 0 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);font-size:12px}
+.fr b{font-weight:400;white-space:nowrap}
+.fr span{flex-grow:1;font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr.off,.fr.off span{color:var(--faint)}
+.join{height:20px;padding:0 8px;border:1px solid var(--line-strong);font-size:10.5px}
+.join:hover{border-color:var(--text)}
+
+.veil{align-items:flex-start;padding-top:64px}
+.dlg.pal{width:480px}
+.pal-in{height:36px;display:flex;align-items:center;gap:8px;padding:0 12px;border-bottom:1px solid var(--line)}
+.pal-in .icon{font-size:12px;color:var(--dim)}
+.pal-in input{flex-grow:1;background:none;border:0;outline:0;color:var(--text);font-family:'Inter',sans-serif;font-size:13px}
+.hit{height:28px;width:100%;display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:0 12px;font-size:12px;text-align:left}
+.hit:hover,.hit.sel{background:var(--hover)}
+.hit .lbl{letter-spacing:.08em}
+.hit u{text-decoration:none;color:var(--text);border-bottom:1px solid var(--dim)}
+.hits{padding:4px 0}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html" class="on">Главная</a>
+<a href="regions.html">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html">Мониторинг</a>
+<a href="news.html">Новости</a>
+<a href="settings.html">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main">
+<div class="hero">
+<div class="hero-name">
+<h1 class="name">ХЕЙВЕН</h1>
+<div class="addr mono">ss14://95.31.51.216:1212</div>
+</div>
+<div class="stat"><span class="mono num flash">42/80</span><span>игроков</span></div>
+<div class="stat"><b>01:12</b><span>раунд</span></div>
+<div class="stat"><b>38 мс</b><span>отклик</span></div>
+<a class="play" href="connecting.html"><span class="icon">&#xEB2C;</span>ИГРАТЬ</a>
+</div>
+
+<div class="regions">
+<button class="reg on"><i class="st on" title="в сети"></i><b>ХЕЙВЕН</b><span class="mono">42</span></button>
+<button class="reg"><i class="st q" title="карантин"></i><b>РУБЕЖ</b></button>
+<button class="reg"><i class="st q" title="карантин"></i><b>ВЕРФЬ</b></button>
+<button class="reg"><i class="st q" title="карантин"></i><b>КАРАНТИН</b></button>
+<button class="reg"><i class="st q" title="карантин"></i><b>ПОЛИГОН</b></button>
+</div>
+
+<div class="lists">
+<section>
+<div class="cap"><span>ИЗБРАННОЕ</span><span>4</span></div>
+<button class="row"><i class="st on" title="в сети"></i><span>Станция Орион</span><span class="mono">31/60</span><span class="icon">&#xEAB6;</span></button>
+<button class="row"><i class="st full" title="полный"></i><span>Nova RP</span><span class="mono">64/64</span><span class="icon">&#xEAB6;</span></button>
+<button class="row"><i class="st on" title="в сети"></i><span>Глубина</span><span class="mono">12/40</span><span class="icon">&#xEAB6;</span></button>
+<button class="row off"><i class="st off" title="офлайн"></i><span>Сектор 7</span><span class="mono">—</span><span></span></button>
+</section>
+<section>
+<div class="cap"><span>НЕДАВНИЕ</span><span>5</span></div>
+<button class="row"><i class="st on" title="в сети"></i><span>ХЕЙВЕН</span><span class="mono">42/80</span><span class="icon">&#xEAB6;</span></button>
+<button class="row"><i class="st full" title="полный"></i><span>Nova RP</span><span class="mono">64/64</span><span class="icon">&#xEAB6;</span></button>
+<button class="row"><i class="st on" title="в сети"></i><span>Станция Орион</span><span class="mono">31/60</span><span class="icon">&#xEAB6;</span></button>
+<button class="row"><i class="st on" title="в сети"></i><span>Глубина</span><span class="mono">12/40</span><span class="icon">&#xEAB6;</span></button>
+<button class="row off"><i class="st off" title="офлайн"></i><span>Сектор 7</span><span class="mono">—</span><span></span></button>
+</section>
+</div>
+</main>
+<aside class="friends">
+<div class="cap"><span>ДРУЗЬЯ</span><span>2/4</span></div>
+<div class="fr"><i class="st on" title="в игре"></i><b>Kestrel</b><span>ХЕЙВЕН</span><button class="join">Зайти</button></div>
+<div class="fr"><i class="st on" title="в игре"></i><b>Лада_7</b><span>Nova RP</span><button class="join">Зайти</button></div>
+<div class="fr"><i class="st q" title="в сети"></i><b>Мирон</b><span></span></div>
+<div class="fr off"><i class="st off" title="не в сети"></i><b>vex</b><span></span></div>
+</aside>
+</div>
+<div class="veil">
+<div class="dlg pal" role="dialog" aria-label="Быстрый переход">
+<div class="pal-in"><span class="icon">&#xEA6D;</span><input value="но" aria-label="Куда"></div>
+<div class="hits">
+<button class="hit sel"><i class="st full" title="полный"></i><span><u>No</u>va RP</span><span class="lbl">СЕРВЕР</span></button>
+<button class="hit"><i class="st on" title="в сети"></i><span><u>No</u>va Classic</span><span class="lbl">СЕРВЕР</span></button>
+<button class="hit"><i class="st full" title="полный"></i><span><u>No</u>va Frontier</span><span class="lbl">СЕРВЕР</span></button>
+<button class="hit"><span></span><span><u>Но</u>вости</span><span class="lbl">РАЗДЕЛ</span></button>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

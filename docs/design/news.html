@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Новости</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.num{color:var(--text)}
+.main{padding:0;flex-direction:row;gap:0}
+.nlist{width:280px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.ni{padding:8px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px;text-align:left}
+.ni:hover{background:var(--hover)}
+.ni.on{background:var(--panel)}
+.ni .meta{display:flex;gap:8px;align-items:center;font-family:'JBM',monospace;font-size:10px;color:var(--dim)}
+.ni .meta .icon{font-size:10px}
+.ni b{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.art{flex-grow:1;padding:16px 24px;display:flex;flex-direction:column;gap:12px;max-width:600px}
+.art .meta{display:flex;gap:12px;font-family:'JBM',monospace;font-size:10.5px;color:var(--dim)}
+.art h1{margin:0;font-size:18px;line-height:1.25;font-weight:600}
+.art p{margin:0;font-size:12.5px;line-height:1.6;color:var(--body)}
+</style>
+</head>
+<body>
+<div class="win">
+
+<header class="top">
+<div class="mark">FRONTIER 15</div>
+<div class="top-r">
+<button class="top-btn" aria-label="Уведомления"><span class="icon">&#xEAA2;</span></button>
+<a class="top-btn" href="account.html"><span class="icon">&#xEB99;</span>Гость</a>
+<div class="wc">
+<button class="min" aria-label="Свернуть"></button>
+<button class="cls" aria-label="Закрыть"></button>
+</div>
+</div>
+</header>
+
+<div class="body">
+<nav class="rail">
+<div class="nav">
+<a href="home.html">Главная</a>
+<a href="regions.html">Регионы</a>
+<a href="servers.html">Серверы</a>
+<a href="monitoring.html">Мониторинг</a>
+<a href="news.html" class="on">Новости</a>
+<a href="settings.html">Настройки</a>
+</div>
+<div class="ver">
+<div><span>ЛАУНЧЕР</span>0.2.4</div>
+<div><span>ДВИЖОК</span>275.1.0</div>
+
+</div>
+</nav>
+
+<main class="main">
+<div class="nlist scroll">
+<button class="ni on"><div class="meta"><span>2026-09-10</span><span>ЛАУНЧЕР</span><span class="icon">&#xEBA0;</span></div><b>Обновление 0.1.9 — новости и слежение за регионом</b></button>
+<button class="ni"><div class="meta"><span>2026-09-10</span><span>ЛАУНЧЕР</span></div><b>Лаунчер 0.1.8 — подключение к ХЕЙВЕН</b></button>
+<button class="ni"><div class="meta"><span>2026-09-09</span><span>ЛАУНЧЕР</span></div><b>Карта сектора</b></button>
+<button class="ni"><div class="meta"><span>2026-09-09</span><span>СЕТЬ</span></div><b>Добро пожаловать в Frontier 15</b></button>
+</div>
+<article class="art scroll">
+<div class="meta"><span>2026-09-10</span><span>ЛАУНЧЕР</span><span class="icon">&#xEBA0;</span></div>
+<h1>Обновление 0.1.9 — новости и слежение за регионом</h1>
+<p>Появилась эта вкладка — новости лаунчера и сети.</p><p>Если регион сейчас лежит, на его странице можно нажать «Уведомить, когда поднимется». Лаунчер сам проверяет регион в фоне и мигнёт в панели задач, как только он вернётся в сеть — даже если окно свёрнуто.</p>
+</article>
+</main>
+
+</div>
+
+</div>
+</body>
+</html>

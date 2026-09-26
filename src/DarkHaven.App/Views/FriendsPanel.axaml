@@ -2,181 +2,139 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:views="using:DarkHaven.App.Views"
+             xmlns:c="using:DarkHaven.App.Controls"
              x:Class="DarkHaven.App.Views.FriendsPanel"
              x:DataType="vm:FriendsViewModel">
 
     <UserControl.Styles>
-        <!-- Presence dot: green playing, blue in the launcher, grey offline. -->
-        <Style Selector="Ellipse.presence">
-            <Setter Property="Width" Value="8" />
-            <Setter Property="Height" Value="8" />
-            <Setter Property="Fill" Value="{StaticResource DhOfflineBrush}" />
-        </Style>
-        <Style Selector="Ellipse.presence.online">
-            <Setter Property="Fill" Value="{StaticResource DhAccentBrightBrush}" />
-        </Style>
-        <Style Selector="Ellipse.presence.playing">
-            <Setter Property="Fill" Value="{StaticResource DhOnlineBrush}" />
-        </Style>
-        <Style Selector="Border.avatar">
-            <Setter Property="Width" Value="30" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="CornerRadius" Value="15" />
-            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Style Selector="Border.fr">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="12,0,4,0" />
             <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-        </Style>
-        <!-- The avatar + name of a friend: click for their profile card -->
-        <Style Selector="Button.who">
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
             <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <!-- Unfriend only shows on the hovered row. -->
+        <Style Selector="Border.fr Button.rm">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+        <Style Selector="Border.fr:pointerover Button.rm, Border.fr Button.rm.armed">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.who">
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="4,3" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
-        <Style Selector="Button.who:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Style Selector="Button.who:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
-        <Style Selector="Button.small">
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="FontSize" Value="11" />
-        </Style>
-        <Style Selector="TextBlock.addstatus">
-            <Setter Property="Foreground" Value="{StaticResource DhOnlineBrush}" />
-        </Style>
-        <Style Selector="TextBlock.addstatus.failed">
-            <Setter Property="Foreground" Value="{StaticResource DhDangerBrush}" />
+        <Style Selector="Button.who:pointerover TextBlock.nm">
+            <Setter Property="TextDecorations" Value="Underline" />
         </Style>
     </UserControl.Styles>
 
-    <Border Classes="card" Padding="18,16">
-        <StackPanel Spacing="14">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="ДРУЗЬЯ" Classes="caps" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1" Text="{Binding OnlineSummary}" Classes="dim" FontSize="11"
-                           VerticalAlignment="Center" />
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Height="28" Padding="12,0" Classes="hair">
+            <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                <TextBlock Text="ДРУЗЬЯ" Classes="caps" />
+                <TextBlock Grid.Column="1" Text="{Binding OnlineSummary}" Classes="caps" />
             </Grid>
+        </Border>
 
-            <!-- Add by username -->
-            <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                    <TextBox Text="{Binding AddName}" Watermark="Ник игрока" MaxLength="64">
-                        <TextBox.KeyBindings>
-                            <KeyBinding Gesture="Enter" Command="{Binding SendRequestCommand}" />
-                        </TextBox.KeyBindings>
-                    </TextBox>
-                    <Button Grid.Column="1" Classes="ghost" Content="Добавить"
-                            Command="{Binding SendRequestCommand}" />
-                </Grid>
-                <TextBlock Text="{Binding AddStatus}" Classes="addstatus" Classes.failed="{Binding AddFailed}"
-                           FontSize="11" TextWrapping="Wrap" IsVisible="{Binding HasAddStatus}" />
-            </StackPanel>
-
-            <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}"
-                       Text="Добавьте друга по нику — увидите, где он играет, и сможете зайти к нему в один клик." />
-
-            <!-- Incoming requests -->
-            <StackPanel Spacing="8" IsVisible="{Binding HasIncoming}">
-                <TextBlock Text="ЗАЯВКИ" Classes="caps" FontSize="10" />
-                <ItemsControl ItemsSource="{Binding Incoming}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:FriendItemViewModel">
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis" />
-                                <Button Grid.Column="1" Classes="primary small" Content="Принять"
-                                        Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).AcceptCommand}"
-                                        CommandParameter="{Binding}" />
-                                <Button Grid.Column="2" Classes="ghost small" Content="✕" ToolTip.Tip="Отклонить"
-                                        Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
-                                        CommandParameter="{Binding}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
-            <Border Height="1" Background="{StaticResource DhBorderBrush}">
-                <Border.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                        <Binding Path="HasIncoming" />
-                        <Binding Path="HasFriends" />
-                    </MultiBinding>
-                </Border.IsVisible>
-            </Border>
-
-            <!-- Friends: playing first, then in the launcher, then offline (the platform sorts) -->
-            <ItemsControl ItemsSource="{Binding Friends}" IsVisible="{Binding HasFriends}">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:FriendItemViewModel">
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-                            <Button Classes="who" ToolTip.Tip="Профиль">
-                                <Button.Flyout>
-                                    <Flyout Placement="LeftEdgeAlignedTop" FlyoutPresenterClasses="dh">
-                                        <views:ProfileCard Width="300" DataContext="{Binding Card}" />
-                                    </Flyout>
-                                </Button.Flyout>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                    <Panel VerticalAlignment="Center">
-                                        <Border Classes="avatar">
-                                            <Panel>
-                                                <TextBlock Text="{Binding Initial}" FontWeight="Bold" FontSize="13"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           IsVisible="{Binding !HasAvatar}" />
-                                                <Panel Width="28" Height="28" IsVisible="{Binding HasAvatar}">
-                                                    <Panel.Clip><EllipseGeometry Rect="0,0,28,28" /></Panel.Clip>
-                                                    <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
-                                                </Panel>
-                                            </Panel>
-                                        </Border>
-                                        <Ellipse Classes="presence" Classes.online="{Binding Online}"
-                                                 Classes.playing="{Binding IsPlaying}"
-                                                 Stroke="{StaticResource DhBgElevatedBrush}" StrokeThickness="2"
-                                                 Width="11" Height="11"
-                                                 HorizontalAlignment="Right" VerticalAlignment="Bottom" />
-                                    </Panel>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Status}" Classes="dim" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Grid>
-                            </Button>
-                            <Button Grid.Column="1" Classes="primary small" Content="Зайти" VerticalAlignment="Center"
-                                    IsVisible="{Binding IsPlaying}"
-                                    Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).JoinCommand}"
-                                    CommandParameter="{Binding}" />
-                            <Button Grid.Column="2" Classes="ghost small" Content="{Binding RemoveLabel}"
-                                    VerticalAlignment="Center" ToolTip.Tip="Удалить из друзей"
-                                    Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).UnfriendCommand}"
-                                    CommandParameter="{Binding}" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <!-- Outgoing requests -->
-            <StackPanel Spacing="8" IsVisible="{Binding HasOutgoing}">
-                <TextBlock Text="ОТПРАВЛЕННЫЕ" Classes="caps" FontSize="10" />
-                <ItemsControl ItemsSource="{Binding Outgoing}">
-                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:FriendItemViewModel">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Username}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="ждёт ответа" Classes="dim" FontSize="11" VerticalAlignment="Center" />
-                                </StackPanel>
-                                <Button Grid.Column="1" Classes="ghost small" Content="✕" ToolTip.Tip="Отменить заявку"
-                                        Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
-                                        CommandParameter="{Binding}" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
+        <!-- Add by username -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="12,8" Spacing="4">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                <TextBox Text="{Binding AddName}" Watermark="Ник" MaxLength="64">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding SendRequestCommand}" />
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <Button Grid.Column="1" Classes="icon" Content="&#xEA60;" ToolTip.Tip="Добавить"
+                        Command="{Binding SendRequestCommand}" />
+            </Grid>
+            <TextBlock Text="{Binding AddStatus}" Classes.dim="{Binding !AddFailed}" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding HasAddStatus}" />
         </StackPanel>
-    </Border>
+
+        <ScrollViewer>
+            <StackPanel>
+                <!-- Incoming requests -->
+                <ItemsControl ItemsSource="{Binding Incoming}" IsVisible="{Binding HasIncoming}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FriendItemViewModel">
+                            <Border Classes="fr">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
+                                    <TextBlock Text="{Binding Username}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <Button Grid.Column="1" Classes="primary small" Content="Принять"
+                                            Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).AcceptCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="Отклонить"
+                                            Width="20" Height="20"
+                                            Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Friends: playing first, then in the launcher, then offline (the platform sorts) -->
+                <ItemsControl ItemsSource="{Binding Friends}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FriendItemViewModel">
+                            <Border Classes="fr">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                                    <c:StatusGlyph IsOnline="{Binding IsPlaying}" IsOffline="{Binding !Online}"
+                                                   Foreground="{Binding Online, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                    <Button Grid.Column="1" Classes="who" ToolTip.Tip="{Binding Status}">
+                                        <Button.Flyout>
+                                            <Flyout Placement="LeftEdgeAlignedTop" FlyoutPresenterClasses="dh">
+                                                <views:ProfileCard Width="280" DataContext="{Binding Card}" />
+                                            </Flyout>
+                                        </Button.Flyout>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Classes="nm" Text="{Binding Username}" VerticalAlignment="Center"
+                                                       Foreground="{Binding Online, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                            <TextBlock Text="{Binding ServerName}" Classes="dim" FontSize="10.5" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" IsVisible="{Binding IsPlaying}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Grid.Column="2" Classes="small" Content="Зайти" IsVisible="{Binding IsPlaying}"
+                                            Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).JoinCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="3" Classes="link rm" Classes.armed="{Binding ConfirmingRemove}"
+                                            Content="{Binding RemoveLabel}" FontFamily="{StaticResource DhMono}" FontSize="10.5"
+                                            ToolTip.Tip="Удалить из друзей" VerticalAlignment="Center"
+                                            Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).UnfriendCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Outgoing requests -->
+                <ItemsControl ItemsSource="{Binding Outgoing}" IsVisible="{Binding HasOutgoing}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FriendItemViewModel">
+                            <Border Classes="fr">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                    <c:StatusGlyph Kind="q" Foreground="{StaticResource DhTextFaintBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Username}" Classes="faint" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" ToolTip.Tip="ждёт ответа" />
+                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="Отменить заявку"
+                                            Width="20" Height="20"
+                                            Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
 </UserControl>

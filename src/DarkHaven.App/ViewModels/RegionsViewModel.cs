@@ -39,7 +39,7 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private bool _isWatched;
 
-    public string WatchLabel => IsWatched ? "🔔 Уведомлю, когда поднимется" : "Уведомить, когда поднимется";
+    public string WatchLabel => IsWatched ? "Сообщу, когда поднимется · отменить" : "Сообщить, когда поднимется";
 
     partial void OnIsWatchedChanged(bool value) => OnPropertyChanged(nameof(WatchLabel));
 
@@ -52,17 +52,17 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
 
     public string Population => Entry.SoftMaxPlayers > 0 ? $"{Entry.Players}/{Entry.SoftMaxPlayers}" : Entry.Players.ToString();
     public string Ping => Entry.PingMs is { } p ? $"{p} мс" : "—";
-    public string StateText => IsQuarantine ? "НА КАРАНТИНЕ" : Entry.Reachability switch
+    public string StateText => IsQuarantine ? "карантин" : Entry.Reachability switch
     {
-        ServerReachability.Online => "ОНЛАЙН",
+        ServerReachability.Online => IsFull ? "полный" : "в сети",
         ServerReachability.Offline => "офлайн",
         _ => "…",
     };
     public string RoundText => Entry.RunLevel switch
     {
-        RunLevel.InRound => "раунд идёт",
+        RunLevel.InRound => "идёт",
         RunLevel.PreRoundLobby => "лобби",
-        RunLevel.PostRound => "конец раунда",
+        RunLevel.PostRound => "конец",
         _ => "",
     };
 
@@ -71,7 +71,7 @@ public partial class RegionNodeViewModel(AppServices services, ServerEntry entry
     public bool IsFull => IsOnline && SlotWatcher.IsFull(Entry.Players, Entry.SoftMaxPlayers);
     public bool IsWaitingForSlot => services.SlotWatch.IsWatchingAddress(Address);
     public bool CanWaitForSlot => IsFull || IsWaitingForSlot;
-    public string SlotLabel => IsWaitingForSlot ? "⏳ Ждём место — отменить" : "Ждать свободного места";
+    public string SlotLabel => IsWaitingForSlot ? "Ждём место · отменить" : "Ждать места";
 
     [RelayCommand]
     private void WaitForSlot()
@@ -158,7 +158,10 @@ public partial class RegionsViewModel(AppServices services, Action<ServerEntry> 
             var match = Nodes.FirstOrDefault(n => string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase));
             if (match is not null) SelectedNeighbours.Add(match);
         }
+        OnPropertyChanged(nameof(HasNeighbours));
     }
+
+    public bool HasNeighbours => SelectedNeighbours.Count > 0;
 
     [RelayCommand]
     private void PlaySelected()

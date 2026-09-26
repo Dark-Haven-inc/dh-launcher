@@ -24,7 +24,7 @@ public sealed record HistoryRow(string When, string Average, string Peak, string
 /// <summary>"ХЕЙВЕН — 12" under the launcher counter.</summary>
 public sealed record LauncherRegionRow(string Name, int Players)
 {
-    public string Text => $"{Name} — {Players}";
+    public string Text => $"{Name} {Players}";
 }
 
 /// <summary>
@@ -74,10 +74,10 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
     [ObservableProperty] private string _launcherPeakDayText = "—";
     [ObservableProperty] private string _launcherPeakEverText = "—";
     [ObservableProperty] private IReadOnlyList<OnlinePoint>? _launcherPoints;
-    [ObservableProperty] private string _copyLabel = "Скопировать адрес";
+    [ObservableProperty] private string _copyLabel = "\uEBCC"; // cod-copy: shown after the address
 
     public bool HasRegions => Regions.Count > 0;
-    public string TableLabel => ShowTable ? "Скрыть таблицу" : "Показать таблицей";
+    public string TableLabel => ShowTable ? "График" : "Таблица";
     partial void OnShowTableChanged(bool value) => OnPropertyChanged(nameof(TableLabel));
 
     /// <summary>Tab opened: pick up the region list, start polling.</summary>
@@ -184,9 +184,9 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
     {
         if (Selected is null) return;
         await App.CopyToClipboardAsync(Selected.Address);
-        CopyLabel = "Скопировано";
+        CopyLabel = "\uEAB2"; // cod-check
         await Task.Delay(2000);
-        CopyLabel = "Скопировать адрес";
+        CopyLabel = "\uEBCC"; // cod-copy
     }
 
     [RelayCommand]
@@ -214,23 +214,22 @@ public partial class MonitoringViewModel(AppServices services, Action<ServerEntr
         IsOnline = status is not null;
         if (status is null)
         {
-            StateText = "Сервер не отвечает";
+            StateText = "офлайн";
             PlayersText = MapText = PresetText = RoundText = PingText = "—";
             return;
         }
 
         Capacity = Math.Max(0, status.SoftMaxPlayers);
-        PlayersText = status.SoftMaxPlayers > 0 ? $"{status.Players} / {status.SoftMaxPlayers}" : status.Players.ToString();
+        PlayersText = status.SoftMaxPlayers > 0 ? $"{status.Players}/{status.SoftMaxPlayers}" : status.Players.ToString();
         MapText = string.IsNullOrWhiteSpace(status.Map) ? "—" : status.Map!;
         PresetText = string.IsNullOrWhiteSpace(status.Preset) ? "—" : status.Preset!;
         RoundText = status.RoundId is { } id ? $"#{id}" : "—";
         PingText = $"{ms} мс";
         StateText = status.RunLevel switch
         {
-            RunLevel.PreRoundLobby => "Лобби — сервер принимает игроков",
-            RunLevel.InRound => "Раунд идёт — можно заходить",
-            RunLevel.PostRound => "Конец раунда",
-            _ => "Сервер онлайн",
+            RunLevel.PreRoundLobby => "в сети · лобби",
+            RunLevel.PostRound => "в сети · конец раунда",
+            _ => "в сети",
         };
     }
 
