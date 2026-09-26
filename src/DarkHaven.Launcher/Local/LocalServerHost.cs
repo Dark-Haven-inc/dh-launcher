@@ -1,10 +1,14 @@
 using System.Diagnostics;
+using System.Net.Http.Json;
 using System.Text;
 using Serilog;
 
 namespace DarkHaven.Launcher.Local;
 
 public enum LocalServerState { Stopped, Preparing, Starting, Running, Stopping, Crashed }
+
+/// <summary>What the router said to the engine's port-forwarding request (servers open to others only).</summary>
+public enum UpnpState { Unknown, Forwarded, Failed }
 
 /// <summary>What it takes to start one local server process.</summary>
 public sealed record LocalServerLaunch(
@@ -36,6 +40,9 @@ public sealed class LocalServerHost(int port, HttpClient http)
     public string? Detail { get; private set; }
 
     public int? ExitCode { get; private set; }
+
+    /// <summary>For a server open to others: whether the router forwarded its port, as the engine logged it.</summary>
+    public UpnpState Upnp { get; private set; }
 
     public event Action? Changed;
     public event Action<string>? LineAdded;
@@ -69,6 +76,7 @@ public sealed class LocalServerHost(int port, HttpClient http)
 
         _stopRequested = false;
         ExitCode = null;
+        Upnp = UpnpState.Unknown;
         lock (_lock) _lines.Clear();
 
         var psi = new ProcessStartInfo
@@ -154,6 +162,42 @@ public sealed class LocalServerHost(int port, HttpClient http)
         }
     }
 
+    /// <summary>Puts an SS14 account on the whitelist of a server open to others.</summary>
+    public void Allow(string username)
+    {
+        if (IsUsername(username))
+            Send($"whitelistadd {username}");
+    }
+
+    /// <summary>Takes an account off the whitelist. Someone already in the game stays until they leave.</summary>
+    public void Disallow(string username)
+    {
+        if (IsUsername(username))
+            Send($"whitelistremove {username}");
+    }
+
+    /// <summary>SS14 account names are letters, digits and underscores — anything else never reaches the console.</summary>
+    internal static bool IsUsername(string s) =>
+        s.Length is > 0 and <= 32 && s.All(c => char.IsAsciiLetterOrDigit(c) || c == '_');
+
+    /// <summary>Players on the server now, from its own /status (0 if it doesn't answer).</summary>
+    public async Task<int> PlayersAsync(CancellationToken cancel = default)
+    {
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            var status = await http.GetFromJsonAsync<StatusPlayers>($"http://127.0.0.1:{port}/status", timeout.Token);
+            return Math.Max(0, status?.Players ?? 0);
+        }
+        catch (Exception) when (!cancel.IsCancellationRequested)
+        {
+            return 0;
+        }
+    }
+
+    private sealed record StatusPlayers([property: System.Text.Json.Serialization.JsonPropertyName("players")] int Players);
+
     public async Task StopAsync()
     {
         var p = _process;
@@ -214,6 +258,26 @@ public sealed class LocalServerHost(int port, HttpClient http)
                 _lines.RemoveFirst();
         }
         LineAdded?.Invoke(line);
+
+        if (ReadUpnp(line) is { } upnp && upnp != Upnp)
+        {
+            Upnp = upnp;
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>The engine's own UPnP log lines (Robust NetManager.Upnp), or null for any other line.</summary>
+    internal static UpnpState? ReadUpnp(string line)
+    {
+        if (!line.Contains("UPnP", StringComparison.Ordinal))
+            return null;
+        if (line.Contains("Successfully UPnP port forwarded", StringComparison.Ordinal))
+            return UpnpState.Forwarded;
+        if (line.Contains("Failed UPnP port forwarding", StringComparison.Ordinal)
+            || line.Contains("Can't UPnP forward", StringComparison.Ordinal)
+            || line.Contains("UPnP threw an exception", StringComparison.Ordinal))
+            return UpnpState.Failed;
+        return null;
     }
 
     private void Set(LocalServerState state, string? detail)

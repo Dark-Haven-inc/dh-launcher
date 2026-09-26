@@ -128,6 +128,23 @@ public sealed class AdminGameBanRowViewModel(PlatformGameBan b)
     public string StateText => b.Lifted ? "снят" : b.ExpiresAt is { } e ? $"до {RuText.ShortDate(e.ToLocalTime())}" : "навсегда";
 }
 
+/// <summary>A local server someone opened to other players, as staff see it.</summary>
+public sealed class AdminLocalShareRowViewModel(PlatformLocalStaffRow r)
+{
+    public string Title => $"{r.OwnerName} · {r.Name}";
+    public string Details =>
+        $"{(r.Mode == "develop" ? "маппинг и тесты" : "игра")} · игроков: {r.Players} · открыт {RuText.DayTime(r.OpenedAt.ToLocalTime())}";
+    public string Address => r.Address + r.Reachable switch
+    {
+        true => " · виден из интернета",
+        false => " · снаружи не виден",
+        _ => "",
+    };
+    public string InvitedText =>
+        (r.Invited.Length == 0 ? "никого не пустил" : "пущены: " + string.Join(", ", r.Invited))
+        + (r.Requested > 0 ? $" · просятся: {r.Requested}" : "");
+}
+
 public sealed class AdminAuditRowViewModel(PlatformAuditEntry a)
 {
     public string ActorUsername => a.ActorUsername;
@@ -231,6 +248,9 @@ public partial class AdminViewModel : ViewModelBase
     public ObservableCollection<AdminBanRowViewModel> Bans { get; } = [];
     public ObservableCollection<AdminRoleRowViewModel> Roles { get; } = [];
     public ObservableCollection<AdminAuditRowViewModel> AuditLog { get; } = [];
+    /// <summary>ЛОКАЛКИ open to other players right now (moderator+).</summary>
+    public ObservableCollection<AdminLocalShareRowViewModel> LocalShares { get; } = [];
+    public bool HasLocalShares => LocalShares.Count > 0;
     public ObservableCollection<string> GameServers { get; } = [];
     public ObservableCollection<AdminChatMessageViewModel> ChatMessages { get; } = [];
     public ObservableCollection<AdminGameAdminRowViewModel> GameAdmins { get; } = [];
@@ -336,6 +356,11 @@ public partial class AdminViewModel : ViewModelBase
 
             if (CanModerate)
             {
+                LocalShares.Clear();
+                foreach (var s in await _services.Platform.GetOpenLocalSharesAsync())
+                    LocalShares.Add(new AdminLocalShareRowViewModel(s));
+                OnPropertyChanged(nameof(HasLocalShares));
+
                 var bans = await _services.Platform.GetLauncherBansAsync();
                 Bans.Clear();
                 foreach (var b in bans)

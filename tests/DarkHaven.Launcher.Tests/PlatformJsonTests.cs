@@ -142,6 +142,26 @@ public class PlatformJsonTests
     }
 
     [Fact]
+    public void Reads_a_shared_local_server_and_the_ones_i_can_join()
+    {
+        const string share = """
+        {"id":4,"address":"ss14://203.0.113.50:1250","players":2,"reachable":true,
+         "members":[{"userId":"e9e66119-b624-4eff-9903-edcbf6d790b9","username":"Cadet_Nova","status":"requested",
+                     "createdAt":"2026-09-26T18:00:00+00:00"}]}
+        """;
+        var s = JsonSerializer.Deserialize<PlatformLocalShare>(share, LauncherJson.Options)!;
+        Assert.Equal(("ss14://203.0.113.50:1250", true, "requested"), (s.Address, s.Reachable, s.Members[0].Status));
+
+        const string available = """
+        [{"id":4,"ownerName":"GODWINCH","name":"Шаттл","mode":"develop","players":2,"status":"invited","address":"ss14://203.0.113.50:1250"},
+         {"id":5,"ownerName":"Friend","name":"Раунд","mode":"play","players":0,"status":"none","address":null}]
+        """;
+        var a = JsonSerializer.Deserialize<PlatformLocalAvailable[]>(available, LauncherJson.Options)!;
+        Assert.Equal(("invited", "ss14://203.0.113.50:1250"), (a[0].Status, a[0].Address));
+        Assert.Null(a[1].Address);
+    }
+
+    [Fact]
     public void Reads_who_is_still_on_an_old_launcher()
     {
         const string json = """

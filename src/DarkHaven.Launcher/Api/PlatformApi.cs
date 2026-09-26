@@ -422,6 +422,66 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
         return true;
     }
 
+    // --- ЛОКАЛКА opened to other players (Local/LocalSharing drives these) ---
+
+    private static string SharePath(string key) => $"/api/local/shares/{Uri.EscapeDataString(key)}";
+
+    /// <summary>The server is open (or still is): the platform answers with the address invited players
+    /// get, whether it reached the server from outside, and who's let in or asking.</summary>
+    public Task<(PlatformLocalShare? Share, string? Error)> ReportLocalShareAsync(
+        string key, string name, int port, string mode, int players, CancellationToken cancel = default) =>
+        SendAuthedFor<PlatformLocalShare>(HttpMethod.Put, SharePath(key), new { name, port, mode, players }, cancel);
+
+    public Task<string?> CloseLocalShareAsync(string key, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Delete, SharePath(key), null, cancel);
+
+    public Task<(PlatformLocalShare? Share, string? Error)> InviteToLocalAsync(string key, string username, CancellationToken cancel = default) =>
+        SendAuthedFor<PlatformLocalShare>(HttpMethod.Post, SharePath(key) + "/invite", new { username }, cancel);
+
+    public Task<(PlatformLocalShare? Share, string? Error)> AcceptLocalMemberAsync(string key, Guid userId, CancellationToken cancel = default) =>
+        SendAuthedFor<PlatformLocalShare>(HttpMethod.Post, SharePath(key) + $"/members/{userId}/accept", null, cancel);
+
+    /// <summary>Withdraws an invitation, or turns down a request.</summary>
+    public Task<(PlatformLocalShare? Share, string? Error)> RemoveLocalMemberAsync(string key, Guid userId, CancellationToken cancel = default) =>
+        SendAuthedFor<PlatformLocalShare>(HttpMethod.Delete, SharePath(key) + $"/members/{userId}", null, cancel);
+
+    /// <summary>Friends' open servers, and any I'm invited to — the address only where I'm let in.</summary>
+    public Task<IReadOnlyList<PlatformLocalAvailable>> GetAvailableLocalAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformLocalAvailable>("/api/local/available", cancel);
+
+    public Task<string?> AskToJoinLocalAsync(int shareId, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Post, $"/api/local/available/{shareId}/request", null, cancel);
+
+    /// <summary>Staff: every local server open to others right now.</summary>
+    public Task<IReadOnlyList<PlatformLocalStaffRow>> GetOpenLocalSharesAsync(CancellationToken cancel = default) =>
+        GetAuthedList<PlatformLocalStaffRow>("/api/admin/local-shares", cancel);
+
+    /// <summary>Like <see cref="SendAuthed"/>, with the answer: (value, null) or (null, why not).</summary>
+    private async Task<(T? Value, string? Error)> SendAuthedFor<T>(HttpMethod method, string path, object? body, CancellationToken cancel)
+    {
+        if (_jwt is null) return (default, "Войдите в аккаунт — без него платформа не знает, кто вы.");
+        try
+        {
+            using var req = new HttpRequestMessage(method, Url(path))
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", _jwt) },
+            };
+            if (body is not null)
+                req.Content = JsonContent.Create(body, options: LauncherJson.Options);
+            using var res = await http.SendAsync(req, cancel);
+            if (res.IsSuccessStatusCode)
+                return (await res.Content.ReadFromJsonAsync<T>(LauncherJson.Options, cancel), null);
+            if (res.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                return (default, "Слишком часто — подождите немного.");
+            return (default, await ErrorOf(res, cancel));
+        }
+        catch (Exception e) when (e is not OperationCanceledException || !cancel.IsCancellationRequested)
+        {
+            Log.Debug(e, "Platform {Method} {Path} failed", method, path);
+            return (default, "Платформа недоступна.");
+        }
+    }
+
     /// <summary>An admin action whose refusal the admin should read: null on success, else the reason.</summary>
     private async Task<string?> SendAuthed(HttpMethod method, string path, object? body, CancellationToken cancel)
     {
@@ -770,6 +830,19 @@ public sealed record PlatformAdminServer(
 public sealed record PlatformAdminStatus(bool Lockdown, string? Reason, DateTimeOffset? Since);
 
 public sealed record PlatformChatMessage(string Sender, string Text, DateTimeOffset AtUtc);
+
+/// <summary>My local server as the platform sees it: the address invited players get, and who's let in or asking.</summary>
+public sealed record PlatformLocalShare(int Id, string Address, int Players, bool? Reachable, PlatformLocalMember[] Members);
+
+/// <summary>"invited" (may join) | "requested" (asked, waiting for the owner).</summary>
+public sealed record PlatformLocalMember(Guid UserId, string Username, string Status, DateTimeOffset CreatedAt);
+
+/// <summary>Someone else's open local server I can see. <c>Status</c>: "none" | "requested" | "invited".</summary>
+public sealed record PlatformLocalAvailable(int Id, string OwnerName, string Name, string Mode, int Players, string Status, string? Address);
+
+public sealed record PlatformLocalStaffRow(
+    int Id, Guid OwnerId, string OwnerName, string Name, string Mode, int Players, string Address,
+    DateTimeOffset OpenedAt, DateTimeOffset SeenAt, bool? Reachable, string[] Invited, int Requested);
 
 public sealed record PlatformLauncherVersions(
     int Days, string NewFeedSince, int Total, int OnOldFeed,

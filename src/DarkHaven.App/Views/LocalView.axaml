@@ -76,7 +76,7 @@
             <StackPanel>
                 <TextBlock Classes="h1" Text="Локалка" />
                 <TextBlock Classes="dim" TextWrapping="Wrap"
-                           Text="Свой сервер Frontier 15 на этом ПК: поиграть, проверить сборку, построить карту. Он виден только вам, всё хранится у вас." />
+                           Text="Свой сервер Frontier 15 на этом ПК: поиграть, проверить сборку, построить карту — одному или с теми, кого позовёте. Всё хранится у вас." />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Classes="nav" Content="+ Для игры" Command="{Binding NewServerCommand}" CommandParameter="play" />
@@ -103,13 +103,48 @@
                                                      Classes.error="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=error}" />
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
-                                        <TextBlock Classes="dim" FontSize="11" Text="{Binding ModeText}" />
+                                        <TextBlock Classes="dim" FontSize="11">
+                                            <Run Text="{Binding ModeText}" /><Run Text="{Binding SharedText}" />
+                                        </TextBlock>
                                         <TextBlock Classes="dim" FontSize="11" Text="{Binding StateText}" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+
+                    <!-- Friends' open servers and invitations -->
+                    <StackPanel Spacing="8" Margin="0,12,0,0" IsVisible="{Binding HasAvailable}">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="СЕРВЕРЫ ДРУЗЕЙ" Classes="caps" VerticalAlignment="Center" />
+                            <Button Grid.Column="1" Classes="ghost" Content="↻" Padding="8,2" ToolTip.Tip="Обновить"
+                                    Command="{Binding LoadAvailableCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Available}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LocalAvailableRow">
+                                    <Border Classes="card" Padding="10,8">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Spacing="1">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Subtitle}" Classes="dim" FontSize="11" />
+                                            </StackPanel>
+                                            <Panel Grid.Column="1" VerticalAlignment="Center">
+                                                <Button Classes="primary" Content="Зайти" Padding="10,4" FontSize="12" IsVisible="{Binding CanJoin}"
+                                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).JoinSharedCommand}" CommandParameter="{Binding}" />
+                                                <Button Classes="ghost" Content="Попроситься" Padding="8,3" IsVisible="{Binding CanAsk}"
+                                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).AskToJoinCommand}" CommandParameter="{Binding}" />
+                                                <TextBlock Text="ждём ответа" Classes="dim" FontSize="11" IsVisible="{Binding Asked}" VerticalAlignment="Center" />
+                                            </Panel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding AvailableMessage}" Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                   IsVisible="{Binding AvailableMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,12,0,0">
                         <TextBlock Text="СБОРКИ" Classes="caps" VerticalAlignment="Center" />
@@ -192,6 +227,50 @@
                             </Border>
                         </StackPanel>
 
+                        <!-- Access: who may join a server open to others (while it runs) -->
+                        <StackPanel Spacing="8" IsVisible="{Binding ShowAccess}">
+                            <TextBlock Text="ДОСТУП" Classes="caps" />
+                            <Border Classes="card" Padding="16">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding ReachText}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                               IsVisible="{Binding PublicAddress, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <Run Text="Адрес сервера: " /><Run Text="{Binding PublicAddress}" />
+                                        <Run Text=" — его получают только те, кого вы пустили." />
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding AccessError}" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource DhDangerBrush}"
+                                               IsVisible="{Binding AccessError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <Grid ColumnDefinitions="*,8,Auto">
+                                        <TextBox Text="{Binding InviteName}" Watermark="Ник игрока (он должен хоть раз зайти в лаунчер)" MaxLength="32">
+                                            <TextBox.KeyBindings>
+                                                <KeyBinding Gesture="Enter" Command="{Binding InviteCommand}" />
+                                            </TextBox.KeyBindings>
+                                        </TextBox>
+                                        <Button Grid.Column="2" Classes="ghost" Content="Пригласить" Command="{Binding InviteCommand}" />
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Members}" IsVisible="{Binding HasMembers}">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:LocalMemberRow">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock VerticalAlignment="Center">
+                                                        <Run Text="{Binding Username}" FontWeight="SemiBold" /><Run Text=" · " />
+                                                        <Run Text="{Binding StatusText}" Foreground="{StaticResource DhTextDimBrush}" />
+                                                    </TextBlock>
+                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                                        <Button Classes="ghost" Content="Пустить" Padding="8,2" IsVisible="{Binding IsRequest}"
+                                                                Command="{Binding $parent[ItemsControl].((vm:LocalServerRow)DataContext).AcceptMemberCommand}" CommandParameter="{Binding}" />
+                                                        <Button Classes="ghost" Padding="8,2" Content="{Binding RemoveText}"
+                                                                Command="{Binding $parent[ItemsControl].((vm:LocalServerRow)DataContext).RemoveMemberCommand}" CommandParameter="{Binding}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
                         <!-- Settings: only while it's off — a running server reads them once, at start -->
                         <StackPanel Spacing="8">
                             <TextBlock Text="НАСТРОЙКИ" Classes="caps" />
@@ -199,7 +278,7 @@
                                 <StackPanel Spacing="10" IsEnabled="{Binding IsStopped}">
                                     <TextBlock Classes="dim" FontSize="11" IsVisible="{Binding !IsStopped}"
                                                Text="Настройки меняются, пока сервер выключен." />
-                                    <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto">
+                                    <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto">
                                         <TextBlock Grid.Row="0" Text="Название" Classes="dim" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Name}" MaxLength="60" />
 
@@ -232,6 +311,13 @@
                                         <TextBlock Grid.Row="8" Text="Карта" Classes="dim" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Map}" MaxLength="100"
                                                  Watermark="по умолчанию для режима (в маппинге — NFDev)" />
+
+                                        <TextBlock Grid.Row="10" Text="Доступ" Classes="dim" VerticalAlignment="Top" Margin="0,4,0,0" />
+                                        <StackPanel Grid.Row="10" Grid.Column="1" Spacing="4">
+                                            <CheckBox IsChecked="{Binding Shared}" Content="Пускать приглашённых игроков" />
+                                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                                       Text="Сервер станет доступен из интернета, но зайдут только те, кого вы пригласите или пустите по запросу. Нужен вход в аккаунт. При первом запуске Windows спросит разрешение для Robust.Server — нажмите «Разрешить»." />
+                                        </StackPanel>
                                     </Grid>
                                     <TextBlock Text="{Binding SettingsError}" FontSize="12" Foreground="{StaticResource DhDangerBrush}"
                                                IsVisible="{Binding SettingsError, Converter={x:Static ObjectConverters.IsNotNull}}" />

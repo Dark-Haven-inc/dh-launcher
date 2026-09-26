@@ -29,6 +29,12 @@ public sealed class LocalServerProfile
     /// <summary>Map id to load instead of the mode's own (e.g. a map the player is building).</summary>
     public string? Map { get; set; }
 
+    /// <summary>
+    /// Open to players the owner lets in: reachable from outside (UPnP), SS14 accounts required, and
+    /// only whitelisted players get in — the owner and whoever they invited. Off = this PC only.
+    /// </summary>
+    public bool Shared { get; set; }
+
     /// <summary>Anything else, as cvar = value; passed to the server with <c>--cvar</c>.</summary>
     public Dictionary<string, string> Cvars { get; set; } = [];
 

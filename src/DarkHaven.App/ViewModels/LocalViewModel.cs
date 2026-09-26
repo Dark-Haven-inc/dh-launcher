@@ -32,6 +32,7 @@ public sealed partial class LocalBuildRow(LocalBuild build, bool installed) : Ob
 /// <summary>One local server: its settings (editable while it's stopped), state, and console.</summary>
 public sealed partial class LocalServerRow : ObservableObject
 {
+    private readonly AppServices _services;
     private readonly LocalServers _local;
     private readonly DispatcherTimer _consoleFlush = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private bool _consoleDirty;
@@ -51,19 +52,21 @@ public sealed partial class LocalServerRow : ObservableObject
     [ObservableProperty] private bool _confirmDelete;
     [ObservableProperty] private string? _settingsError;
 
-    public LocalServerRow(LocalServers local, LocalServerProfile profile)
+    public LocalServerRow(AppServices services, LocalServerProfile profile)
     {
-        _local = local;
+        _services = services;
+        _local = services.Local;
         Profile = profile;
         _loading = true;
         _name = profile.Name;
         _mode = profile.Mode;
+        _shared = profile.Shared;
         _port = profile.Port.ToString();
         _maxPlayers = profile.MaxPlayers.ToString();
         _map = profile.Map ?? "";
         _loading = false;
 
-        Host = local.HostFor(profile);
+        Host = _local.HostFor(profile);
         Attach();
         _consoleFlush.Tick += (_, _) =>
         {
@@ -113,6 +116,7 @@ public sealed partial class LocalServerRow : ObservableObject
         foreach (var name in new[] { nameof(State), nameof(IsStopped), nameof(IsRunning), nameof(CanStop), nameof(HasConsole), nameof(StateText), nameof(Dot) })
             OnPropertyChanged(name);
         _consoleDirty = true;
+        AccessFollowState();
     }
 
     // Settings save as they're typed; numbers only once they're valid.
@@ -169,6 +173,20 @@ public sealed partial class LocalServerRow : ObservableObject
     }
 }
 
+/// <summary>A friend's open server, or one I'm invited to.</summary>
+public sealed class LocalAvailableRow(DarkHaven.Launcher.Api.PlatformLocalAvailable a)
+{
+    public int Id => a.Id;
+    public string OwnerName => a.OwnerName;
+    public string Name => a.Name;
+    public string Title => $"{a.OwnerName} · {a.Name}";
+    public string Subtitle => $"{(a.Mode == "develop" ? "маппинг и тесты" : "игра")} · игроков: {a.Players}";
+    public string? Address => a.Address;
+    public bool CanJoin => a.Status == "invited" && a.Address is not null;
+    public bool CanAsk => a.Status == "none";
+    public bool Asked => a.Status == "requested";
+}
+
 /// <summary>
 /// ЛОКАЛКА — DH servers on the player's own PC, for playing on their own, testing, and building maps.
 /// Pick a mode and a build, press start; the build and .NET are fetched on the first run. Connecting
@@ -182,6 +200,10 @@ public partial class LocalViewModel : ViewModelBase
     public ObservableCollection<LocalServerRow> Servers { get; } = [];
     public ObservableCollection<LocalBuildRow> Builds { get; } = [];
     public ObservableCollection<LocalBuildChoice> BuildChoices { get; } = [];
+    /// <summary>Friends' open servers and ones I'm invited to.</summary>
+    public ObservableCollection<LocalAvailableRow> Available { get; } = [];
+    public bool HasAvailable => Available.Count > 0;
+    [ObservableProperty] private string? _availableMessage;
 
     [ObservableProperty] private LocalServerRow? _selected;
     [ObservableProperty] private string? _buildsMessage;
@@ -196,7 +218,7 @@ public partial class LocalViewModel : ViewModelBase
         _connect = connect;
         BuildChoices.Add(new LocalBuildChoice(null, "Новейшая"));
         foreach (var p in services.Local.Profiles.List())
-            Servers.Add(new LocalServerRow(services.Local, p));
+            Servers.Add(new LocalServerRow(services, p));
         Selected = Servers.FirstOrDefault();
         SyncBuildChoice();
     }
@@ -208,7 +230,38 @@ public partial class LocalViewModel : ViewModelBase
     }
 
     /// <summary>The page opened: refresh the build list (cheap, one small JSON).</summary>
-    public void Activate() => _ = LoadBuildsAsync();
+    public void Activate()
+    {
+        _ = LoadBuildsAsync();
+        _ = LoadAvailableAsync();
+    }
+
+    [RelayCommand]
+    private async Task LoadAvailableAsync()
+    {
+        var list = _services.Platform.IsSignedIn
+            ? await _services.Platform.GetAvailableLocalAsync()
+            : [];
+        Available.Clear();
+        foreach (var a in list)
+            Available.Add(new LocalAvailableRow(a));
+        OnPropertyChanged(nameof(HasAvailable));
+    }
+
+    [RelayCommand]
+    private async Task AskToJoin(LocalAvailableRow row)
+    {
+        var error = await _services.Platform.AskToJoinLocalAsync(row.Id);
+        AvailableMessage = error ?? $"Запрос отправлен — {row.OwnerName} увидит его у себя в ЛОКАЛКЕ.";
+        await LoadAvailableAsync();
+    }
+
+    [RelayCommand]
+    private void JoinShared(LocalAvailableRow row)
+    {
+        if (row is { CanJoin: true, Address: { } address })
+            _connect(new ServerEntry(address) { Name = $"{row.OwnerName}: {row.Name}" });
+    }
 
     [RelayCommand]
     private async Task LoadBuildsAsync()
@@ -267,7 +320,7 @@ public partial class LocalViewModel : ViewModelBase
             develop ? $"Маппинг {Servers.Count + 1}" : $"Сервер {Servers.Count + 1}",
             develop ? LocalServerMode.Develop : LocalServerMode.Play);
         _services.Local.Profiles.Save(p);
-        var row = new LocalServerRow(_services.Local, p);
+        var row = new LocalServerRow(_services, p);
         Servers.Add(row);
         Selected = row;
         OnPropertyChanged(nameof(HasServers));
@@ -278,6 +331,11 @@ public partial class LocalViewModel : ViewModelBase
     {
         row ??= Selected;
         if (row is null || !row.IsStopped) return;
+        if (row.Profile.Shared && !_services.Platform.IsSignedIn)
+        {
+            row.Host.Failed("Чтобы пускать других, войдите в аккаунт: без него белый список сервера не пустит даже вас.");
+            return;
+        }
         await _services.Local.StartAsync(row.Profile);
         await LoadBuildsAsync(); // a first start downloads a build
     }

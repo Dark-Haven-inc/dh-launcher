@@ -202,10 +202,15 @@ public sealed class AppServices : IDisposable
         _heartbeat.Start();
     }
 
+    // A local server's 127.0.0.1 means nothing on a friend's PC: they see the player online, not where.
     private Task SendPresenceAsync() =>
         Platform.IsSignedIn
-            ? Platform.UpdatePresenceAsync(CurrentGameAddress, CurrentGameName)
+            ? Platform.UpdatePresenceAsync(IsThisPc(CurrentGameAddress) ? null : CurrentGameAddress, CurrentGameName)
             : Task.CompletedTask;
+
+    internal static bool IsThisPc(string? address) =>
+        Uri.TryCreate(address, UriKind.Absolute, out var uri)
+        && (uri.IsLoopback || System.Net.IPAddress.TryParse(uri.Host.Trim('[', ']'), out var ip) && System.Net.IPAddress.IsLoopback(ip));
 
     public void Dispose()
     {

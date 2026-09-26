@@ -211,6 +211,39 @@ public sealed class LocalServerTests : IDisposable
     }
 
     [Fact]
+    public void A_server_open_to_others_is_reachable_but_only_for_whitelisted_accounts()
+    {
+        var p = new LocalServerProfile { Port = 1252, Shared = true };
+        var toml = LocalServerConfig.Toml(p, "logs").Replace("\r\n", "\n");
+
+        Assert.Contains("bindto = \"::,0.0.0.0\"", toml);
+        Assert.Contains("upnp = true", toml);
+        Assert.Contains("bind = \"*:1252\"", toml);
+        Assert.Contains("[auth]\nmode = 1", toml); // Required: real accounts only
+        Assert.Contains("[whitelist]\nenabled = true", toml);
+        Assert.DoesNotContain("127.0.0.1", toml);
+    }
+
+    [Theory]
+    [InlineData("[INFO] net.upnp: Peer 0.0.0.0:1250: Successfully UPnP port forwarded 1250/udp and 1250/tcp", UpnpState.Forwarded)]
+    [InlineData("[WARN] net.upnp: Peer 0.0.0.0:1250: Failed UPnP port forwarding, your server may not be accessible.", UpnpState.Failed)]
+    [InlineData("[WARN] net.upnp: Can't UPnP forward: No IPv4-compatible NetPeers available.", UpnpState.Failed)]
+    [InlineData("[WARN] net.upnp: UPnP threw an exception: System.Exception", UpnpState.Failed)]
+    [InlineData("[INFO] root: Server Version 275.1.0.0 -> Ready", null)]
+    public void Reads_the_routers_answer_from_the_server_console(string line, UpnpState? expected) =>
+        Assert.Equal(expected, LocalServerHost.ReadUpnp(line));
+
+    [Theory]
+    [InlineData("GODWINCH", true)]
+    [InlineData("Cadet_Nova_2", true)]
+    [InlineData("name; shutdown", false)]
+    [InlineData("a b", false)]
+    [InlineData("", false)]
+    [InlineData("имя", false)]
+    public void Only_real_account_names_reach_the_server_console(string name, bool ok) =>
+        Assert.Equal(ok, LocalServerHost.IsUsername(name));
+
+    [Fact]
     public void Mapping_mode_loads_the_games_developer_preset_and_a_chosen_map()
     {
         var p = new LocalServerProfile { Mode = LocalServerMode.Develop, Map = " MyShuttle " };

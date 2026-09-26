@@ -11,23 +11,48 @@ public static class LocalServerConfig
     /// <summary>The game's developer preset, shipped inside every server build.</summary>
     public const string DevelopPreset = "Build/development";
 
+    // Robust's AuthMode enum.
+    private const int AuthOptional = 0;
+    private const int AuthRequired = 1;
+
     public static string Toml(LocalServerProfile p, string logsDir)
     {
         var s = new StringBuilder();
         s.AppendLine("# Written by the Frontier 15 launcher (ЛОКАЛКА) on every start — change the server there, not here.");
 
-        // Only this PC: no one else can reach it, and it never shows up on the public hub.
         Section(s, "net");
         Value(s, "port", p.Port);
-        Value(s, "bindto", "127.0.0.1");
-        Section(s, "status");
-        Value(s, "bind", $"127.0.0.1:{p.Port}");
+        if (p.Shared)
+        {
+            // Open to invited players: every interface, and ask the router to forward the port (the
+            // engine maps both UDP and TCP; the console says whether it worked — LocalServerHost reads it).
+            Value(s, "bindto", "::,0.0.0.0");
+            Value(s, "upnp", true);
+            Section(s, "status");
+            Value(s, "bind", $"*:{p.Port}");
+        }
+        else
+        {
+            // Only this PC: no one else can reach it.
+            Value(s, "bindto", "127.0.0.1");
+            Section(s, "status");
+            Value(s, "bind", $"127.0.0.1:{p.Port}");
+        }
+
+        // Never on the public hub either way.
         Section(s, "hub");
         Value(s, "advertise", false);
-        // Optional, not the engine's Required: a server only this PC reaches still works offline or
-        // with the SS14 auth server down; a signed-in player is verified all the same.
+
+        // This PC only: Optional, not the engine's Required — it works offline or with the SS14 auth
+        // server down, and a signed-in player is verified all the same. Open to others: real accounts
+        // only, and only whitelisted ones (the owner and whoever they let in).
         Section(s, "auth");
-        Value(s, "mode", 0);
+        Value(s, "mode", p.Shared ? AuthRequired : AuthOptional);
+        if (p.Shared)
+        {
+            Section(s, "whitelist");
+            Value(s, "enabled", true);
+        }
 
         Section(s, "game");
         Value(s, "hostname", $"Локалка: {p.Name}");
