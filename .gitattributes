@@ -1,5 +1,7 @@
 * text=auto eol=lf
 *.sln text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
 *.slnx text eol=lf
 *.csproj text eol=lf
 *.props text eol=lf
