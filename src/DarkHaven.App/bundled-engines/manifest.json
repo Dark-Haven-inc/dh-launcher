@@ -1,12 +1,12 @@
 {
   "275.1.0": {
-    "file": "275.1.0.zip",
-    "sha256": "5C70F44A1C98091EED980F4B0F452D181CEE46DBCB45EFF127781152C3C28062",
-    "note": "Dark Haven forked RobustToolbox, built from c333ccb58145767922946bf08d919d8856bc1f40 (live server, медецина build)",
+    "file": "275.1.0-d9acf620.zip",
+    "sha256": "23096442E4FC76E862DFD12C0045F2F72B1EDB6EFB38CAD4953CC2B58E676775",
+    "note": "Dark Haven forked RobustToolbox, built from d9acf620a94d1229bfd265a8a33701f372a4a918 (dh-sector-frontier master 52af13a7: launch proof in the handshake, server visibility filtering, client integrity). Also joins servers still on c333ccb58 - checked against build 875c455c.",
     "platforms": {
       "linux-x64": {
-        "file": "275.1.0_linux-x64.zip",
-        "sha256": "95819E6689B4C5880A169DA4E17A99DDFD90AE1A85EA70D749BC10DE6BA8B163"
+        "file": "275.1.0-d9acf620_linux-x64.zip",
+        "sha256": "C0A9047B07CCC251567FBF64F63913EB534A09D42E628C9BCE9925F1A73B60F7"
       }
     }
   }
