@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.PeriodPicker"
+             x:DataType="vm:PeriodPickerViewModel">
+
+    <UserControl.Styles>
+        <!-- A day: a 24 px cell, the number in mono. The period's ends are filled with the accent,
+             the days between them shaded; today has a short line under it. -->
+        <Style Selector="Button.day">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Foreground" Value="{StaticResource DhBodyBrush}" />
+        </Style>
+        <Style Selector="Button.day TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+        </Style>
+        <!-- Text colors on the button itself (the number reads them from there); fills on its presenter,
+             where Fluent's own hover and press fills would otherwise win. -->
+        <Style Selector="Button.day.out">
+            <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+        </Style>
+        <Style Selector="Button.day:pointerover, Button.day.range">
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Button.day.edge">
+            <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        </Style>
+        <Style Selector="Button.day.edge TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.day:disabled">
+            <Setter Property="Foreground" Value="{StaticResource DhBorderStrongBrush}" />
+        </Style>
+        <Style Selector="Button.day:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        </Style>
+        <Style Selector="Button.day:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.day.range /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        </Style>
+        <Style Selector="Button.day.edge /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        </Style>
+        <Style Selector="Button.day.edge:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhActiveHoverBrush}" />
+        </Style>
+        <Style Selector="Button.day:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.day Border.today">
+            <Setter Property="IsVisible" Value="False" />
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="1" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,0,3" />
+            <Setter Property="Background" Value="{StaticResource DhActiveLineBrush}" />
+        </Style>
+        <Style Selector="Button.day.today Border.today">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="Button.day.edge Border.today">
+            <Setter Property="Background" Value="{StaticResource DhOnActiveBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- The field: what's picked, lit like a chosen chip once there is a period. Plain text content, so
+         it takes the chip's colors as they change. -->
+    <Button Classes="chip period" Classes.on="{Binding IsSet}" MinWidth="136" HorizontalContentAlignment="Left"
+            FontFamily="{StaticResource DhMono}" Content="{Binding FieldText}">
+        <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="dh">
+                <StackPanel Width="224" Margin="12" Spacing="8">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Button Classes="icon" Content="&#xEAB5;" ToolTip.Tip="Раньше" Command="{Binding PrevMonthCommand}" />
+                        <TextBlock Grid.Column="1" Classes="caps" Text="{Binding MonthTitle}" Foreground="{StaticResource DhTextBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEAB6;" ToolTip.Tip="Позже"
+                                Command="{Binding NextMonthCommand}" IsEnabled="{Binding CanGoNext}" />
+                    </Grid>
+
+                    <StackPanel Spacing="2">
+                        <UniformGrid Columns="7">
+                            <TextBlock Classes="lbl" Text="ПН" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="ВТ" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="СР" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="ЧТ" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="ПТ" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="СБ" HorizontalAlignment="Center" />
+                            <TextBlock Classes="lbl" Text="ВС" HorizontalAlignment="Center" />
+                        </UniformGrid>
+                        <ItemsControl ItemsSource="{Binding Days}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CalendarDayViewModel">
+                                    <Button Classes="day" Classes.out="{Binding !InMonth}" Classes.today="{Binding IsToday}"
+                                            Classes.edge="{Binding IsEdge}" Classes.range="{Binding IsInRange}"
+                                            IsEnabled="{Binding IsEnabled}"
+                                            Command="{Binding $parent[ItemsControl].((vm:PeriodPickerViewModel)DataContext).PickCommand}"
+                                            CommandParameter="{Binding}">
+                                        <Panel>
+                                            <TextBlock Text="{Binding Text}" />
+                                            <Border Classes="today" />
+                                        </Panel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <Border Classes="hair" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="chip small" Content="7 дней" Command="{Binding PresetCommand}" CommandParameter="7"
+                                Classes.on="{Binding ActivePreset, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=7}" />
+                        <Button Classes="chip small" Content="30 дней" Margin="-1,0,0,0" Command="{Binding PresetCommand}" CommandParameter="30"
+                                Classes.on="{Binding ActivePreset, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=30}" />
+                        <Button Classes="chip small" Content="год" Margin="-1,0,0,0" Command="{Binding PresetCommand}" CommandParameter="365"
+                                Classes.on="{Binding ActivePreset, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=365}" />
+                        <Button Classes="chip small" Content="всё время" Margin="-1,0,0,0" Command="{Binding PresetCommand}" CommandParameter="all"
+                                Classes.on="{Binding ActivePreset, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=all}" />
+                    </StackPanel>
+                </StackPanel>
+            </Flyout>
+        </Button.Flyout>
+    </Button>
+</UserControl>

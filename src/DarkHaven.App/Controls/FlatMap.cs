@@ -38,8 +38,6 @@ public sealed class FlatMap : Control
     public event EventHandler<object>? NodeInvoked;
 
     private const double PadX = 64, PadY = 48, Square = 8, Ring = 20, HitRadius = 14;
-    private static readonly Color GridColor = Color.Parse("#141416");
-    private static readonly Color LinkColor = Color.Parse("#3A3A3E");
 
     private readonly List<IMapNode> _nodes = [];
     private INotifyCollectionChanged? _observed;
@@ -52,6 +50,8 @@ public sealed class FlatMap : Control
     public FlatMap()
     {
         ClipToBounds = true;
+        // Colors come from the palette at render time; repaint when the player recolors it.
+        ResourcesChanged += (_, _) => InvalidateVisual();
         Cursor = new Cursor(StandardCursorType.Arrow);
     }
 
@@ -211,7 +211,7 @@ public sealed class FlatMap : Control
         var b = Bounds;
         ctx.FillRectangle(Brushes.Transparent, new Rect(b.Size));
 
-        var gridPen = new Pen(new SolidColorBrush(GridColor), 1);
+        var gridPen = new Pen(Brush("DhMapGrid", "#141416"), 1);
         for (var x = 16.5; x < b.Width; x += 48)
             ctx.DrawLine(gridPen, new Point(x, 0), new Point(x, b.Height));
         for (var y = 8.5; y < b.Height; y += 48)
@@ -228,7 +228,7 @@ public sealed class FlatMap : Control
         var mono = Font("DhMono", "monospace");
 
         // Links, each pair once.
-        var linkPen = new Pen(new SolidColorBrush(LinkColor), 1) { DashStyle = new DashStyle([4, 4], 0) };
+        var linkPen = new Pen(Brush("DhMapLink", "#3A3A3E"), 1) { DashStyle = new DashStyle([4, 4], 0) };
         var byName = _nodes.GroupBy(n => n.Name).ToDictionary(g => g.Key, g => g.First());
         var drawn = new HashSet<(string, string)>();
         foreach (var n in _nodes)

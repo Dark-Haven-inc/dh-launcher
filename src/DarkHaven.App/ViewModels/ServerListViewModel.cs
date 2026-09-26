@@ -356,7 +356,7 @@ public partial class ServerListViewModel : ViewModelBase
 }
 
 /// <summary>One network section in the grouped РУхаб list — e.g. "Corvax" with its shards underneath.</summary>
-public sealed class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers)
+public sealed partial class ServerGroupViewModel(string label, IReadOnlyList<ServerRowViewModel> servers)
 {
     public string Label { get; } = label;
     public IReadOnlyList<ServerRowViewModel> Servers { get; } = servers;

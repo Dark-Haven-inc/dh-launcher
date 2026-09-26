@@ -1,0 +1,160 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DarkHaven.App.ViewModels"
+        xmlns:views="using:DarkHaven.App.Views.Legacy"
+        x:Class="DarkHaven.App.Views.Legacy.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Frontier 15 Launcher" Width="1100" Height="720"
+        MinWidth="960" MinHeight="600"
+        Icon="/Assets/icon.ico"
+        Background="{StaticResource DhBgBrush}">
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
+        <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
+        <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:ProfileViewModel"><views:ProfileView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
+    </Window.DataTemplates>
+
+    <Panel>
+        <DockPanel>
+            <!-- Top bar -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1" Height="58">
+                <Grid Margin="20,0" ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Image Source="/Assets/emblem.png" Width="32" Height="32" VerticalAlignment="Center" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock FontWeight="Bold" FontSize="15" LetterSpacing="1">
+                                <Run Text="FRONTIER" Foreground="{StaticResource DhFrontierSilverBrush}" /><Run Text=" 15" Foreground="{StaticResource DhFrontierRedBrush}" />
+                            </TextBlock>
+                            <TextBlock Text="СЕТЬ СТАНЦИЙ" Classes="caps" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="ghost" Padding="10,6" ToolTip.Tip="Уведомления"
+                                IsVisible="{Binding Notifications.IsAvailable}">
+                            <Panel>
+                                <PathIcon Data="{StaticResource DhBellGeometry}" Width="15" Height="15"
+                                          Foreground="{StaticResource DhTextBrush}" />
+                                <Border Background="{StaticResource DhDangerBrush}" CornerRadius="7"
+                                        MinWidth="14" Height="14" Padding="3,0" Margin="0,-7,-9,0"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        IsVisible="{Binding Notifications.HasUnread}">
+                                    <TextBlock Text="{Binding Notifications.BadgeText}" FontSize="9" FontWeight="Bold"
+                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                            </Panel>
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="dh">
+                                    <views:NotificationsPanel DataContext="{Binding Notifications}" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Classes="ghost" Content="Discord" Command="{Binding OpenDiscordCommand}" />
+                        <Button Classes="ghost" Content="Сайт" Command="{Binding OpenSiteCommand}" />
+                        <Button Classes="ghost" Command="{Binding OpenAccountCommand}">
+                            <TextBlock>
+                                <Run Text="{Binding AccountName, TargetNullValue='Гость', FallbackValue='Гость'}" />
+                            </TextBlock>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Self-update banner -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhAccentBrush}" Padding="20,8"
+                    IsVisible="{Binding ShowUpdateBanner}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding UpdateBannerText}" Foreground="White"
+                               FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="Обновить" Command="{Binding StartUpdateCommand}"
+                                IsVisible="{Binding CanStartUpdate}"
+                                Background="White" Foreground="{StaticResource DhAccent}" Padding="12,4" FontSize="12" />
+                        <Button Content="Перезапустить" Command="{Binding RestartForUpdateCommand}"
+                                IsVisible="{Binding CanRestartForUpdate}"
+                                Background="White" Foreground="{StaticResource DhAccent}" Padding="12,4" FontSize="12" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Watched region back online -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrightBrush}" BorderThickness="0,0,0,2" Padding="20,8"
+                    IsVisible="{Binding ShowRegionBanner}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding LegacyRegionBannerText}" FontWeight="SemiBold" FontSize="12"
+                               VerticalAlignment="Center" Foreground="{StaticResource DhTextBrush}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Classes="primary" Content="ПОДКЛЮЧИТЬСЯ" Padding="12,4" FontSize="12"
+                                Command="{Binding ConnectOnlineRegionCommand}" />
+                        <Button Classes="ghost" Content="Позже" Padding="10,4" FontSize="12"
+                                Command="{Binding DismissRegionBannerCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Waiting for a free slot on a full server -->
+            <Border DockPanel.Dock="Top" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrightBrush}" BorderThickness="0,0,0,2" Padding="20,8"
+                    IsVisible="{Binding ShowSlotWaitBanner}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding LegacySlotWaitBannerText}" FontWeight="SemiBold" FontSize="12"
+                               VerticalAlignment="Center" Foreground="{StaticResource DhTextBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Classes="ghost" Content="Не ждать" Padding="10,4" FontSize="12"
+                            Command="{Binding CancelSlotWaitCommand}" />
+                </Grid>
+            </Border>
+
+            <!-- Bottom tab bar -->
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource DhBgElevatedBrush}"
+                    BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,1,0,0" Height="52">
+                <Grid Margin="20,0" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding LegacyVersionLine}" Classes="mono dim" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center" FontSize="10" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <Button Classes="tab" Content="ГЛАВНАЯ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Home}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}" />
+                        <Button Classes="tab" Content="РЕГИОНЫ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Regions}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Regions}}" />
+                        <Button Classes="tab" Content="СЕРВЕРЫ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Servers}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}" />
+                        <Button Classes="tab" Content="МОНИТОРИНГ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Monitoring}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}" />
+                        <Button Classes="tab" Content="НОВОСТИ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.News}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}" />
+                        <Button Classes="tab" Content="НАСТРОЙКИ" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Settings}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}" />
+                        <Button Classes="tab" Content="АДМИН" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ContentControl Content="{Binding Current}" />
+        </DockPanel>
+
+        <!-- Connecting overlay -->
+        <Border IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Background="{StaticResource DhScrimBrush}">
+            <ContentControl Content="{Binding Connecting}" />
+        </Border>
+    </Panel>
+</Window>

@@ -1,0 +1,68 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Legacy palette: the deep blue-black sci-fi HUD the launcher had before the monochrome redesign. -->
+    <Color x:Key="DhBg">#0A0F1C</Color>
+    <Color x:Key="DhBgElevated">#111A2E</Color>
+    <Color x:Key="DhBgPanel">#0E1626</Color>
+    <Color x:Key="DhBgHover">#1B2942</Color>
+    <Color x:Key="DhBorder">#24365A</Color>
+    <Color x:Key="DhBorderBright">#3C5C96</Color>
+    <Color x:Key="DhText">#DCE6F5</Color>
+    <Color x:Key="DhTextDim">#7C8DB0</Color>
+    <Color x:Key="DhAccent">#3B82F6</Color>
+    <Color x:Key="DhAccentBright">#5AA0FF</Color>
+    <Color x:Key="DhCyan">#7FD4FF</Color>
+    <Color x:Key="DhOnline">#4ADE80</Color>
+    <Color x:Key="DhWarn">#F0B454</Color>
+    <Color x:Key="DhDanger">#C6402E</Color>
+    <Color x:Key="DhOffline">#5A6B8A</Color>
+    <!-- The Frontier 15 wordmark: silver "FRONTIER", red "15". Same values SectorMap.cs draws
+         on its canvas (Lerp(Text, White, 0.25) and FrontierRed) — kept in sync by hand, since
+         that one is painted in code rather than styled from XAML. -->
+    <Color x:Key="DhFrontierSilver">#E5ECF8</Color>
+    <Color x:Key="DhFrontierRed">#F0384C</Color>
+
+    <!-- The monochrome design's names, so either layout can be painted in this palette. -->
+    <Color x:Key="DhBgPress">#22335A</Color>
+    <Color x:Key="DhBorderStrong">#3C5C96</Color>
+    <Color x:Key="DhBody">#B4C2DA</Color>
+    <Color x:Key="DhTextFaint">#5A6B8A</Color>
+    <Color x:Key="DhActive">#3B82F6</Color>
+    <Color x:Key="DhActiveHover">#5AA0FF</Color>
+    <Color x:Key="DhActivePress">#2F6BD0</Color>
+    <Color x:Key="DhOnActive">#FFFFFF</Color>
+    <Color x:Key="DhActiveLine">#5AA0FF</Color>
+    <Color x:Key="DhScrim">#D8060A12</Color>
+    <Color x:Key="DhMapGrid">#0E1626</Color>
+    <Color x:Key="DhMapLink">#24365A</Color>
+
+    <SolidColorBrush x:Key="DhBgBrush" Color="{StaticResource DhBg}" />
+    <SolidColorBrush x:Key="DhBgPanelBrush" Color="{StaticResource DhBgPanel}" />
+    <SolidColorBrush x:Key="DhBgHoverBrush" Color="{StaticResource DhBgHover}" />
+    <SolidColorBrush x:Key="DhBgPressBrush" Color="{StaticResource DhBgPress}" />
+    <SolidColorBrush x:Key="DhBorderBrush" Color="{StaticResource DhBorder}" />
+    <SolidColorBrush x:Key="DhBorderStrongBrush" Color="{StaticResource DhBorderStrong}" />
+    <SolidColorBrush x:Key="DhTextBrush" Color="{StaticResource DhText}" />
+    <SolidColorBrush x:Key="DhBodyBrush" Color="{StaticResource DhBody}" />
+    <SolidColorBrush x:Key="DhTextDimBrush" Color="{StaticResource DhTextDim}" />
+    <SolidColorBrush x:Key="DhTextFaintBrush" Color="{StaticResource DhTextFaint}" />
+    <SolidColorBrush x:Key="DhBgElevatedBrush" Color="{StaticResource DhBgElevated}" />
+    <SolidColorBrush x:Key="DhBorderBrightBrush" Color="{StaticResource DhBorderBright}" />
+    <SolidColorBrush x:Key="DhAccentBrush" Color="{StaticResource DhAccent}" />
+    <SolidColorBrush x:Key="DhAccentBrightBrush" Color="{StaticResource DhAccentBright}" />
+    <SolidColorBrush x:Key="DhCyanBrush" Color="{StaticResource DhCyan}" />
+    <SolidColorBrush x:Key="DhOnlineBrush" Color="{StaticResource DhOnline}" />
+    <SolidColorBrush x:Key="DhWarnBrush" Color="{StaticResource DhWarn}" />
+    <SolidColorBrush x:Key="DhDangerBrush" Color="{StaticResource DhDanger}" />
+    <SolidColorBrush x:Key="DhOfflineBrush" Color="{StaticResource DhOffline}" />
+    <SolidColorBrush x:Key="DhFrontierSilverBrush" Color="{StaticResource DhFrontierSilver}" />
+    <SolidColorBrush x:Key="DhFrontierRedBrush" Color="{StaticResource DhFrontierRed}" />
+    <SolidColorBrush x:Key="DhActiveBrush" Color="{StaticResource DhActive}" />
+    <SolidColorBrush x:Key="DhActiveHoverBrush" Color="{StaticResource DhActiveHover}" />
+    <SolidColorBrush x:Key="DhActivePressBrush" Color="{StaticResource DhActivePress}" />
+    <SolidColorBrush x:Key="DhOnActiveBrush" Color="{StaticResource DhOnActive}" />
+    <SolidColorBrush x:Key="DhActiveLineBrush" Color="{StaticResource DhActiveLine}" />
+    <SolidColorBrush x:Key="DhScrimBrush" Color="{StaticResource DhScrim}" />
+
+    <!-- No SystemAccentColor here: like before, Fluent keeps its own. -->
+</ResourceDictionary>

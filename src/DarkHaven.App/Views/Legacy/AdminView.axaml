@@ -1,0 +1,633 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views.Legacy"
+             xmlns:api="using:DarkHaven.Launcher.Api"
+             xmlns:sys="using:System"
+             x:Class="DarkHaven.App.Views.Legacy.AdminView"
+             x:DataType="vm:AdminViewModel">
+
+    <UserControl.Styles>
+        <!-- ВЕРСИИ ЛАУНЧЕРА verdict: amber while someone is left on the old feed, green once nobody is -->
+        <Style Selector="TextBlock.verdict">
+            <Setter Property="Foreground" Value="{StaticResource DhWarnBrush}" />
+        </Style>
+        <Style Selector="TextBlock.verdict.ready">
+            <Setter Property="Foreground" Value="{StaticResource DhOnlineBrush}" />
+        </Style>
+        <!-- Role switches: same look as МОНИТОРИНГ's range switches — the chosen one is lit -->
+        <Style Selector="Button.pill">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        </Style>
+        <Style Selector="Button.pill:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        </Style>
+        <Style Selector="Button.pill.selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
+            <Setter Property="TextBlock.Foreground" Value="White" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Margin="40,36" Spacing="22" MaxWidth="720" HorizontalAlignment="Left">
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Админ" Classes="h1" />
+                <TextBlock Text="Игроки, серверы, чат, новости, роли и журнал" Classes="dim" />
+            </StackPanel>
+
+            <!-- Access gating -->
+            <Border Classes="card" Padding="18" IsVisible="{Binding NotConnected}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Платформа Frontier 15 не настроена. Укажите адрес в Настройках → Подключение → «Платформа Frontier 15»." />
+            </Border>
+            <Border Classes="card" Padding="18" IsVisible="{Binding NotSignedIn}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="Не удалось войти в платформу этим аккаунтом — проверьте, что вы вошли в Space Station 14 и платформа доступна." />
+            </Border>
+            <Border Classes="card" Padding="18" IsVisible="{Binding NoAccess}">
+                <TextBlock Classes="dim" TextWrapping="Wrap"
+                           Text="У вашего аккаунта нет прав администратора на платформе." />
+            </Border>
+
+            <TextBlock Text="{Binding Status}" Classes="dim" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <!-- The host's emergency freeze (dh-platform Admin/Lockdown) -->
+            <Border Background="{StaticResource DhDangerBrush}" CornerRadius="6" Padding="14,10"
+                    IsVisible="{Binding LockdownText, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding LockdownText}" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel Spacing="22" IsVisible="{Binding CanSeeAdmin}">
+                <!-- One section at a time instead of one endless page -->
+                <WrapPanel>
+                    <Button Classes="pill" Margin="0,0,6,6" Content="Игроки" Command="{Binding SetSectionCommand}" CommandParameter="players"
+                            IsVisible="{Binding CanModerate}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}" />
+                    <Button Classes="pill" Margin="0,0,6,6" Content="{Binding ServersTabTitle}" Command="{Binding SetSectionCommand}" CommandParameter="servers"
+                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=servers}" />
+                    <Button Classes="pill" Margin="0,0,6,6" Content="Чат" Command="{Binding SetSectionCommand}" CommandParameter="chat"
+                            IsVisible="{Binding CanModerate}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=chat}" />
+                    <Button Classes="pill" Margin="0,0,6,6" Content="Новости" Command="{Binding SetSectionCommand}" CommandParameter="news"
+                            IsVisible="{Binding CanEditNews}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
+                    <Button Classes="pill" Margin="0,0,6,6" Content="Роли и доступ" Command="{Binding SetSectionCommand}" CommandParameter="access"
+                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}" />
+                    <Button Classes="pill" Margin="0,0,6,6" Content="Журнал" Command="{Binding SetSectionCommand}" CommandParameter="journal"
+                            IsVisible="{Binding CanAdmin}" Classes.selected="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}" />
+                </WrapPanel>
+
+                <!-- СЕРВЕРЫ: what goes on the launcher's server list (admin/owner) -->
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=servers}">
+                <StackPanel Spacing="12" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap"
+                               Text="В лаунчере видны только сервера из этого списка. Игроки подают заявки во вкладке СЕРВЕРЫ; решение и причина отказа приходят им в уведомления." />
+                    <TextBlock Text="{Binding ServersStatus}" FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding ServersStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                    <TextBlock Text="ЗАЯВКИ" Classes="caps" />
+                    <TextBlock Classes="dim" FontSize="12" Text="Новых заявок нет." IsVisible="{Binding !HasPendingServers}" />
+                    <ItemsControl ItemsSource="{Binding PendingServers}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminServerRowViewModel">
+                                <Border Classes="card" Padding="14,12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock>
+                                            <Run Text="{Binding Name}" FontWeight="Bold" FontSize="15" /><Run Text="   " />
+                                            <Run Text="{Binding Address}" FontFamily="{StaticResource DhMono}" FontSize="12" />
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding SubmittedText}" Classes="dim" FontSize="11" />
+                                        <TextBlock Text="{Binding LegacyProbeText}" FontSize="12" />
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" FontSize="12"
+                                                   IsVisible="{Binding Description, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <TextBlock Text="{Binding Contact}" Classes="dim" FontSize="11"
+                                                   IsVisible="{Binding Contact, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <TextBox Text="{Binding Note}" Watermark="Причина отказа (обязательна) или комментарий к одобрению" Margin="0,4,0,0" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Classes="primary" Content="Одобрить"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).ApproveServerCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="ghost" Content="Отклонить"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RejectServerCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="В СПИСКЕ — В ЭТОМ ПОРЯДКЕ ИХ ВИДЯТ ИГРОКИ" Classes="caps" Margin="0,8,0,0" />
+                    <TextBlock Classes="dim" FontSize="12" Text="Список пуст — одобрите заявку или добавьте сервер ниже." IsVisible="{Binding !HasListedServers}" />
+                    <ItemsControl ItemsSource="{Binding ListedServers}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminServerRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="Auto,10,*,Auto">
+                                        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                            <Button Classes="ghost" Content="↑" Padding="8,2"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).MoveServerUpCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="ghost" Content="↓" Padding="8,2"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).MoveServerDownCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="2">
+                                            <TextBlock>
+                                                <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text="   " />
+                                                <Run Text="{Binding Address}" FontFamily="{StaticResource DhMono}" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ReviewText}" Classes="dim" FontSize="11" />
+                                            <TextBox Text="{Binding Note}" Watermark="Причина, если убираете (увидит тот, кто подавал)" FontSize="11" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Classes="ghost" Content="Убрать"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).HideServerCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="ДОБАВИТЬ СЕРВЕР СРАЗУ" Classes="caps" Margin="0,8,0,0" />
+                    <Border Classes="card" Padding="14,12">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,8,*">
+                                <TextBox Grid.Column="0" Watermark="Название" Text="{Binding NewServerName}" MaxLength="60" />
+                                <TextBox Grid.Column="2" Watermark="ss14://адрес:порт" Text="{Binding NewServerAddress}" MaxLength="200" />
+                            </Grid>
+                            <TextBox Watermark="Описание (видят игроки)" Text="{Binding NewServerDescription}" MaxLength="500" />
+                            <Button Classes="primary" Content="Добавить в список" HorizontalAlignment="Left" Command="{Binding AddServerCommand}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Expander Header="Отклонённые и убранные" IsVisible="{Binding HasArchivedServers}" HorizontalAlignment="Stretch">
+                        <ItemsControl ItemsSource="{Binding ArchivedServers}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AdminServerRowViewModel">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Spacing="1">
+                                            <TextBlock>
+                                                <Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=" · " /><Run Text="{Binding StatusTitle}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ReviewText}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Button Classes="ghost" Content="Вернуть в список"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RestoreServerCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="ghost" Content="Удалить"
+                                                    Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).DeleteServerCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}">
+                <!-- Player search -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ИГРОК" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="10">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Grid.Column="0" Text="{Binding SearchUsername}" Watermark="Ник игрока" />
+                                <Button Grid.Column="1" Classes="ghost" Content="Найти" Command="{Binding SearchPlayerCommand}" />
+                            </Grid>
+
+                            <TextBlock Classes="dim" Text="Игрок не найден — он ещё не открывал ПРОФИЛЬ с этим лаунчером."
+                                       IsVisible="{Binding SearchNotFound}" />
+
+                            <StackPanel Spacing="4" IsVisible="{Binding SearchResult, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding SearchResult.Username}" FontWeight="Bold" FontSize="16" />
+                                    <Border Background="{StaticResource DhBgElevatedBrush}" BorderBrush="{StaticResource DhBorderBrush}"
+                                            BorderThickness="1" CornerRadius="4" Padding="6,1"
+                                            IsVisible="{Binding SearchResult.Role, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <TextBlock Text="{Binding SearchResult.Role}" FontSize="10" />
+                                    </Border>
+                                    <Border Background="{StaticResource DhDangerBrush}" CornerRadius="4" Padding="6,1"
+                                            IsVisible="{Binding SearchResult.LauncherBanned}">
+                                        <TextBlock Text="ЗАБАНЕН" FontSize="10" Foreground="White" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Classes="dim" FontSize="12">
+                                    <Run Text="На платформе с" /><Run Text=" " /><Run Text="{Binding SearchResult.MemberSince, Converter={x:Static vm:RuDateConverter.Instance}}" />
+                                    <Run Text=" · последний раз " /><Run Text="{Binding SearchResult.LastSeen, Converter={x:Static vm:RuDateConverter.Instance}}" />
+                                </TextBlock>
+                                <TextBlock Classes="dim" FontSize="12" Text="{Binding SearchResult.LauncherVersion, StringFormat='Лаунчер: {0}'}"
+                                           IsVisible="{Binding SearchResult.LauncherVersion, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                <TextBlock Classes="dim" FontSize="12">
+                                    <Run Text="Наиграно на серверах DH:" /><Run Text=" " /><Run Text="{Binding SearchResult.TotalPlaytimeSeconds, Converter={x:Static vm:DurationConverter.Instance}}" />
+                                </TextBlock>
+                                <TextBlock Classes="dim" FontSize="12" IsVisible="{Binding SearchResult.LauncherBanned}"
+                                           Text="{Binding SearchResult.LauncherBanReason, StringFormat='Причина бана: {0}'}" />
+                                <TextBlock Classes="dim" FontSize="12"
+                                           IsVisible="{Binding SearchResult.Discord, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                           Text="{Binding SearchResult.Discord.Display, StringFormat='Discord: {0}'}" />
+                                <TextBlock Classes="dim" FontSize="12"
+                                           IsVisible="{Binding SearchResult.GameAdminRank, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                           Text="{Binding SearchResult.GameAdminRank, StringFormat='Права на игровом сервере: {0}'}" />
+
+                                <!-- Bans the game server itself issued — separate from the launcher ban above -->
+                                <StackPanel Spacing="4" IsVisible="{Binding HasGameBans}">
+                                    <TextBlock Text="БАНЫ НА СЕРВЕРЕ" Classes="caps" FontSize="10" Margin="0,6,0,0" />
+                                    <ItemsControl ItemsSource="{Binding SearchGameBans}">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AdminGameBanRowViewModel">
+                                                <TextBlock Classes="dim" FontSize="12" TextWrapping="Wrap">
+                                                    <Run Text="{Binding WhenText}" /><Run Text=" · " /><Run Text="{Binding KindText}" />
+                                                    <Run Text=" · " /><Run Text="{Binding StateText}" /><Run Text=" — " /><Run Text="{Binding Reason}" />
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+
+                                <!-- Their profile as everyone sees it, and the moderation for it -->
+                                <Grid ColumnDefinitions="280,16,*" Margin="0,10,0,0">
+                                    <views:ProfileCard DataContext="{Binding SearchCard}" />
+                                    <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Top">
+                                        <TextBlock Text="ПРОФИЛЬ ИГРОКА" Classes="caps" />
+                                        <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                                   Text="Если картинка или текст нарушают правила — уберите. Игрок получит уведомление, действие попадёт в журнал." />
+                                        <Button Classes="ghost" Content="Убрать аватар" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="avatar" />
+                                        <Button Classes="ghost" Content="Убрать баннер" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="banner" />
+                                        <Button Classes="ghost" Content="Убрать «О себе»" HorizontalAlignment="Left"
+                                                Command="{Binding ClearLookCommand}" CommandParameter="about" />
+                                        <TextBlock Text="{Binding LookStatus}" FontSize="11" TextWrapping="Wrap"
+                                                   IsVisible="{Binding LookStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}">
+                <!-- News: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanEditNews}">
+                    <TextBlock Text="НОВОСТИ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Редактирование" Classes="dim" FontSize="11" IsVisible="{Binding IsEditingNews}" />
+                            <TextBox Text="{Binding NewsTitle}" Watermark="Заголовок" />
+                            <TextBox Text="{Binding NewsBody}" Watermark="Текст" AcceptsReturn="True" TextWrapping="Wrap" Height="80" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Classes="primary" Content="{Binding NewsSubmitLabel}"
+                                        Command="{Binding PostNewsCommand}" IsEnabled="{Binding !IsLoading}" />
+                                <Button Classes="ghost" Content="Отмена" IsVisible="{Binding IsEditingNews}"
+                                        Command="{Binding CancelEditNewsCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding News}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminNewsRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="черновик" Classes="dim" FontSize="10" IsVisible="{Binding Draft}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding DateText}" Classes="dim" FontSize="11" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" Content="Изменить" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).EditNewsCommand}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Grid.Column="2" Classes="ghost" Content="Удалить" VerticalAlignment="Center"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).DeleteNewsCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}">
+                <!-- Launcher bans -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="БАНЫ НА ЛАУНЧЕР" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding BanUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding BanReason}" Watermark="Причина" />
+                            <TextBox Text="{Binding BanDays}" Watermark="Дней (пусто — навсегда)" />
+                            <Button Classes="primary" Content="Выдать бан" HorizontalAlignment="Left"
+                                    Command="{Binding IssueBanCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Bans}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminBanRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                <TextBlock Text="снят" Classes="dim" FontSize="10" IsVisible="{Binding !Active}" />
+                                            </StackPanel>
+                                            <TextBlock Classes="dim" FontSize="11">
+                                                <Run Text="{Binding Reason}" /><Run Text=" · " /><Run Text="{Binding ExpiryText}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding IssuedText}" Classes="dim" FontSize="10" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" Content="Снять" VerticalAlignment="Center"
+                                                IsVisible="{Binding Active}"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeBanCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=players}">
+                <!-- Warnings -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ПРЕДУПРЕЖДЕНИЕ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding WarnUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding WarnText}" Watermark="Текст предупреждения" />
+                            <Button Classes="ghost" Content="Отправить" HorizontalAlignment="Left"
+                                    Command="{Binding SendWarningCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=chat}">
+                <!-- Live game chat: moderator+ -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ЧАТ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Сервер:" Classes="dim" VerticalAlignment="Center" />
+                                <ComboBox ItemsSource="{Binding GameServers}" SelectedItem="{Binding SelectedRegion}" MinWidth="140" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Classes="ghost" Content="OOC" Command="{Binding SetChatChannelCommand}" CommandParameter="ooc" />
+                                <Button Classes="ghost" Content="AdminChat" Command="{Binding SetChatChannelCommand}" CommandParameter="adminchat" />
+                                <Button Classes="ghost" Content="DeadChat" Command="{Binding SetChatChannelCommand}" CommandParameter="dead" />
+                                <TextBlock Text="{Binding ChatChannel, StringFormat='выбрано: {0}'}" Classes="dim" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Recent messages on the selected server/channel, polled every few seconds —
+                                 writing blind with no way to see a reply isn't very useful. -->
+                            <Border Background="{StaticResource DhBgBrush}" BorderBrush="{StaticResource DhBorderBrush}"
+                                    BorderThickness="1" CornerRadius="4" Height="160">
+                                <ScrollViewer>
+                                    <ItemsControl ItemsSource="{Binding ChatMessages}" Margin="8">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="3" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AdminChatMessageViewModel">
+                                                <TextBlock TextWrapping="Wrap" FontSize="12">
+                                                    <Run Text="{Binding TimeText}" Foreground="{StaticResource DhTextDimBrush}" />
+                                                    <Run Text=" " />
+                                                    <Run Text="{Binding Sender}" FontWeight="SemiBold" />
+                                                    <Run Text=": " />
+                                                    <Run Text="{Binding Text}" />
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Border>
+
+                            <TextBox Text="{Binding ChatText}" Watermark="Сообщение" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
+                            <Button Classes="primary" Content="Отправить в игру" HorizontalAlignment="Left"
+                                    Command="{Binding SendGameChatCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=chat}">
+                <!-- AHelp reply: moderator+ -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="AHELP" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding AhelpUsername}" Watermark="Ник игрока" />
+                            <TextBox Text="{Binding AhelpText}" Watermark="Ответ" />
+                            <CheckBox Content="Только для админов (ao:)" IsChecked="{Binding AhelpAdminOnly}" />
+                            <Button Classes="primary" Content="Ответить" HorizontalAlignment="Left"
+                                    Command="{Binding ReplyAhelpCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}">
+                <!-- Announcement: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Text="ОБЪЯВЛЕНИЕ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBox Text="{Binding AnnouncementText}" Watermark="Текст для всех известных игроков" AcceptsReturn="True" TextWrapping="Wrap" Height="60" />
+                            <Button Classes="primary" Content="Отправить всем" HorizontalAlignment="Left"
+                                    Command="{Binding PostAnnouncementCommand}" IsEnabled="{Binding !IsLoading}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}">
+                <StackPanel Spacing="22" IsVisible="{Binding CanAdmin}">
+                <!-- Launcher versions: is anyone still updating from dh-launcher, or can it go private? -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ВЕРСИИ ЛАУНЧЕРА" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="verdict" Classes.ready="{Binding VersionsReady}" Text="{Binding VersionsVerdict}"
+                                       TextWrapping="Wrap" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding VersionCounts}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="sys:String">
+                                        <TextBlock Text="{Binding}" FontSize="12" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Spacing="2" IsVisible="{Binding HasVersionStragglers}">
+                                <TextBlock Text="Ещё на старой версии:" Classes="dim" FontSize="11" Margin="0,4,0,0" />
+                                <ItemsControl ItemsSource="{Binding VersionStragglers}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="sys:String">
+                                            <TextBlock Text="{Binding}" Classes="dim" FontSize="12" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                       Text="Считаются игроки с аккаунтом, которые открывали лаунчер за последние 14 дней. Кто играет без аккаунта, сюда не попадает." />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Audit log: admin/owner only -->
+                <StackPanel Spacing="10">
+                    <TextBlock Text="ЖУРНАЛ" Classes="caps" />
+                    <ItemsControl ItemsSource="{Binding AuditLog}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminAuditRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <StackPanel Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding ActorUsername}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Action}" Classes="dim" FontSize="11" />
+                                            <TextBlock Text="{Binding TargetUsername}" Classes="dim" FontSize="11"
+                                                       IsVisible="{Binding TargetUsername, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Details}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding WhenText}" Classes="dim" FontSize="10" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}">
+                <!-- Доступ на игровой сервер: admin/owner only -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanAdmin}">
+                    <TextBlock Text="ДОСТУП НА СЕРВЕР" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !GameAccessEnabled}"
+                                       Text="Платформа не подключена к базе игрового сервера, поэтому выдавать права нельзя." />
+
+                            <StackPanel Spacing="10" IsVisible="{Binding GameAccessEnabled}">
+                                <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                           Text="Найдите игрока в разделе ИГРОК, выберите ранг и выдайте права. У игрока они появятся при следующем заходе в игру." />
+                                <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="8">
+                                    <ComboBox Grid.Column="0" HorizontalAlignment="Stretch"
+                                              ItemsSource="{Binding GameRanks}" SelectedItem="{Binding SelectedGameRank}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="api:PlatformGameRank">
+                                                <TextBlock Text="{Binding Name}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <TextBox Grid.Column="1" Text="{Binding GameAdminTitle}" Watermark="Должность (необязательно)" />
+                                    <Button Grid.Column="2" Classes="primary" Content="Выдать найденному"
+                                            Command="{Binding GrantGameAccessCommand}" IsEnabled="{Binding !IsLoading}" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding GameAdmins}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:AdminGameAdminRowViewModel">
+                                            <Border Classes="card" Padding="12,10">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                        <TextBlock Classes="dim">
+                                                            <Run Text="{Binding RankText}" /><Run Text="{Binding TitleText}" /><Run Text="{Binding StateText}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Classes="ghost" Content="Забрать" VerticalAlignment="Center"
+                                                            Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeGameAccessCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding GameAccessStatus}" FontSize="11" TextWrapping="Wrap"
+                                       IsVisible="{Binding GameAccessStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}">
+                <!-- Roles: owner only. The platform enforces the rules (RoleRules); this just explains them. -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsOwner}">
+                    <TextBlock Text="РОЛИ" Classes="caps" />
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBox Text="{Binding RoleUsername}" Watermark="Ник игрока" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Classes="pill" Content="Редактор новостей" Command="{Binding SetRoleToGrantCommand}" CommandParameter="news"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
+                                <Button Classes="pill" Content="Модератор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="moderator"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=moderator}" />
+                                <Button Classes="pill" Content="Администратор" Command="{Binding SetRoleToGrantCommand}" CommandParameter="admin"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=admin}" />
+                                <Button Classes="pill" Content="Владелец" Command="{Binding SetRoleToGrantCommand}" CommandParameter="owner"
+                                        Classes.selected="{Binding RoleToGrant, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=owner}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding RoleToGrantDescription}" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+                            <Button Classes="primary" HorizontalAlignment="Left"
+                                    Content="{Binding RoleToGrantTitle, StringFormat='Выдать роль: {0}'}"
+                                    Command="{Binding GrantRoleCommand}" IsEnabled="{Binding !IsLoading}" />
+                            <TextBlock Text="{Binding RoleStatus}" FontSize="12" TextWrapping="Wrap"
+                                       IsVisible="{Binding RoleStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                                       Text="Правила: модерировать можно только тех, кто ниже по роли, и никогда себя. Владельца снимает другой владелец или он сам, главного владельца — никто. Выданная роль появляется у игрока в течение пары минут, снятая пропадает сразу. Роль можно выдать только тому, кто хотя бы раз входил в лаунчер под своим аккаунтом. Роль в лаунчере не делает админом в игре — для этого раздел ДОСТУП НА СЕРВЕР." />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Roles}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminRoleRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding Username}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding RoleTitle}" Classes="dim" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding GrantedText}" Classes="dim" FontSize="11" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Classes="ghost" Content="Снять" VerticalAlignment="Center"
+                                                IsVisible="{Binding CanRevoke}"
+                                                Command="{Binding $parent[ItemsControl].((vm:AdminViewModel)DataContext).RevokeRoleCommand}"
+                                                CommandParameter="{Binding}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                </Panel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

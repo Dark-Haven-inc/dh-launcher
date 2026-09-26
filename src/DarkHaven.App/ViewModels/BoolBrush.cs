@@ -1,29 +1,31 @@
 using System.Globalization;
+using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 
 namespace DarkHaven.App.ViewModels;
 
-/// <summary>Bool → one of two brushes.</summary>
-public sealed class BoolBrush(IBrush ifTrue, IBrush ifFalse) : IValueConverter
+/// <summary>Bool → one of two palette brushes, looked up by key when converting, so they follow the theme.</summary>
+public sealed class BoolBrush(string ifTrue, string ifFalse) : IValueConverter
 {
-    // Monochrome: state is carried by StatusGlyph shapes; these only pick a gray.
-    public static readonly BoolBrush OnlineOffline =
-        new(new SolidColorBrush(Color.Parse("#EDEDED")), new SolidColorBrush(Color.Parse("#7A7A80")));
+    public static readonly BoolBrush OnlineOffline = new("DhOnlineBrush", "DhOfflineBrush");
 
     /// <summary>true (pending) → dim, false → normal text.</summary>
-    public static readonly BoolBrush DimText =
-        new(new SolidColorBrush(Color.Parse("#8A8A8F")), new SolidColorBrush(Color.Parse("#EDEDED")));
+    public static readonly BoolBrush DimText = new("DhTextDimBrush", "DhTextBrush");
 
     /// <summary>true (selected / live) → normal text, false → dim.</summary>
-    public static readonly BoolBrush AccentText =
-        new(new SolidColorBrush(Color.Parse("#EDEDED")), new SolidColorBrush(Color.Parse("#8A8A8F")));
+    public static readonly BoolBrush TextOrDim = new("DhTextBrush", "DhTextDimBrush");
 
-    /// <summary>Same as <see cref="AccentText"/>, named for what it does now.</summary>
-    public static readonly BoolBrush TextOrDim = AccentText;
+    /// <summary>true (selected) → accent, false → normal text.</summary>
+    public static readonly BoolBrush AccentText = new("DhAccentBrightBrush", "DhTextBrush");
 
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? ifTrue : ifFalse;
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var key = value is true ? ifTrue : ifFalse;
+        return Application.Current is { } app && app.TryGetResource(key, app.ActualThemeVariant, out var brush)
+            ? brush as IBrush
+            : null;
+    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

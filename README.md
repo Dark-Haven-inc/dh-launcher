@@ -3,7 +3,7 @@
 A from-scratch launcher for [Space Station 14](https://spacestation14.com/): a first-class view of
 the **Dark Haven** region network plus a full browser of any public SS14 server.
 
-Status: **Phase 6** — Avalonia GUI (blue HUD), end-to-end connect (fetch → content/engine download
+Status: **Phase 6** — Avalonia GUI (themes: monochrome, legacy), end-to-end connect (fetch → content/engine download
 → auth → launch), the forked Dark Haven engine bundled and served in place of the public CDN, and
 self-update + one-click install via Velopack. See
 [`whimsical-petting-reddy.md`](../../.claude/plans/whimsical-petting-reddy.md) for the plan,
@@ -40,6 +40,21 @@ Linux (x64) is supported: `dotnet run` works as above, releases ship as an AppIm
 itself on first run, with a one-line `install.sh` and an AUR package (`docs/RELEASING.md`); `ss14://`
 links go through a desktop entry, and the saved account token is encrypted with a per-user key file
 next to `settings.db` instead of Windows DPAPI.
+
+## Themes
+
+НАСТРОЙКИ → ВИД → Тема switches the look live (saved as config `Theme`). A theme is a *layout* — a main
+window with its views and the control styles they use (`Views/` + `Themes/Styles/Monochrome.axaml`, or
+`Views/Legacy/` + `Themes/Styles/Legacy.axaml`, the pre-redesign blue HUD) — painted in a *palette*
+(`Themes/Palettes/*.axaml`). A new palette on an existing layout is one file there plus one line in
+`Theme.All` (`src/DarkHaven.App/Themes/Theme.cs`, which lists the keys every palette defines).
+The button next to the monochrome theme recolors it live with two HSV picks, saved per theme
+(`Theme.<id>.Base`, `Theme.<id>.Active`), worked out much like Material You (`Themes/ColorMath.cs`): a
+pick sets the hue, and each color's lightness follows from what it must stand out against. The
+background is the first pick (pushed off mid-gray, so text keeps 9:1); every gray keeps the contrast it
+had with the original background, so a light background gets dark text. The accent fills buttons and
+checked boxes as long as it looks different from the background (hue counts), and is moved to 4.5:1
+where it is a 1–2 px line or text (selected chips, the nav marker).
 
 ## Release
 

@@ -2,24 +2,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:c="using:DarkHaven.App.Controls"
+             xmlns:views="using:DarkHaven.App.Views"
              x:Class="DarkHaven.App.Views.BanListView"
              x:DataType="vm:BanListViewModel">
 
     <UserControl.Styles>
-        <Style Selector="Border.sep">
-            <Setter Property="Width" Value="1" />
-            <Setter Property="Height" Value="16" />
-            <Setter Property="Background" Value="{StaticResource DhBorderStrongBrush}" />
-            <Setter Property="Margin" Value="4,0" />
-        </Style>
-        <Style Selector="CalendarDatePicker">
-            <Setter Property="MinHeight" Value="24" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="Padding" Value="8,0" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="CornerRadius" Value="0" />
-            <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <!-- The kind of ban, a small boxed word at the start of a row's last line. -->
+        <Style Selector="Border.tag">
             <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4,0" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.tag > TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+            <Setter Property="FontSize" Value="9" />
+            <Setter Property="LetterSpacing" Value="1.2" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
     </UserControl.Styles>
 
@@ -36,33 +37,40 @@
             <TextBox Watermark="Поиск по нику" Text="{Binding Search}" Padding="28,4,8,4" />
             <TextBlock Classes="icon dim" Text="&#xEA6D;" FontSize="11" Margin="10,0,0,0" IsHitTestVisible="False" />
         </Grid>
-        <WrapPanel DockPanel.Dock="Top" Margin="0,8,0,0" ItemSpacing="8" LineSpacing="8">
-            <StackPanel Orientation="Horizontal">
-                <Button Classes="chip" Content="все" Command="{Binding SetStatusCommand}" CommandParameter="all"
-                        Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=all}" />
-                <Button Classes="chip" Content="действуют" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="active"
-                        Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=active}" />
-                <Button Classes="chip" Content="истекли" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="expired"
-                        Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=expired}" />
-                <Button Classes="chip" Content="сняты" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="lifted"
-                        Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=lifted}" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <Button Classes="chip" Content="любые" Command="{Binding SetTypeCommand}" CommandParameter="all"
-                        Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=all}" />
-                <Button Classes="chip" Content="сервер" Margin="-1,0,0,0" Command="{Binding SetTypeCommand}" CommandParameter="server"
-                        Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=server}" />
-                <Button Classes="chip" Content="роль" Margin="-1,0,0,0" Command="{Binding SetTypeCommand}" CommandParameter="role"
-                        Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=role}" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Classes="lbl" Text="С" VerticalAlignment="Center" />
-                <CalendarDatePicker SelectedDate="{Binding From}" Watermark="—" />
-                <TextBlock Classes="lbl" Text="ПО" VerticalAlignment="Center" />
-                <CalendarDatePicker SelectedDate="{Binding To}" Watermark="—" />
-                <Button Classes="icon" Content="&#xEAE2;" ToolTip.Tip="Сбросить фильтры" Command="{Binding ResetFiltersCommand}" />
-            </StackPanel>
-        </WrapPanel>
+        <Grid DockPanel.Dock="Top" Margin="0,8,0,0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <WrapPanel ItemSpacing="16" LineSpacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="lbl" Text="СТАТУС" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="chip" Content="все" Command="{Binding SetStatusCommand}" CommandParameter="all"
+                                Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=all}" />
+                        <Button Classes="chip" Content="действуют" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="active"
+                                Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=active}" />
+                        <Button Classes="chip" Content="истекли" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="expired"
+                                Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=expired}" />
+                        <Button Classes="chip" Content="сняты" Margin="-1,0,0,0" Command="{Binding SetStatusCommand}" CommandParameter="lifted"
+                                Classes.on="{Binding Status, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=lifted}" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="lbl" Text="ТИП" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Classes="chip" Content="любой" Command="{Binding SetTypeCommand}" CommandParameter="all"
+                                Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=all}" />
+                        <Button Classes="chip" Content="сервер" Margin="-1,0,0,0" Command="{Binding SetTypeCommand}" CommandParameter="server"
+                                Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=server}" />
+                        <Button Classes="chip" Content="роли" Margin="-1,0,0,0" Command="{Binding SetTypeCommand}" CommandParameter="role"
+                                Classes.on="{Binding Type, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=role}" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="lbl" Text="ПЕРИОД" VerticalAlignment="Center" />
+                    <views:PeriodPicker DataContext="{Binding Period}" />
+                </StackPanel>
+            </WrapPanel>
+            <Button Grid.Column="1" Classes="link" Content="сбросить" VerticalAlignment="Top" Margin="0,5,0,0"
+                    Command="{Binding ResetFiltersCommand}" IsVisible="{Binding HasFilters}" />
+        </Grid>
 
         <Panel DockPanel.Dock="Top" Margin="0,16,0,0" Height="1">
             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
@@ -76,19 +84,26 @@
                 <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:BanRowViewModel">
-                            <Border Classes="hair" Padding="0,8">
-                                <StackPanel Spacing="4">
-                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                                        <c:StatusGlyph IsOnline="{Binding IsActive}"
-                                                       Foreground="{Binding IsActive, Converter={x:Static vm:BoolBrush.TextOrDim}}" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Player}" FontWeight="Medium" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="2" Text="{Binding StateText}" Classes="mono dim" FontSize="10.5" VerticalAlignment="Center" />
-                                    </Grid>
-                                    <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Foreground="{StaticResource DhBodyBrush}" Margin="14,0,0,0" />
-                                    <TextBlock Classes="mono dim" FontSize="10.5" TextWrapping="Wrap" Margin="14,0,0,0">
-                                        <Run Text="{Binding WhenText}" /><Run Text="  ·  " /><Run Text="{Binding DurationText}" /><Run Text="  ·  " /><Run Text="{Binding KindText}" /><Run Text="{Binding AdminText, StringFormat='  ·  {0}'}" />
-                                    </TextBlock>
-                                </StackPanel>
+                            <!-- Who and how it stands; why; what kind, when and for how long, and by whom. -->
+                            <Border Classes="hair" Padding="0,10">
+                                <Grid ColumnDefinitions="14,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="0" RowSpacing="4">
+                                    <c:StatusGlyph IsOnline="{Binding IsActive}" HorizontalAlignment="Left"
+                                                   Foreground="{Binding IsActive, Converter={x:Static vm:BoolBrush.TextOrDim}}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Player}" FontWeight="Medium" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding StateLine}" Classes="mono" FontSize="10.5" VerticalAlignment="Center"
+                                               HorizontalAlignment="Right" Foreground="{Binding IsActive, Converter={x:Static vm:BoolBrush.TextOrDim}}" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Reason}" TextWrapping="Wrap"
+                                               Foreground="{StaticResource DhBodyBrush}" />
+
+                                    <DockPanel Grid.Row="2" Grid.Column="1">
+                                        <Border DockPanel.Dock="Left" Classes="tag" Margin="0,0,8,0"><TextBlock Text="{Binding KindTag}" /></Border>
+                                        <TextBlock Text="{Binding MetaText}" Classes="mono dim" FontSize="10.5" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding MetaText}" />
+                                    </DockPanel>
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding PeopleText}" Classes="mono dim" FontSize="10.5"
+                                               VerticalAlignment="Center" HorizontalAlignment="Right" Margin="16,0,0,0" />
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
