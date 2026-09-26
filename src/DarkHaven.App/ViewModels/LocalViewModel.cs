@@ -102,13 +102,13 @@ public sealed partial class LocalServerRow : ObservableObject
         _ => Profile.LastStartedAt is { } at ? $"выключен · запускался {RuText.DayTime(at.ToLocalTime())}" : "выключен · ещё не запускался",
     };
 
-    /// <summary>"on" | "busy" | "off" | "error" — the dot on the card.</summary>
+    /// <summary>The StatusGlyph kind: ■ running, ◧ on its way up or down, ✕ crashed, □ off.</summary>
     public string Dot => Host.State switch
     {
         LocalServerState.Running => "on",
-        LocalServerState.Preparing or LocalServerState.Starting or LocalServerState.Stopping => "busy",
-        LocalServerState.Crashed => "error",
-        _ => "off",
+        LocalServerState.Preparing or LocalServerState.Starting or LocalServerState.Stopping => "full",
+        LocalServerState.Crashed => "off",
+        _ => "q",
     };
 
     private void RaiseState()

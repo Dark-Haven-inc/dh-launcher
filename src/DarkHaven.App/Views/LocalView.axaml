@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:local="using:DarkHaven.Launcher.Local"
+             xmlns:c="using:DarkHaven.App.Controls"
              x:Class="DarkHaven.App.Views.LocalView"
              x:DataType="vm:LocalViewModel">
 
@@ -24,42 +25,14 @@
             <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
         </Style>
 
-        <!-- State dot -->
-        <Style Selector="Ellipse.dot">
-            <Setter Property="Width" Value="9" />
-            <Setter Property="Height" Value="9" />
-            <Setter Property="Fill" Value="{StaticResource DhOfflineBrush}" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-        <Style Selector="Ellipse.dot.on"><Setter Property="Fill" Value="{StaticResource DhOnlineBrush}" /></Style>
-        <Style Selector="Ellipse.dot.busy"><Setter Property="Fill" Value="{StaticResource DhWarnBrush}" /></Style>
-        <Style Selector="Ellipse.dot.error"><Setter Property="Fill" Value="{StaticResource DhDangerBrush}" /></Style>
 
-        <!-- Mode switch: the chosen mode is lit -->
-        <Style Selector="Button.mode">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="14" />
-            <Setter Property="Padding" Value="14,5" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
-        </Style>
-        <Style Selector="Button.mode:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
-        </Style>
-        <Style Selector="Button.mode.selected /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource DhAccentBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource DhAccentBrush}" />
-            <Setter Property="TextBlock.Foreground" Value="White" />
-        </Style>
 
         <!-- The server console: its own scroll area, so following new lines never scrolls the page -->
         <Style Selector="Border.console">
             <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="CornerRadius" Value="0" />
         </Style>
         <Style Selector="SelectableTextBlock.console">
             <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
@@ -97,10 +70,7 @@
                                 <Border Classes="card" Padding="12,10">
                                     <StackPanel Spacing="3">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Ellipse Classes="dot"
-                                                     Classes.on="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=on}"
-                                                     Classes.busy="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=busy}"
-                                                     Classes.error="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=error}" />
+                                            <c:StatusGlyph Kind="{Binding Dot}" VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <TextBlock Classes="dim" FontSize="11">
@@ -190,10 +160,7 @@
                         <!-- Name, state, actions -->
                         <StackPanel Spacing="10">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Ellipse Classes="dot"
-                                         Classes.on="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=on}"
-                                         Classes.busy="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=busy}"
-                                         Classes.error="{Binding Dot, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=error}" />
+                                <c:StatusGlyph Kind="{Binding Dot}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding Name}" FontSize="20" FontWeight="Bold" />
                             </StackPanel>
                             <TextBlock Text="{Binding StateText}" Classes="dim" TextWrapping="Wrap" />
@@ -284,10 +251,10 @@
 
                                         <TextBlock Grid.Row="2" Text="Режим" Classes="dim" VerticalAlignment="Center" />
                                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                            <Button Classes="mode" Content="Игра" Command="{Binding SetModeCommand}" CommandParameter="play"
-                                                    Classes.selected="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Play}}" />
-                                            <Button Classes="mode" Content="Маппинг и тесты" Command="{Binding SetModeCommand}" CommandParameter="develop"
-                                                    Classes.selected="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Develop}}" />
+                                            <Button Classes="chip" Content="Игра" Command="{Binding SetModeCommand}" CommandParameter="play"
+                                                    Classes.on="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Play}}" />
+                                            <Button Classes="chip" Content="Маппинг и тесты" Command="{Binding SetModeCommand}" CommandParameter="develop"
+                                                    Classes.on="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Develop}}" />
                                         </StackPanel>
 
                                         <TextBlock Grid.Row="4" Text="Сборка" Classes="dim" VerticalAlignment="Center" />
@@ -310,7 +277,7 @@
 
                                         <TextBlock Grid.Row="8" Text="Карта" Classes="dim" VerticalAlignment="Center" />
                                         <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding Map}" MaxLength="100"
-                                                 Watermark="по умолчанию для режима (в маппинге — NFDev)" />
+                                                 Watermark="как в режиме (маппинг — NFDev)" />
 
                                         <TextBlock Grid.Row="10" Text="Доступ" Classes="dim" VerticalAlignment="Top" Margin="0,4,0,0" />
                                         <StackPanel Grid.Row="10" Grid.Column="1" Spacing="4">
