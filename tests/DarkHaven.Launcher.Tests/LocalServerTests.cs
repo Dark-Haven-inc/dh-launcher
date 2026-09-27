@@ -211,6 +211,8 @@ public sealed class LocalServerTests : IDisposable
         const string releases = """
             {"releases":[
               {"release-version":"10.0.3","runtime":{"version":"10.0.3","files":[
+                {"name":"dotnet-apphost-pack-linux-x64.tar.gz","rid":"linux-x64","url":"https://x/apphost.tgz","hash":"A1"},
+                {"name":"dotnet-apphost-pack-win-x64.zip","rid":"win-x64","url":"https://x/apphost.zip","hash":"A2"},
                 {"name":"dotnet-runtime-win-x64.exe","rid":"win-x64","url":"https://x/new.exe","hash":"E1"},
                 {"name":"dotnet-runtime-linux-x64.tar.gz","rid":"linux-x64","url":"https://x/new.tgz","hash":"L1"},
                 {"name":"dotnet-runtime-win-x64.zip","rid":"win-x64","url":"https://x/new.zip","hash":"Z1"}]}},

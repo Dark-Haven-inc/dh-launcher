@@ -148,11 +148,12 @@ public sealed class DotnetRuntime(HttpClient http, string privateRoot, bool tryS
 
     /// <summary>
     /// The newest release's runtime archive for <paramref name="rid"/> from Microsoft's releases.json: the zip
-    /// for Windows, the tar.gz everywhere else.
+    /// for Windows, the tar.gz everywhere else. By its exact name — the apphost pack comes first in the list
+    /// with the same extension, and has no runtime in it.
     /// </summary>
     internal static (string Url, string Sha512)? PickRuntimeArchive(string releasesJson, string rid)
     {
-        var extension = rid.StartsWith("win-", StringComparison.Ordinal) ? ".zip" : ".tar.gz";
+        var wanted = $"dotnet-runtime-{rid}" + (rid.StartsWith("win-", StringComparison.Ordinal) ? ".zip" : ".tar.gz");
         using var doc = JsonDocument.Parse(releasesJson);
         if (!doc.RootElement.TryGetProperty("releases", out var releases))
             return null;
@@ -165,7 +166,7 @@ public sealed class DotnetRuntime(HttpClient http, string privateRoot, bool tryS
             {
                 var name = f.TryGetProperty("name", out var n) ? n.GetString() : null;
                 var fileRid = f.TryGetProperty("rid", out var r) ? r.GetString() : null;
-                if (fileRid == rid && name is not null && name.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
+                if (fileRid == rid && string.Equals(name, wanted, StringComparison.OrdinalIgnoreCase)
                     && f.TryGetProperty("url", out var u) && f.TryGetProperty("hash", out var h))
                     return (u.GetString()!, h.GetString()!);
             }
