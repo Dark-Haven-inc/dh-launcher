@@ -84,7 +84,7 @@ jobs:
           mkdir -p src/DarkHaven.App/bundled-engines
           # Only the files manifest.json names: the release keeps older engines around, and every zip in
           # the folder would otherwise ship inside the launcher.
-          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json); do
+          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json | tr -d '\r'); do
             gh release download engine-bundles \
               --repo "${{ github.repository }}" \
               --dir src/DarkHaven.App/bundled-engines \
@@ -216,7 +216,7 @@ jobs:
           mkdir -p src/DarkHaven.App/bundled-engines
           # Only the files manifest.json names: the release keeps older engines around, and every zip in
           # the folder would otherwise ship inside the launcher.
-          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json); do
+          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json | tr -d '\r'); do
             gh release download engine-bundles \
               --repo "${{ github.repository }}" \
               --dir src/DarkHaven.App/bundled-engines \
