@@ -185,6 +185,10 @@ public sealed class SectorMap : Control
 
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(45), DispatcherPriority.Background, (_, _) =>
         {
+            // Nobody sees it: the launcher minimises itself while the game runs, and the game shouldn't pay for an animation.
+            if (!IsEffectivelyVisible || TopLevel.GetTopLevel(this) is Window { WindowState: WindowState.Minimized })
+                return;
+
             _phase += 0.024;
 
             if (Math.Abs(_targetScale - _scale) > 0.0004)
