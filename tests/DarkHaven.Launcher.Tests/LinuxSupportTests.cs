@@ -76,6 +76,75 @@ public class LinuxSupportTests
     }
 
     [Fact]
+    public void A_copied_launcher_folder_is_no_good_on_another_machine()
+    {
+        // The Linux scheme, whatever system runs the test; each database stands for one machine.
+        var dir = Directory.CreateTempSubdirectory("dh-token-");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "settings.db");
+            var mine = new SettingsDatabase(path, useDpapi: false, machineId: () => "machine-a");
+            mine.Initialize();
+            var id = Guid.NewGuid();
+            mine.UpsertLogin(new StoredLogin(id, "tester", "secret-token", DateTimeOffset.UtcNow.AddDays(30)));
+            Assert.Equal("secret-token", Assert.Single(mine.GetLogins()).Token);
+
+            // settings.db and settings.key both taken, opened on another machine.
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Assert.Empty(new SettingsDatabase(path, useDpapi: false, machineId: () => "machine-b").GetLogins());
+            Assert.Empty(new SettingsDatabase(path, useDpapi: false, machineId: () => null).GetLogins());
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void A_token_saved_before_the_binding_still_signs_in_and_is_saved_bound()
+    {
+        var dir = Directory.CreateTempSubdirectory("dh-token-");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "settings.db");
+            var db = new SettingsDatabase(path, useDpapi: false, machineId: () => "machine-a");
+            db.Initialize();
+
+            // What launcher 0.3.9 wrote: AES-GCM with the file key alone.
+            var fileKey = System.Security.Cryptography.RandomNumberGenerator.GetBytes(32);
+            File.WriteAllBytes(Path.Combine(dir.FullName, "settings.key"), fileKey);
+            var plain = System.Text.Encoding.UTF8.GetBytes("old-token");
+            var blob = new byte[12 + plain.Length + 16];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(blob.AsSpan(0, 12));
+            using (var aes = new System.Security.Cryptography.AesGcm(fileKey, 16))
+                aes.Encrypt(blob.AsSpan(0, 12), plain, blob.AsSpan(12, plain.Length), blob.AsSpan(12 + plain.Length));
+            using (var con = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path}"))
+            {
+                con.Open();
+                using var cmd = con.CreateCommand();
+                cmd.CommandText = "INSERT INTO Login (UserId, UserName, Token, Expires) VALUES ($id, 'tester', $token, $expires)";
+                cmd.Parameters.AddWithValue("$id", Guid.NewGuid().ToString());
+                cmd.Parameters.AddWithValue("$token", "aes1:" + Convert.ToBase64String(blob));
+                cmd.Parameters.AddWithValue("$expires", DateTime.UtcNow.AddDays(30));
+                cmd.ExecuteNonQuery();
+            }
+
+            Assert.Equal("old-token", Assert.Single(db.GetLogins()).Token);
+
+            // Rewritten bound: from now on another machine can't read it either.
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Assert.Empty(new SettingsDatabase(path, useDpapi: false, machineId: () => "machine-b").GetLogins());
+            Assert.Equal("old-token", Assert.Single(db.GetLogins()).Token);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            dir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void Desktop_entry_exec_survives_awkward_paths()
     {
         Assert.Equal("\"/opt/Frontier 15/launcher\"", UriScheme.QuoteExecArg("/opt/Frontier 15/launcher"));

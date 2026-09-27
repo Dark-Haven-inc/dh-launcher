@@ -127,7 +127,7 @@ internal static class Program
     }
 
     /// <summary>True when running straight from <c>bin/Debug</c> or <c>bin/Release</c> build output.</summary>
-    private static bool IsDevBuild()
+    internal static bool IsDevBuild()
     {
         var dir = AppContext.BaseDirectory.Replace('\\', '/');
         return dir.Contains("/bin/Debug/", StringComparison.OrdinalIgnoreCase)

@@ -134,7 +134,8 @@
                 </Border>
             </StackPanel>
 
-            <StackPanel>
+            <!-- Developers only: in a player's launcher these addresses can't be changed (AppServices.DevOverrides). -->
+            <StackPanel IsVisible="{Binding ShowConnection}">
                 <Border Classes="cap"><TextBlock Classes="caps" Text="ПОДКЛЮЧЕНИЕ" /></Border>
                 <Border Classes="hair">
                     <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
@@ -163,7 +164,7 @@
                 <Border Classes="hair">
                     <Grid Classes="srow" ColumnDefinitions="160,*" ColumnSpacing="12">
                         <TextBlock Text="Платформа" />
-                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding PlatformUrl}" Watermark="https://api.darkhaven.games" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding PlatformUrl}" Watermark="https://api.dark-haven.xyz" VerticalAlignment="Center" />
                     </Grid>
                 </Border>
             </StackPanel>

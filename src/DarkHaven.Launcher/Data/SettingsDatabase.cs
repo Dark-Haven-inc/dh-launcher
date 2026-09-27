@@ -29,6 +29,13 @@ public sealed class SettingsDatabase(string dbPath)
     private readonly TokenProtector _tokens = new(Path.Combine(
         Path.GetDirectoryName(Path.GetFullPath(dbPath))!, Path.GetFileNameWithoutExtension(dbPath) + ".key"));
 
+    /// <summary>Tests: the same database as another machine (or scheme) would read it.</summary>
+    internal SettingsDatabase(string dbPath, bool useDpapi, Func<string?> machineId) : this(dbPath)
+    {
+        _tokens = new TokenProtector(Path.Combine(
+            Path.GetDirectoryName(Path.GetFullPath(dbPath))!, Path.GetFileNameWithoutExtension(dbPath) + ".key"), useDpapi, machineId);
+    }
+
     private const string CreateV1 = """
         CREATE TABLE Login (
             UserId   TEXT PRIMARY KEY NOT NULL,
@@ -122,19 +129,30 @@ public sealed class SettingsDatabase(string dbPath)
         using var reader = cmd.ExecuteReader();
 
         var list = new List<StoredLogin>();
+        var legacy = new List<StoredLogin>();
         while (reader.Read())
         {
             // Pre-fix rows hold plaintext (Unprotect will fail on them, not throw) — drop those
             // silently rather than crash the whole login list; the player just signs in again.
-            var token = _tokens.Unprotect(reader.GetString(2));
+            var stored = reader.GetString(2);
+            var token = _tokens.Unprotect(stored);
             if (token is null) continue;
 
-            list.Add(new StoredLogin(
+            var login = new StoredLogin(
                 Guid.Parse(reader.GetString(0)),
                 reader.GetString(1),
                 token,
-                reader.GetDateTime(3)));
+                reader.GetDateTime(3));
+            list.Add(login);
+            if (_tokens.IsLegacy(stored))
+                legacy.Add(login);
         }
+        reader.Close();
+
+        // Written before the key was bound to this machine: write them again, bound.
+        foreach (var login in legacy)
+            UpsertLogin(login);
+
         return list;
     }
 
