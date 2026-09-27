@@ -21,8 +21,13 @@ gh release download engine-bundles --repo Dark-Haven-inc/dh-launcher -D . -p '*.
 
 | engine | RID | RT commit | server |
 |--------|-----|-----------|--------|
-| `275.1.0.zip` | win-x64 | `c333ccb58145767922946bf08d919d8856bc1f40` | live ХЕЙВЕН (`медецина` build; content `a240a1d47c`). Verified end-to-end 2026-09-10: launcher → local server on that pair → in-game lobby. |
-| `275.1.0_linux-x64.zip` | linux-x64 | `c333ccb58145767922946bf08d919d8856bc1f40` | same. Built with `Tools/package_client_build.py -p linux-x64`. |
+| `275.1.0-d9acf620.zip` | win-x64 | `d9acf620a94d1229bfd265a8a33701f372a4a918` | dh-sector-frontier master `52af13a7` (launch proof in the handshake). Verified 2026-09-27: joins a local server on that build AND one on the older `875c455c` (engine `c333ccb58`), both in game. |
+| `275.1.0-d9acf620_linux-x64.zip` | linux-x64 | `d9acf620a94d1229bfd265a8a33701f372a4a918` | same. |
+
+Built with `RobustToolbox/Tools/package_client_build.py -p win-x64 linux-x64`. On Windows the zip step
+dies on NuGet's DLLs dated 1980-01-01 UTC (before 1980 in a UTC-minus zone): touch those files and rerun
+with `--skip-build`. The previous engine (`c333ccb58`, `275.1.0.zip` / `275.1.0_linux-x64.zip`) stays on
+the release; the workflow only downloads what `manifest.json` names.
 
 ### manifest.json
 

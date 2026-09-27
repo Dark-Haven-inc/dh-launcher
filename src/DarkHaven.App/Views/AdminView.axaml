@@ -57,6 +57,8 @@
                             IsVisible="{Binding CanEditNews}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=news}" />
                     <Button Classes="chip" Margin="0,0,6,6" Content="Роли и доступ" Command="{Binding SetSectionCommand}" CommandParameter="access"
                             IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=access}" />
+                    <Button Classes="chip" Margin="0,0,6,6" Content="Локалки" Command="{Binding SetSectionCommand}" CommandParameter="local"
+                            IsVisible="{Binding ShowLocalShares}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=local}" />
                     <Button Classes="chip" Margin="0,0,6,6" Content="Журнал" Command="{Binding SetSectionCommand}" CommandParameter="journal"
                             IsVisible="{Binding CanAdmin}" Classes.on="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=journal}" />
                 </WrapPanel>
@@ -438,6 +440,31 @@
                                     Command="{Binding PostAnnouncementCommand}" IsEnabled="{Binding !IsLoading}" />
                         </StackPanel>
                     </Border>
+                </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding Section, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=local}">
+                <!-- Local servers players opened to others: moderator+ -->
+                <StackPanel Spacing="10" IsVisible="{Binding CanModerate}">
+                    <TextBlock Text="ОТКРЫТЫЕ ЛОКАЛКИ" Classes="caps" />
+                    <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap"
+                               Text="Серверы, которые игроки подняли у себя в ЛОКАЛКЕ и открыли для приглашённых. Пропадают отсюда через несколько минут после закрытия." />
+                    <TextBlock Classes="dim" Text="Сейчас ни одной." IsVisible="{Binding !HasLocalShares}" />
+                    <ItemsControl ItemsSource="{Binding LocalShares}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AdminLocalShareRowViewModel">
+                                <Border Classes="card" Padding="12,10">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Details}" Classes="dim" FontSize="11" />
+                                        <TextBlock Text="{Binding Address}" Classes="dim mono" FontSize="11" />
+                                        <TextBlock Text="{Binding InvitedText}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
                 </Panel>
 

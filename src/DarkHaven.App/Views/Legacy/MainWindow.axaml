@@ -14,6 +14,7 @@
         <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
         <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
         <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><views:LocalView /></DataTemplate>
         <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
         <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
@@ -135,6 +136,9 @@
                         <Button Classes="tab" Content="МОНИТОРИНГ" Command="{Binding NavigateCommand}"
                                 CommandParameter="{x:Static vm:NavPage.Monitoring}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}" />
+                        <Button Classes="tab" Content="ЛОКАЛКА" Command="{Binding NavigateCommand}"
+                                CommandParameter="{x:Static vm:NavPage.Local}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}" />
                         <Button Classes="tab" Content="НОВОСТИ" Command="{Binding NavigateCommand}"
                                 CommandParameter="{x:Static vm:NavPage.News}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}" />

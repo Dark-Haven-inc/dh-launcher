@@ -19,6 +19,9 @@ public static class LauncherPaths
     public static string ServerListCachePath => Path.Combine(DataDir, "servers-cache.json");
     public static string NewsCachePath => Path.Combine(DataDir, "news-cache.json");
 
+    /// <summary>ЛОКАЛКА: server builds, a private .NET if needed, and one folder per local server.</summary>
+    public static string LocalDir => Path.Combine(DataDir, "local");
+
     /// <summary>The game client's stdout/stderr from the latest launch (see <see cref="Update.ClientLog"/>).</summary>
     public static string ClientLogPath => Path.Combine(LogsDir, "client.log");
 

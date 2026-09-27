@@ -82,10 +82,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p src/DarkHaven.App/bundled-engines
-          gh release download engine-bundles \
-            --repo "${{ github.repository }}" \
-            --dir src/DarkHaven.App/bundled-engines \
-            --pattern '*.zip' --clobber
+          # Only the files manifest.json names: the release keeps older engines around, and every zip in
+          # the folder would otherwise ship inside the launcher.
+          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json); do
+            gh release download engine-bundles \
+              --repo "${{ github.repository }}" \
+              --dir src/DarkHaven.App/bundled-engines \
+              --pattern "$f" --clobber
+          done
           echo "Bundled engines present:"
           ls -lh src/DarkHaven.App/bundled-engines/*.zip
 
@@ -210,10 +214,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p src/DarkHaven.App/bundled-engines
-          gh release download engine-bundles \
-            --repo "${{ github.repository }}" \
-            --dir src/DarkHaven.App/bundled-engines \
-            --pattern '*.zip' --clobber
+          # Only the files manifest.json names: the release keeps older engines around, and every zip in
+          # the folder would otherwise ship inside the launcher.
+          for f in $(jq -r '.[] | .file, (.platforms // {} | .[] | .file)' src/DarkHaven.App/bundled-engines/manifest.json); do
+            gh release download engine-bundles \
+              --repo "${{ github.repository }}" \
+              --dir src/DarkHaven.App/bundled-engines \
+              --pattern "$f" --clobber
+          done
           ls -lh src/DarkHaven.App/bundled-engines/*.zip
 
       - name: Fetch previous releases
