@@ -10,6 +10,7 @@ using DarkHaven.Launcher.Engine;
 using DarkHaven.Launcher.Local;
 using DarkHaven.Launcher.Servers;
 using DarkHaven.Launcher.Update;
+using Serilog;
 
 namespace DarkHaven.App;
 
@@ -104,6 +105,28 @@ public sealed class AppServices : IDisposable
         PlatformSessionChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Whether the addresses in settings.db (auth, platform, updates, engine builds, regions, news, ЛОКАЛКА builds)
+    /// may replace the built-in ones: only in a developer build (run from bin/) or with <c>DH_LAUNCHER_DEV=1</c>.
+    /// In a player's launcher they would be a way in: a settings.db handed over "to speed things up", or an address
+    /// talked into the settings screen, sends the password to someone else's auth server, the SS14 token to someone
+    /// else's platform, or installs someone else's "update".
+    /// </summary>
+    public static bool DevOverrides { get; } =
+        Program.IsDevBuild() || Environment.GetEnvironmentVariable("DH_LAUNCHER_DEV") == "1";
+
+    /// <summary>An address from settings.db, or null (the built-in one) unless <see cref="DevOverrides"/>.</summary>
+    private string? Override(string key)
+    {
+        var value = Settings.GetConfig(key);
+        if (value is null || DevOverrides)
+            return value;
+
+        Log.Warning("Ignoring {Key}={Value} from settings.db: addresses can only be changed in a developer build (DH_LAUNCHER_DEV=1)",
+            key, value);
+        return null;
+    }
+
     public AppServices()
     {
         Http = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
@@ -117,19 +140,19 @@ public sealed class AppServices : IDisposable
         ContentDb = new ContentDatabase(LauncherPaths.ContentDbPath);
         ContentDb.Initialize();
 
-        Auth = new AuthApi(Http, Settings.GetConfig("AuthUrl"));
+        Auth = new AuthApi(Http, Override("AuthUrl"));
         Accounts = new AccountManager(Settings, Auth);
         Accounts.Load();
 
         var signing = new EngineSignature(LauncherPaths.SigningKeyPath);
         var bundledEngines = Path.Combine(AppContext.BaseDirectory, "bundled-engines");
         Engines = new EngineManager(Http, LauncherPaths.EnginesDir, LauncherPaths.ModulesDir, signing,
-            bundledEngines, Settings.GetConfig("EngineBuildsUrl"));
+            bundledEngines, Override("EngineBuildsUrl"));
 
         if (int.TryParse(Settings.GetConfig("DownloadLimitKbps"), out var kbps))
             DarkHaven.Launcher.Content.DownloadThrottle.SetKbps(kbps);
 
-        Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Settings.GetConfig("RegionsUrl"));
+        Regions = new DhRegions(Http, LauncherPaths.RegionsJsonPath, remoteUrl: Override("RegionsUrl"));
         RegionWatch = new RegionWatcher(Http, Settings, () => Regions.Regions);
         RegionWatch.EnsureRunning();
 
@@ -139,14 +162,14 @@ public sealed class AppServices : IDisposable
         if (Settings.GetConfig("PlatformApiUrl") is { } stale && stale.TrimEnd('/') == "http://localhost:5080")
             Settings.SetConfig("PlatformApiUrl", null);
 
-        var platformUrl = Settings.GetConfig("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
+        var platformUrl = Override("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
         Platform = new PlatformApi(Http, platformUrl);
         // СЕРВЕРЫ: only what staff approved on the platform (no longer the public hub).
         ServerList = new ServerListManager(Platform, Http, LauncherPaths.ServerListCachePath);
         Images = new RemoteImages(Platform);
         // The platform's own /api/news is a drop-in for the bundled news.json (same shape) —
         // default to it once a platform is configured, unless someone already set NewsUrl by hand.
-        var newsUrl = Settings.GetConfig("NewsUrl")
+        var newsUrl = Override("NewsUrl")
                       ?? (string.IsNullOrWhiteSpace(platformUrl) ? null : $"{platformUrl.TrimEnd('/')}/api/news");
         News = new DhNews(Http, LauncherPaths.NewsJsonPath, LauncherPaths.NewsCachePath, newsUrl);
 
@@ -154,10 +177,10 @@ public sealed class AppServices : IDisposable
         Content = new ContentUpdater(ContentDb, new ManifestDownloader(Http), Engines);
         Game = new GameLauncher(LocateLoader(), LauncherPaths.SigningKeyPath, Engines, LauncherPaths.ContentDbPath);
         Launch = new LaunchCoordinator(ServerInfo, Content, Accounts, Engines, Game);
-        Updater = new LauncherUpdater(Settings.GetConfig("UpdateFeedUrl"), Settings.GetConfig("UpdateChannel"));
+        Updater = new LauncherUpdater(Override("UpdateFeedUrl"), Override("UpdateChannel"));
         Discord = new DiscordPresence(Settings.GetConfig("DiscordAppId"));
         SlotWatch = new SlotWatcher(Http);
-        Local = new LocalServers(Http, LauncherPaths.LocalDir, Settings.GetConfig("LocalBuildsUrl"));
+        Local = new LocalServers(Http, LauncherPaths.LocalDir, Override("LocalBuildsUrl"));
 
         StartPresenceHeartbeat();
         _ = SignInToPlatformAsync();

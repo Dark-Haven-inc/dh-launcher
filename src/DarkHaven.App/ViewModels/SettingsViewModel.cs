@@ -39,6 +39,9 @@ public partial class SettingsViewModel : ViewModelBase
     private (Theme Theme, ThemeColors Colors)? _unsavedColors;
 
     public string DataDir => LauncherPaths.DataDir;
+
+    /// <summary>The ПОДКЛЮЧЕНИЕ addresses: developers only (<see cref="AppServices.DevOverrides"/>).</summary>
+    public bool ShowConnection => AppServices.DevOverrides;
     public string VersionLine =>
         $"ЛАУНЧЕР {LauncherInfo.Version}     ·     ДВИЖОК Robust (в комплекте)";
 
