@@ -8,10 +8,14 @@
 #   $env:DhLocalServer = 'true'
 #   dotnet run --project Content.Packaging server --platform win-x64 --hybrid-acz
 #   # -> release/SS14.Server_win-x64.zip
+#   dotnet run --project Content.Packaging server --platform linux-x64 --hybrid-acz
+#   # -> release/SS14.Server_linux-x64.zip (packaging wipes release/, so publish the first one before this)
 #
-# Then, from this repo, with gh signed in to an account that can write to Dark-Haven-inc/frontier15-launcher:
+# Then, from this repo, with gh signed in to an account that can write to Dark-Haven-inc/frontier15-launcher,
+# once per platform (the second one joins the first under the same version):
 #
 #   powershell -File scripts/publish-local-server.ps1 -Zip <path>\release\SS14.Server_win-x64.zip -Version <game commit>
+#   powershell -File scripts/publish-local-server.ps1 -Zip <path>\release\SS14.Server_linux-x64.zip -Version <game commit> -Rid linux-x64
 #
 # It uploads the zip to the "local-servers" pre-release of the public releases repo (a pre-release, so the
 # launcher's own updater never looks at it), adds the build to manifest.json there (Robust.Cdn's format, which
@@ -100,10 +104,16 @@ try {
     Write-Host "-- uploading $asset ($([math]::Round($size / 1MB)) MB)" -ForegroundColor DarkCyan
     Invoke-Gh { gh release upload $Tag $staged --repo $Repo --clobber } "upload"
 
+    # One version, one entry: another platform of a build that's already there joins its servers.
     $url = "https://github.com/$Repo/releases/download/$Tag/$asset"
-    $builds[$Version] = [pscustomobject]@{
-        time   = (Get-Date).ToUniversalTime().ToString("o")
-        server = [pscustomobject]@{ $Rid = [pscustomobject]@{ url = $url; sha256 = $sha; size = $size } }
+    $server = [pscustomobject]@{ url = $url; sha256 = $sha; size = $size }
+    if ($builds.Contains($Version)) {
+        $builds[$Version].server | Add-Member -NotePropertyName $Rid -NotePropertyValue $server -Force
+    } else {
+        $builds[$Version] = [pscustomobject]@{
+            time   = (Get-Date).ToUniversalTime().ToString("o")
+            server = [pscustomobject]@{ $Rid = $server }
+        }
     }
 
     # Keep the newest -Keep builds; the rest go, zips included.
