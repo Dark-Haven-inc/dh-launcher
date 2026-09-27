@@ -131,8 +131,12 @@ public partial class ConnectingViewModel : ViewModelBase
                 regionName: _server.DisplayName,
                 cancel: _cts.Token);
 
-            try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
-            catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
+            // Not a local server: it only answers while ЛОКАЛКА runs it, so a "Продолжить" pointing at it would mostly fail.
+            if (!AppServices.IsThisPc(_server.Address))
+            {
+                try { _services.Settings.RecordRecent(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion); }
+                catch (Exception e) { Log.Warning(e, "Could not record recent server"); }
+            }
 
             _services.Discord.SetInGame(_server.DisplayName, _server.IsDarkHavenRegion);
             _services.SetGameSession(_server.Address, _server.DisplayName, _server.IsDarkHavenRegion);
