@@ -163,7 +163,7 @@ public sealed class AppServices : IDisposable
             Settings.SetConfig("PlatformApiUrl", null);
 
         var platformUrl = Override("PlatformApiUrl") ?? PlatformApi.DefaultBaseUrl;
-        Platform = new PlatformApi(Http, platformUrl);
+        Platform = new PlatformApi(Http, platformUrl, Auth.BaseUrl);
         // СЕРВЕРЫ: only what staff approved on the platform (no longer the public hub).
         ServerList = new ServerListManager(Platform, Http, LauncherPaths.ServerListCachePath);
         Images = new RemoteImages(Platform);

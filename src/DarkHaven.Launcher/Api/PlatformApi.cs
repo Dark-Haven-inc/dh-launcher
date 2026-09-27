@@ -1,3 +1,5 @@
+using System.Buffers.Text;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Serilog;
@@ -10,8 +12,11 @@ namespace DarkHaven.Launcher.Api;
 /// call just returns null/empty and the caller falls back to local-only behaviour (see
 /// <c>dh-platform</c>'s docs/BACKEND.md §7 for the design).
 /// </summary>
-public sealed class PlatformApi(HttpClient http, string? baseUrl)
+/// <param name="authBaseUrl">Wizard's Den, where the launcher "joins" to sign in; null for the real one.</param>
+public sealed class PlatformApi(HttpClient http, string? baseUrl, string? authBaseUrl = null)
 {
+    private readonly string _authBaseUrl = (authBaseUrl ?? AuthApi.DefaultBaseUrl).TrimEnd('/') + "/";
+
     /// <summary>The live platform, on the game server's host (dh-platform's DEPLOY.md).</summary>
     public const string DefaultBaseUrl = "https://api.dark-haven.xyz";
 
@@ -32,12 +37,10 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
     private string? _jwt;
 
     /// <summary>
-    /// Trades a Wizard's Den token (the same raw token the launcher already holds for the game
-    /// server) for the platform's own short-lived JWT. <paramref name="userId"/>/<paramref name="username"/>
-    /// are the identity the launcher already trusts from its own earlier Wizard's Den login —
-    /// Wizard's Den's own token-liveness check (<c>/api/auth/ping</c>) only ever confirms a
-    /// *username*, never a UserId, so the platform can't re-derive the UserId from the bare token
-    /// alone. It closes the loop itself by pinging and checking the username matches.
+    /// Signs in to the platform as the account behind <paramref name="wizardsToken"/> - without handing the platform
+    /// the token. The platform hands out a challenge, the launcher "joins" Wizard's Den with it (what the game client
+    /// does for every game server), and the platform asks Wizard's Den who joined. A platform from before this
+    /// (no challenge endpoint) gets the old way: the token in the header.
     /// </summary>
     public async Task<bool> SignInAsync(Guid userId, string username, string wizardsToken, CancellationToken cancel = default)
     {
@@ -47,23 +50,43 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
 
         try
         {
-            var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/session"))
+            HttpResponseMessage res;
+            using (var challengeRes = await http.PostAsync(Url("/api/session/challenge"), null, cancel))
             {
-                Headers = { Authorization = new AuthenticationHeaderValue("SS14Auth", wizardsToken) },
-                Content = JsonContent.Create(new { userId, username }, options: LauncherJson.Options),
-            };
-            var res = await http.SendAsync(req, cancel);
-            if (!res.IsSuccessStatusCode)
-            {
-                Log.Debug("Platform sign-in rejected: {Code}", res.StatusCode);
-                return false;
+                if (challengeRes.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed)
+                {
+                    res = await LegacySignInAsync(userId, username, wizardsToken, cancel);
+                }
+                else
+                {
+                    if (!challengeRes.IsSuccessStatusCode)
+                    {
+                        Log.Debug("Platform sign-in: no challenge ({Code})", challengeRes.StatusCode);
+                        return false;
+                    }
+
+                    var challenge = (await challengeRes.Content.ReadFromJsonAsync<ChallengeResponse>(LauncherJson.Options, cancel))?.Challenge;
+                    if (string.IsNullOrEmpty(challenge) || !await JoinAsync(challenge, wizardsToken, cancel))
+                        return false;
+
+                    res = await http.PostAsJsonAsync(Url("/api/session/joined"), new { userId, challenge }, LauncherJson.Options, cancel);
+                }
             }
 
-            var body = await res.Content.ReadFromJsonAsync<SessionResponse>(LauncherJson.Options, cancel);
-            _jwt = body?.Token;
-            Roles = body?.Roles ?? [];
-            SignedInAt = _jwt is null ? null : DateTimeOffset.UtcNow;
-            return _jwt is not null;
+            using (res)
+            {
+                if (!res.IsSuccessStatusCode)
+                {
+                    Log.Debug("Platform sign-in rejected: {Code}", res.StatusCode);
+                    return false;
+                }
+
+                var body = await res.Content.ReadFromJsonAsync<SessionResponse>(LauncherJson.Options, cancel);
+                _jwt = body?.Token;
+                Roles = body?.Roles ?? [];
+                SignedInAt = _jwt is null ? null : DateTimeOffset.UtcNow;
+                return _jwt is not null;
+            }
         }
         catch (Exception e)
         {
@@ -71,6 +94,40 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl)
             return false;
         }
     }
+
+    /// <summary>
+    /// Tells Wizard's Den this account is joining with <paramref name="challenge"/>, the way the engine does before a
+    /// game server checks it (Robust NetManager.ClientConnect: the hash in standard base64; the server asks with base64url).
+    /// </summary>
+    private async Task<bool> JoinAsync(string challenge, string wizardsToken, CancellationToken cancel)
+    {
+        byte[] hash;
+        try { hash = Base64Url.DecodeFromChars(challenge); }
+        catch (FormatException) { return false; }
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, _authBaseUrl + "api/session/join")
+        {
+            Headers = { Authorization = new AuthenticationHeaderValue("SS14Auth", wizardsToken) },
+            Content = JsonContent.Create(new { hash = Convert.ToBase64String(hash), hwid = (string?)null }),
+        };
+        using var res = await http.SendAsync(req, cancel);
+        if (!res.IsSuccessStatusCode)
+            Log.Debug("Wizard's Den refused the platform join: {Code}", res.StatusCode);
+        return res.IsSuccessStatusCode;
+    }
+
+    /// <summary>Platforms from before 2026-09-28: the token itself, which the platform checks with Wizard's Den.</summary>
+    private Task<HttpResponseMessage> LegacySignInAsync(Guid userId, string username, string wizardsToken, CancellationToken cancel)
+    {
+        var req = new HttpRequestMessage(HttpMethod.Post, Url("/api/session"))
+        {
+            Headers = { Authorization = new AuthenticationHeaderValue("SS14Auth", wizardsToken) },
+            Content = JsonContent.Create(new { userId, username }, options: LauncherJson.Options),
+        };
+        return http.SendAsync(req, cancel);
+    }
+
+    private sealed record ChallengeResponse(string Challenge);
 
     public void SignOut()
     {
