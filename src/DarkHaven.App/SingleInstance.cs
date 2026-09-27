@@ -22,6 +22,9 @@ public static class SingleInstance
         ? "Frontier15Launcher.ipc"
         : $"Frontier15Launcher.{Environment.UserName}.ipc";
 
+    // A link is well under this; anything longer isn't ours.
+    private const int MaxMessageChars = 4096;
+
     private static Mutex? _mutex;
 
     /// <summary>
@@ -44,7 +47,8 @@ public static class SingleInstance
 
         try
         {
-            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            // CurrentUserOnly: only hand the link to a launcher of this same user, never to a pipe someone else made first.
+            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(2000);
             var payload = Encoding.UTF8.GetBytes(string.IsNullOrWhiteSpace(forwardMessage) ? "focus" : forwardMessage);
             client.Write(payload, 0, payload.Length);
@@ -66,10 +70,18 @@ public static class SingleInstance
             {
                 try
                 {
-                    using var server = new NamedPipeServerStream(PipeName, PipeDirection.In, 1);
+                    // CurrentUserOnly: other accounts on the machine can't tell this launcher where to connect.
+                    using var server = new NamedPipeServerStream(PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.CurrentUserOnly);
                     server.WaitForConnection();
                     using var reader = new StreamReader(server, Encoding.UTF8);
-                    var msg = reader.ReadToEnd().Trim();
+                    var buffer = new char[MaxMessageChars];
+                    var length = reader.ReadBlock(buffer, 0, buffer.Length);
+                    if (reader.Peek() >= 0)
+                    {
+                        Log.Warning("IPC: dropped an oversized message");
+                        continue;
+                    }
+                    var msg = new string(buffer, 0, length).Trim();
                     if (msg.Length > 0)
                         onMessage(msg);
                 }
