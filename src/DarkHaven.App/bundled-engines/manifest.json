@@ -1,12 +1,12 @@
 {
   "275.1.0": {
-    "file": "275.1.0-d9acf620.zip",
-    "sha256": "23096442E4FC76E862DFD12C0045F2F72B1EDB6EFB38CAD4953CC2B58E676775",
-    "note": "Dark Haven forked RobustToolbox, built from d9acf620a94d1229bfd265a8a33701f372a4a918 (dh-sector-frontier master 52af13a7: launch proof in the handshake, server visibility filtering, client integrity). Also joins servers still on c333ccb58 - checked against build 875c455c.",
+    "file": "275.1.0-50c33c36.zip",
+    "sha256": "7F0833DE0829CFF9A8CF8ACBF12654C281D1985DD577AC0788715F31166A8AF3",
+    "note": "Dark Haven forked RobustToolbox, built from 50c33c36a4c0b1ac46aca58449e46c24113994db (dh-sector-frontier master 1feb4b57, PR #99): d9acf620 plus the broadphase fix for fixtures removed before physics - internal only, the wire and the API are the same, so it joins servers on d9acf620 and c333ccb58 as before.",
     "platforms": {
       "linux-x64": {
-        "file": "275.1.0-d9acf620_linux-x64.zip",
-        "sha256": "C0A9047B07CCC251567FBF64F63913EB534A09D42E628C9BCE9925F1A73B60F7"
+        "file": "275.1.0-50c33c36_linux-x64.zip",
+        "sha256": "C507EE4F17D817C9A299352E918D2BD36E0E3E250DCF973E838A91B1B87386E5"
       }
     }
   }
