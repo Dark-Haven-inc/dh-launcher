@@ -10,6 +10,9 @@
     <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
     <!-- The engine needs real ICU cultures (system font manager, localization). -->
     <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- The game runs in this process and the launch broker vouches for it: the runtime ignores
+         DOTNET_STARTUP_HOOKS even if one reaches it (the launcher also strips it, GameEnvironment). -->
+    <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
     <!-- Keep this project's dependency surface tiny: it loads the engine into the default
          AssemblyLoadContext and must not drag conflicting assembly versions in with it. -->
   </PropertyGroup>

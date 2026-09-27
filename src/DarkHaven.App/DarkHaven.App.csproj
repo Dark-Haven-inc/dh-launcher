@@ -16,6 +16,9 @@
     <Version Condition="'$(LauncherVersion)' == ''">0.2.4</Version>
     <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <!-- The launcher holds the launch signing key and starts the game it vouches for: no startup hook
+         from the environment runs in it. Debug keeps them for hot reload. -->
+    <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
   </PropertyGroup>
 
   <ItemGroup>

@@ -77,6 +77,9 @@ public sealed class GameLauncher(string loaderPath, string signingKeyPath, Engin
                 Cvar($"build.{name}={value}");
         }
 
+        // The broker vouches for this process: nothing from the player's environment may put code into it.
+        GameEnvironment.Harden(psi.Environment);
+
         var env = psi.EnvironmentVariables;
         env["SS14_LOADER_CONTENT_DB"] = contentDbPath;
         env["SS14_LOADER_CONTENT_VERSION"] = launch.VersionId.ToString();
