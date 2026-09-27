@@ -25,7 +25,7 @@ public sealed class LocalServers
 
     public LocalBuildCatalog Catalog { get; }
     public LocalBuildStore Builds { get; }
-    public DotnetRuntime Runtime { get; }
+    public DotnetRuntime Runtime { get; internal set; }
     public LocalServerStore Profiles { get; }
 
     public LocalServers(HttpClient http, string root, string? manifestUrl = null)
@@ -65,7 +65,9 @@ public sealed class LocalServers
             var version = await PickBuildAsync(p, host, cancel);
 
             var exe = Builds.ServerExecutable(version)
-                      ?? throw new InvalidOperationException($"В сборке {Short(version)} нет Robust.Server.exe — удалите её и скачайте заново.");
+                      ?? throw new InvalidOperationException($"В сборке {Short(version)} нет {Builds.ServerExe} — удалите её и скачайте заново.");
+            if (!OperatingSystem.IsWindows())
+                LocalBuildStore.MakeExecutable(exe);
 
             var major = Builds.RequiredDotnetMajor(version) ?? 10;
             host.Preparing($"проверка .NET {major}…");
@@ -121,8 +123,9 @@ public sealed class LocalServers
 
         if (build is null)
         {
-            // Offline or nothing published for Windows: the newest build already on disk will do.
+            // Offline or nothing published for this system: the newest build already on disk will do.
             var installed = Builds.Installed()
+                .Where(Builds.IsInstalled)
                 .OrderByDescending(v => Directory.GetCreationTimeUtc(Builds.PathFor(v)))
                 .FirstOrDefault();
             return installed ?? throw new InvalidOperationException(list.WithoutServer > 0

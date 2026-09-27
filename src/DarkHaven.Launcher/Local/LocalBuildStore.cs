@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,11 +17,17 @@ namespace DarkHaven.Launcher.Local;
 /// without long paths enabled can't open anything past 259. The full version is kept in the
 /// marker file, so two builds sharing a prefix are never mistaken for each other.
 /// </remarks>
-public sealed partial class LocalBuildStore(HttpClient http, string root)
+public sealed partial class LocalBuildStore(HttpClient http, string root, string? rid = null)
 {
     private const string CompleteMarker = ".complete";
-    private const string ServerExe = "Robust.Server.exe";
     internal const int FolderLength = 12;
+
+    /// <summary>The server's executable in a build for this platform.</summary>
+    public string ServerExe { get; } = ServerExeFor(rid ?? LocalBuildCatalog.Rid);
+
+    /// <summary><c>Robust.Server.exe</c> on Windows; elsewhere the apphost has no extension.</summary>
+    internal static string ServerExeFor(string rid) =>
+        rid.StartsWith("win-", StringComparison.Ordinal) ? "Robust.Server.exe" : "Robust.Server";
 
     /// <summary>Longest full path Windows opens when long paths aren't enabled (MAX_PATH minus the terminator).</summary>
     internal const int MaxPath = 259;
@@ -31,7 +38,11 @@ public sealed partial class LocalBuildStore(HttpClient http, string root)
         return Path.Combine(root, safe.Length > FolderLength ? safe[..FolderLength] : safe);
     }
 
-    public bool IsInstalled(string version) => MarkerVersion(PathFor(version)) == version;
+    /// <summary>
+    /// Downloaded completely, and a server for this platform: launcher 0.3.9 on Linux fetched the Windows build,
+    /// which counts as not installed here and gets replaced.
+    /// </summary>
+    public bool IsInstalled(string version) => MarkerVersion(PathFor(version)) == version && ServerExecutable(version) is not null;
 
     /// <summary>The versions on disk, as the CDN names them.</summary>
     public IReadOnlyList<string> Installed() =>
@@ -121,6 +132,10 @@ public sealed partial class LocalBuildStore(HttpClient http, string root)
                 Directory.Delete(unpack, recursive: true);
             // ExtractToDirectory refuses entries that would land outside the folder ("zip slip").
             await Task.Run(() => ZipFile.ExtractToDirectory(zip, unpack), cancel);
+            if (!OperatingSystem.IsWindows()
+                && Directory.EnumerateFiles(unpack, ServerExe, new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2 })
+                    .FirstOrDefault() is { } exe)
+                MakeExecutable(exe);
             await File.WriteAllTextAsync(Path.Combine(unpack, CompleteMarker), build.Version, cancel);
 
             if (Directory.Exists(target))
@@ -164,6 +179,19 @@ public sealed partial class LocalBuildStore(HttpClient http, string root)
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Server zips are packed on Windows, which stores no Unix permissions: unpacked on Linux, Robust.Server
+    /// isn't executable and the process won't start.
+    /// </summary>
+    [UnsupportedOSPlatform("windows")]
+    internal static void MakeExecutable(string path)
+    {
+        const UnixFileMode exec = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+        var mode = File.GetUnixFileMode(path);
+        if ((mode & exec) != exec)
+            File.SetUnixFileMode(path, mode | exec);
     }
 
     public void Delete(string version)

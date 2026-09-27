@@ -1,6 +1,8 @@
+using System.Formats.Tar;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using DarkHaven.Launcher.Local;
 using Xunit;
@@ -57,6 +59,22 @@ public sealed class LocalServerTests : IDisposable
         Assert.Equal(1, list.WithoutServer);
     }
 
+    [Theory]
+    [InlineData("win", Architecture.X64, "win-x64")]
+    [InlineData("linux", Architecture.X64, "linux-x64")]
+    [InlineData("linux", Architecture.Arm64, "linux-arm64")]
+    public void The_platform_is_named_the_way_the_manifest_names_it(string os, Architecture arch, string rid) =>
+        Assert.Equal(rid, LocalBuildCatalog.RidFor(os, arch));
+
+    [Fact]
+    public void A_linux_pc_lists_the_linux_servers()
+    {
+        var list = LocalBuildCatalog.Parse(Manifest, "linux-x64");
+        Assert.Equal(["bbbbbbbb22222222", "aaaaaaaa11111111"], list.Builds.Select(b => b.Version).ToArray());
+        Assert.Equal("http://cdn/l2.zip", list.Builds[0].Url);
+        Assert.Equal(1, list.WithoutServer); // the windows-only one
+    }
+
     // --- Build download ---
 
     private sealed class ZipServer(byte[] zip) : HttpMessageHandler
@@ -65,12 +83,12 @@ public sealed class LocalServerTests : IDisposable
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(zip) });
     }
 
-    private static byte[] ServerZip()
+    private static byte[] ServerZip(string exe = "Robust.Server.exe")
     {
         using var ms = new MemoryStream();
         using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
         {
-            using (var w = new StreamWriter(zip.CreateEntry("Robust.Server.exe").Open()))
+            using (var w = new StreamWriter(zip.CreateEntry(exe).Open()))
                 w.Write("not really an exe");
             using (var w = new StreamWriter(zip.CreateEntry("Robust.Server.runtimeconfig.json").Open()))
                 w.Write("""{"runtimeOptions":{"tfm":"net10.0","framework":{"name":"Microsoft.NETCore.App","version":"10.0.0"}}}""");
@@ -84,7 +102,7 @@ public sealed class LocalServerTests : IDisposable
     public async Task A_build_that_matches_its_hash_is_installed_and_knows_what_dotnet_it_needs()
     {
         var zip = ServerZip();
-        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir);
+        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir, "win-x64");
         var build = new LocalBuild("bbbbbbbb22222222", DateTimeOffset.UtcNow, "http://cdn/w2.zip", Convert.ToHexString(SHA256.HashData(zip)).ToLowerInvariant(), zip.Length);
 
         await store.InstallAsync(build);
@@ -99,7 +117,7 @@ public sealed class LocalServerTests : IDisposable
     [Fact]
     public async Task A_build_that_doesnt_match_its_hash_is_never_installed()
     {
-        var store = new LocalBuildStore(new HttpClient(new ZipServer(ServerZip())), _dir);
+        var store = new LocalBuildStore(new HttpClient(new ZipServer(ServerZip())), _dir, "win-x64");
         var build = new LocalBuild("bbbbbbbb22222222", DateTimeOffset.UtcNow, "http://cdn/w2.zip", new string('0', 64), null);
 
         var e = await Assert.ThrowsAsync<InvalidDataException>(() => store.InstallAsync(build));
@@ -113,13 +131,42 @@ public sealed class LocalServerTests : IDisposable
     public async Task Builds_sharing_a_folder_prefix_are_not_mistaken_for_each_other()
     {
         var zip = ServerZip();
-        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir);
+        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir, "win-x64");
         var sha = Convert.ToHexString(SHA256.HashData(zip));
         await store.InstallAsync(new LocalBuild("875c455c3c49aaaa", DateTimeOffset.UtcNow, "http://cdn/a.zip", sha, null));
 
         Assert.EndsWith("875c455c3c49", store.PathFor("875c455c3c49aaaa")); // 12 characters, not 40
         Assert.True(store.IsInstalled("875c455c3c49aaaa"));
         Assert.False(store.IsInstalled("875c455c3c49bbbb")); // same folder, different build
+    }
+
+    [Fact]
+    public async Task A_linux_build_starts_its_server_without_an_extension()
+    {
+        var zip = ServerZip("Robust.Server");
+        var store = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir, "linux-x64");
+        var build = new LocalBuild("dddddddd44444444", DateTimeOffset.UtcNow, "http://cdn/l.zip", Convert.ToHexString(SHA256.HashData(zip)), zip.Length);
+
+        await store.InstallAsync(build);
+
+        Assert.True(store.IsInstalled(build.Version));
+        var exe = store.ServerExecutable(build.Version);
+        Assert.EndsWith("Robust.Server", exe);
+        if (!OperatingSystem.IsWindows()) // the zip carries no permissions; the store has to add them
+            Assert.True(File.GetUnixFileMode(exe!).HasFlag(UnixFileMode.UserExecute));
+    }
+
+    [Fact]
+    public async Task A_windows_build_on_linux_counts_as_not_installed()
+    {
+        // What launcher 0.3.9 left on Linux PCs: the Windows server, under the right version.
+        var zip = ServerZip();
+        await new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir, "win-x64")
+            .InstallAsync(new LocalBuild("eeeeeeee55555555", DateTimeOffset.UtcNow, "http://cdn/w.zip", Convert.ToHexString(SHA256.HashData(zip)), null));
+
+        var linux = new LocalBuildStore(new HttpClient(new ZipServer(zip)), _dir, "linux-x64");
+        Assert.False(linux.IsInstalled("eeeeeeee55555555"));
+        Assert.Null(linux.ServerExecutable("eeeeeeee55555555"));
     }
 
     [Fact]
@@ -159,11 +206,13 @@ public sealed class LocalServerTests : IDisposable
     // --- .NET runtime ---
 
     [Fact]
-    public void Picks_the_newest_windows_runtime_zip_from_microsofts_metadata()
+    public void Picks_the_newest_runtime_archive_for_the_system_from_microsofts_metadata()
     {
         const string releases = """
             {"releases":[
               {"release-version":"10.0.3","runtime":{"version":"10.0.3","files":[
+                {"name":"dotnet-apphost-pack-linux-x64.tar.gz","rid":"linux-x64","url":"https://x/apphost.tgz","hash":"A1"},
+                {"name":"dotnet-apphost-pack-win-x64.zip","rid":"win-x64","url":"https://x/apphost.zip","hash":"A2"},
                 {"name":"dotnet-runtime-win-x64.exe","rid":"win-x64","url":"https://x/new.exe","hash":"E1"},
                 {"name":"dotnet-runtime-linux-x64.tar.gz","rid":"linux-x64","url":"https://x/new.tgz","hash":"L1"},
                 {"name":"dotnet-runtime-win-x64.zip","rid":"win-x64","url":"https://x/new.zip","hash":"Z1"}]}},
@@ -171,7 +220,8 @@ public sealed class LocalServerTests : IDisposable
                 {"name":"dotnet-runtime-win-x64.zip","rid":"win-x64","url":"https://x/old.zip","hash":"Z0"}]}}
             ]}
             """;
-        Assert.Equal(("https://x/new.zip", "Z1"), DotnetRuntime.PickRuntimeZip(releases, "win-x64"));
+        Assert.Equal(("https://x/new.zip", "Z1"), DotnetRuntime.PickRuntimeArchive(releases, "win-x64"));
+        Assert.Equal(("https://x/new.tgz", "L1"), DotnetRuntime.PickRuntimeArchive(releases, "linux-x64"));
     }
 
     [Fact]
@@ -181,12 +231,86 @@ public sealed class LocalServerTests : IDisposable
         Directory.CreateDirectory(Path.Combine(root, "shared", "Microsoft.NETCore.App", "9.0.8"));
         Assert.False(DotnetRuntime.HasRuntime(root, 9)); // no host/fxr yet
 
-        Directory.CreateDirectory(Path.Combine(root, "host", "fxr", "9.0.8"));
+        var fxr = Path.Combine(root, "host", "fxr", "9.0.8");
+        Directory.CreateDirectory(fxr);
+        File.WriteAllText(Path.Combine(fxr, OtherSystemsHostFxr), "");
+        Assert.False(DotnetRuntime.HasRuntime(root, 9)); // another system's runtime can't run here
+
+        File.WriteAllText(Path.Combine(fxr, DotnetRuntime.HostFxr), "");
         Assert.True(DotnetRuntime.HasRuntime(root, 9));
         Assert.False(DotnetRuntime.HasRuntime(root, 10));
 
         Directory.CreateDirectory(Path.Combine(root, "shared", "Microsoft.NETCore.App", "10.0.0-rc.2.25502.107"));
         Assert.True(DotnetRuntime.HasRuntime(root, 10));
+    }
+
+    private static string OtherSystemsHostFxr => DotnetRuntime.HostFxr == "hostfxr.dll" ? "libhostfxr.so" : "hostfxr.dll";
+
+    /// <summary>Microsoft's CDN: releases.json and one runtime archive for this system.</summary>
+    private sealed class MicrosoftCdn(byte[] archive, string archiveUrl) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
+        {
+            var url = request.RequestUri!.ToString();
+            var rid = LocalBuildCatalog.Rid;
+            var name = "dotnet-runtime-" + rid + (archiveUrl.EndsWith(".zip") ? ".zip" : ".tar.gz");
+            var hash = Convert.ToHexString(SHA512.HashData(archive));
+            var body = url.EndsWith("releases.json")
+                ? System.Text.Encoding.UTF8.GetBytes(
+                    $$$"""{"releases":[{"runtime":{"files":[{"name":"{{{name}}}","rid":"{{{rid}}}","url":"{{{archiveUrl}}}","hash":"{{{hash}}}"}]}}]}""")
+                : url == archiveUrl ? archive : throw new InvalidOperationException($"unexpected request {url}");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body) });
+        }
+    }
+
+    /// <summary>A pretend runtime in the shape Microsoft ships for this system: a zip on Windows, a tar.gz elsewhere.</summary>
+    private static (byte[] Archive, string Url) RuntimeArchive(string version)
+    {
+        const UnixFileMode executable = (UnixFileMode)0b111_101_101, plain = (UnixFileMode)0b110_100_100;
+        (string Path, UnixFileMode Mode)[] files =
+        [
+            ("dotnet", executable),
+            ($"host/fxr/{version}/{DotnetRuntime.HostFxr}", plain),
+            ($"shared/Microsoft.NETCore.App/{version}/System.Private.CoreLib.dll", plain),
+        ];
+        using var ms = new MemoryStream();
+        if (LocalBuildCatalog.Rid.StartsWith("win-"))
+        {
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+                foreach (var (path, _) in files)
+                    using (var w = new StreamWriter(zip.CreateEntry(path).Open()))
+                        w.Write("x");
+            return (ms.ToArray(), "https://ms/dotnet-runtime.zip");
+        }
+
+        using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true))
+        using (var tar = new TarWriter(gz))
+            foreach (var (path, mode) in files)
+                tar.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, path) { Mode = mode, DataStream = new MemoryStream("x"u8.ToArray()) });
+        return (ms.ToArray(), "https://ms/dotnet-runtime.tar.gz");
+    }
+
+    [Fact]
+    public async Task Without_a_runtime_it_downloads_microsofts_for_this_system()
+    {
+        var root = Path.Combine(_dir, "dotnet");
+        // Launcher 0.3.9 on Linux unpacked the Windows runtime here: it has to go, not mix with the new one.
+        var stray = Path.Combine(root, "shared", "Microsoft.NETCore.App", "10.0.0");
+        Directory.CreateDirectory(stray);
+        Directory.CreateDirectory(Path.Combine(root, "host", "fxr", "10.0.0"));
+        File.WriteAllText(Path.Combine(root, "host", "fxr", "10.0.0", OtherSystemsHostFxr), "");
+
+        var (archive, url) = RuntimeArchive("99.0.1");
+        var runtime = new DotnetRuntime(new HttpClient(new MicrosoftCdn(archive, url)), root, trySystem: false);
+
+        Assert.Equal(root, await runtime.EnsureAsync(99));
+        Assert.True(DotnetRuntime.HasRuntime(root, 99));
+        Assert.False(Directory.Exists(stray));
+        Assert.Empty(Directory.GetFiles(root, ".download-*")); // no leftover archive
+        if (!OperatingSystem.IsWindows()) // the tar's permissions survive: the host must stay executable
+            Assert.True(File.GetUnixFileMode(Path.Combine(root, "dotnet")).HasFlag(UnixFileMode.UserExecute));
+
+        Assert.Equal(root, await runtime.EnsureAsync(99)); // second time: already there, no download
     }
 
     // --- The server's config ---

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Serilog;
 
@@ -26,8 +27,15 @@ public sealed class LocalBuildCatalog(HttpClient http, string manifestUrl, strin
     public const string DefaultManifestUrl =
         "https://github.com/Dark-Haven-inc/frontier15-launcher/releases/download/local-servers/manifest.json";
 
-    /// <summary>The only server platform ЛОКАЛКА runs today.</summary>
-    public const string Rid = "win-x64";
+    /// <summary>
+    /// The server platform for this PC, as Robust.Cdn names it: <c>win-x64</c> or <c>linux-x64</c> (the launcher
+    /// ships for both). Anything else finds no builds, and ЛОКАЛКА says there's none for this system yet.
+    /// </summary>
+    public static string Rid { get; } = RidFor(
+        OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : "linux",
+        RuntimeInformation.ProcessArchitecture);
+
+    internal static string RidFor(string os, Architecture arch) => $"{os}-{arch.ToString().ToLowerInvariant()}";
 
     public async Task<LocalBuildList> GetAsync(CancellationToken cancel = default)
     {
