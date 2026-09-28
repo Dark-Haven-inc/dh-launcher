@@ -8,7 +8,7 @@
         <Border BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
             <Panel>
                 <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
-                <TextBlock Classes="dim" Margin="16" Text="Новостей нет" IsVisible="{Binding IsEmpty}" />
+                <TextBlock Classes="dim" Margin="16" Text="новостей нет" IsVisible="{Binding IsEmpty}" />
                 <ScrollViewer>
                     <ItemsControl ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
@@ -53,7 +53,7 @@
                 </ItemsControl>
                 <Button HorizontalAlignment="Left" Command="{Binding Selected.OpenCommand}" IsVisible="{Binding Selected.HasLink}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Подробнее" VerticalAlignment="Center" />
+                        <TextBlock Text="подробнее" VerticalAlignment="Center" />
                         <TextBlock Classes="icon" Text="&#xEB14;" FontSize="11" />
                     </StackPanel>
                 </Button>

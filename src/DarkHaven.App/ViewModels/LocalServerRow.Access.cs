@@ -55,13 +55,26 @@ public sealed partial class LocalServerRow
         _ => "Проверяем, открыт ли порт…",
     };
 
+    /// <summary><see cref="ReachText"/> in a few words, for the monochrome layout; the full line is its tooltip.</summary>
+    public string ReachShort => (Host.Upnp, Reachable) switch
+    {
+        (_, true) => "виден",
+        (UpnpState.Failed, _) => $"порт {Profile.Port} закрыт роутером",
+        (_, false) => "не виден",
+        _ => "проверяем…",
+    };
+
     partial void OnSharedChanged(bool value)
     {
         SaveIf(() => Profile.Shared = value);
         OnPropertyChanged(nameof(SharedText));
     }
 
-    partial void OnReachableChanged(bool? value) => OnPropertyChanged(nameof(ReachText));
+    partial void OnReachableChanged(bool? value)
+    {
+        OnPropertyChanged(nameof(ReachText));
+        OnPropertyChanged(nameof(ReachShort));
+    }
 
     /// <summary>Called on every state change of the server: opens access when it comes up, closes it when it goes.</summary>
     private void AccessFollowState()
@@ -72,6 +85,7 @@ public sealed partial class LocalServerRow
             EndAccess();
         OnPropertyChanged(nameof(ShowAccess));
         OnPropertyChanged(nameof(ReachText));
+        OnPropertyChanged(nameof(ReachShort));
     }
 
     private void BeginAccess()

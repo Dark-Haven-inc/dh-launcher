@@ -18,15 +18,15 @@
                     <TextBlock Classes="lbl" Text="КОД 2FA" />
                     <TextBox Classes="mono" Text="{Binding TfaCode}" />
                 </StackPanel>
-                <TextBlock Text="{Binding Error}" TextWrapping="Wrap"
+                <TextBlock Text="{Binding Error, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
                            IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
                 <Button Classes="primary" Height="28" HorizontalAlignment="Stretch" IsDefault="True"
                         Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}">
                     <TextBlock Text="ВОЙТИ" LetterSpacing="1.8" />
                 </Button>
                 <Grid ColumnDefinitions="*,*">
-                    <Button Classes="link" HorizontalAlignment="Left" Content="Создать аккаунт" Command="{Binding OpenRegisterCommand}" />
-                    <Button Grid.Column="1" Classes="link" HorizontalAlignment="Right" Content="Забыли пароль?" Command="{Binding OpenForgotCommand}" />
+                    <Button Classes="link" HorizontalAlignment="Left" Content="создать аккаунт" Command="{Binding OpenRegisterCommand}" />
+                    <Button Grid.Column="1" Classes="link" HorizontalAlignment="Right" Content="забыли пароль?" Command="{Binding OpenForgotCommand}" />
                 </Grid>
             </StackPanel>
 
@@ -45,10 +45,10 @@
                                     <TextBlock Text="{Binding Username}" TextTrimming="CharacterEllipsis"
                                                FontWeight="{Binding IsActive, Converter={x:Static vm:BoolWeight.Instance}}" />
                                     <TextBlock Grid.Column="1" Classes="mono dim" FontSize="10" Text="{Binding StatusHint}" VerticalAlignment="Center" />
-                                    <Button Grid.Column="2" Classes="link" Content="Выбрать" IsVisible="{Binding !IsActive}"
+                                    <Button Grid.Column="2" Classes="link" Content="выбрать" IsVisible="{Binding !IsActive}"
                                             Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
                                             CommandParameter="{Binding}" />
-                                    <Button Grid.Column="3" Classes="link" FontFamily="{StaticResource DhMono}" Content="&#xEA76;" ToolTip.Tip="Выйти"
+                                    <Button Grid.Column="3" Classes="link" FontFamily="{StaticResource DhMono}" Content="&#xEA76;" ToolTip.Tip="выйти"
                                             Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).LogoutCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>

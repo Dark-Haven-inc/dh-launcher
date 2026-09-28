@@ -36,7 +36,7 @@
 
     <ScrollViewer>
         <StackPanel Margin="20,16" Spacing="16">
-            <TextBlock Classes="dim" IsVisible="{Binding !HasRegions}" Text="Регионов нет" />
+            <TextBlock Classes="dim" IsVisible="{Binding !HasRegions}" Text="регионов нет" />
 
             <!-- Region switch -->
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasRegions}">
@@ -50,7 +50,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button Grid.Column="1" Classes="icon" Content="&#xEB37;" ToolTip.Tip="Обновить" Command="{Binding RefreshCommand}" />
+                <Button Grid.Column="1" Classes="icon" Content="&#xEB37;" ToolTip.Tip="обновить" Command="{Binding RefreshCommand}" />
             </Grid>
 
             <!-- Right now -->
@@ -62,10 +62,10 @@
                             <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding !IsOnline}" />
                             <TextBlock Classes="mono" FontSize="12" Text="{Binding StateText}" />
                         </StackPanel>
-                        <Button Classes="link" Command="{Binding CopyAddressCommand}" HorizontalAlignment="Left" ToolTip.Tip="Скопировать адрес">
+                        <Button Classes="link" Command="{Binding CopyAddressCommand}" HorizontalAlignment="Left" ToolTip.Tip="скопировать адрес">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <TextBlock Classes="mono" FontSize="10.5" Text="{Binding Selected.Address}" Foreground="{Binding $parent[Button].Foreground}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Classes="icon" FontSize="10" Text="{Binding CopyLabel}" Foreground="{Binding $parent[Button].Foreground}" />
+                                <TextBlock Classes="icon" FontSize="10" Text="{Binding CopyLabel, Converter={x:Static vm:Lowercase.Instance}}" Foreground="{Binding $parent[Button].Foreground}" />
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -120,7 +120,7 @@
                     <Button Grid.Column="2" Command="{Binding ToggleTableCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Classes="icon" Text="&#xEB84;" FontSize="11" />
-                            <TextBlock Text="{Binding TableLabel}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TableLabel, Converter={x:Static vm:Lowercase.Instance}}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
                 </Grid>

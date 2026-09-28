@@ -47,15 +47,15 @@
         <!-- Add by username -->
         <StackPanel DockPanel.Dock="Bottom" Margin="12,8" Spacing="4">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                <TextBox Text="{Binding AddName}" Watermark="Ник" MaxLength="64">
+                <TextBox Text="{Binding AddName}" Watermark="ник" MaxLength="64">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Enter" Command="{Binding SendRequestCommand}" />
                     </TextBox.KeyBindings>
                 </TextBox>
-                <Button Grid.Column="1" Classes="icon" Content="&#xEA60;" ToolTip.Tip="Добавить"
+                <Button Grid.Column="1" Classes="icon" Content="&#xEA60;" ToolTip.Tip="добавить"
                         Command="{Binding SendRequestCommand}" />
             </Grid>
-            <TextBlock Text="{Binding AddStatus}" Classes.dim="{Binding !AddFailed}" FontSize="11" TextWrapping="Wrap"
+            <TextBlock Text="{Binding AddStatus, Converter={x:Static vm:Lowercase.Instance}}" Classes.dim="{Binding !AddFailed}" FontSize="11" TextWrapping="Wrap"
                        IsVisible="{Binding HasAddStatus}" />
         </StackPanel>
 
@@ -68,10 +68,10 @@
                             <Border Classes="fr">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
                                     <TextBlock Text="{Binding Username}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                                    <Button Grid.Column="1" Classes="primary small" Content="Принять"
+                                    <Button Grid.Column="1" Classes="primary small" Content="принять"
                                             Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).AcceptCommand}"
                                             CommandParameter="{Binding}" />
-                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="Отклонить"
+                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="отклонить"
                                             Width="20" Height="20"
                                             Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
                                             CommandParameter="{Binding}" />
@@ -102,12 +102,12 @@
                                                        TextTrimming="CharacterEllipsis" IsVisible="{Binding IsPlaying}" />
                                         </StackPanel>
                                     </Button>
-                                    <Button Grid.Column="2" Classes="small" Content="Зайти" IsVisible="{Binding IsPlaying}"
+                                    <Button Grid.Column="2" Classes="small" Content="зайти" IsVisible="{Binding IsPlaying}"
                                             Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).JoinCommand}"
                                             CommandParameter="{Binding}" />
                                     <Button Grid.Column="3" Classes="link rm" Classes.armed="{Binding ConfirmingRemove}"
                                             Content="{Binding RemoveLabel}" FontFamily="{StaticResource DhMono}" FontSize="10.5"
-                                            ToolTip.Tip="Удалить из друзей" VerticalAlignment="Center"
+                                            ToolTip.Tip="удалить из друзей" VerticalAlignment="Center"
                                             Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).UnfriendCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>
@@ -125,7 +125,7 @@
                                     <c:StatusGlyph Kind="q" Foreground="{StaticResource DhTextFaintBrush}" />
                                     <TextBlock Grid.Column="1" Text="{Binding Username}" Classes="faint" VerticalAlignment="Center"
                                                TextTrimming="CharacterEllipsis" ToolTip.Tip="ждёт ответа" />
-                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="Отменить заявку"
+                                    <Button Grid.Column="2" Classes="link icon" Content="&#xEA76;" ToolTip.Tip="отменить заявку"
                                             Width="20" Height="20"
                                             Command="{Binding $parent[UserControl].((vm:FriendsViewModel)DataContext).DismissCommand}"
                                             CommandParameter="{Binding}" />

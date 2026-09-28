@@ -81,10 +81,10 @@
             <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="dh">
                 <StackPanel Width="224" Margin="12" Spacing="8">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Button Classes="icon" Content="&#xEAB5;" ToolTip.Tip="Раньше" Command="{Binding PrevMonthCommand}" />
+                        <Button Classes="icon" Content="&#xEAB5;" ToolTip.Tip="раньше" Command="{Binding PrevMonthCommand}" />
                         <TextBlock Grid.Column="1" Classes="caps" Text="{Binding MonthTitle}" Foreground="{StaticResource DhTextBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <Button Grid.Column="2" Classes="icon" Content="&#xEAB6;" ToolTip.Tip="Позже"
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEAB6;" ToolTip.Tip="позже"
                                 Command="{Binding NextMonthCommand}" IsEnabled="{Binding CanGoNext}" />
                     </Grid>
 

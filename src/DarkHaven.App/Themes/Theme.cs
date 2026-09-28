@@ -9,8 +9,9 @@ using DarkHaven.Launcher.Data;
 namespace DarkHaven.App.Themes;
 
 /// <summary>A main window with its views (Views/, Views/Legacy/), and the control styles they are
-/// drawn with (Themes/Styles/&lt;name&gt;.axaml).</summary>
-public enum ThemeLayout { Monochrome, Legacy }
+/// drawn with (Themes/Styles/&lt;name&gt;.axaml). Retro is a text-mode window of its own (Views/Retro/)
+/// around the monochrome pages, which its styles redraw as a CRT terminal.</summary>
+public enum ThemeLayout { Monochrome, Legacy, Retro }
 
 /// <summary>
 /// The player's own colors on top of a theme's palette (НАСТРОЙКИ → Вид, next to the theme); null
@@ -46,7 +47,8 @@ public sealed record Theme(string Id, string Title, ThemeLayout Layout, string P
 {
     public static readonly IReadOnlyList<Theme> All =
     [
-        new("monochrome", "Monochrome", ThemeLayout.Monochrome, "Monochrome"),
+        new("monochrome", "monochrome", ThemeLayout.Monochrome, "Monochrome"),
+        new("retro", "retro", ThemeLayout.Retro, "Retro"),
         new("legacy", "Legacy", ThemeLayout.Legacy, "Legacy"),
     ];
 
@@ -151,6 +153,7 @@ public sealed record Theme(string Id, string Title, ThemeLayout Layout, string P
     public Window CreateMainWindow() => Layout switch
     {
         ThemeLayout.Legacy => new Views.Legacy.MainWindow(),
+        ThemeLayout.Retro => new Views.Retro.MainWindow(),
         _ => new Views.MainWindow(),
     };
 

@@ -1,0 +1,278 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:local="using:DarkHaven.Launcher.Local"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Retro.LocalView"
+             x:DataType="vm:LocalViewModel">
+    <!-- ЛОКАЛКА as a text screen: my servers, friends' and the builds in boxes down the left; the chosen
+         server's boxes on the right — state and actions, access, settings as "key: value" lines, and its
+         console with a prompt. -->
+    <UserControl.Styles>
+        <!-- The server list: text rows, the chosen one a reverse-video bar. -->
+        <Style Selector="ListBox.servers">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem">
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="MinHeight" Value="22" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem:selected">
+            <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        </Style>
+        <Style Selector="ListBox.servers ListBoxItem TextBlock">
+            <Setter Property="Foreground" Value="{Binding $parent[ListBoxItem].Foreground}" />
+        </Style>
+
+        <Style Selector="Grid.kv > TextBlock.key">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- The server console: its own scroll area, so following new lines never scrolls the page. -->
+        <Style Selector="SelectableTextBlock.console">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{StaticResource DhBodyBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="16,10,16,12" ColumnDefinitions="280,16,*">
+        <!-- Left: my servers, friends' servers, builds -->
+        <ScrollViewer>
+            <StackPanel Spacing="14">
+                <HeaderedContentControl Classes="box" Header="МОИ СЕРВЕРЫ" Padding="4,8,4,6">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="key" Margin="6,0" Text="серверов нет" IsVisible="{Binding !HasServers}" />
+                        <ListBox Classes="servers" ItemsSource="{Binding Servers}" SelectedItem="{Binding Selected}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LocalServerRow">
+                                    <Grid MinHeight="22" ColumnDefinitions="8,*,Auto" ColumnSpacing="8">
+                                        <c:StatusGlyph Kind="{Binding Dot}" VerticalAlignment="Center" Foreground="{Binding $parent[ListBoxItem].Foreground}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2" Text="{Binding ModeText}" Opacity="0.75" VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="2,2,0,0">
+                            <Button Content="+ игра" ToolTip.Tip="новый сервер: обычный раунд"
+                                    Command="{Binding NewServerCommand}" CommandParameter="play" />
+                            <Button Content="+ маппинг" ToolTip.Tip="новый сервер для маппинга и тестов: без лобби и ивентов"
+                                    Command="{Binding NewServerCommand}" CommandParameter="develop" />
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <!-- Friends' open servers and invitations -->
+                <HeaderedContentControl Classes="box" Header="У ДРУЗЕЙ" IsVisible="{Binding HasAvailable}">
+                    <StackPanel Spacing="4">
+                        <ItemsControl ItemsSource="{Binding Available}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LocalAvailableRow">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinHeight="22">
+                                        <TextBlock Text="{Binding Title}" ToolTip.Tip="{Binding Subtitle}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        <Panel Grid.Column="1" VerticalAlignment="Center">
+                                            <Button Classes="small" Content="играть" IsVisible="{Binding CanJoin}"
+                                                    Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).JoinSharedCommand}" CommandParameter="{Binding}" />
+                                            <Button Classes="small" Content="попроситься" IsVisible="{Binding CanAsk}"
+                                                    Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).AskToJoinCommand}" CommandParameter="{Binding}" />
+                                            <TextBlock Classes="key" Text="ждём" IsVisible="{Binding Asked}" VerticalAlignment="Center" />
+                                        </Panel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding AvailableMessage, Converter={x:Static vm:Lowercase.Instance}}" Classes="key" TextWrapping="Wrap"
+                                   IsVisible="{Binding AvailableMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Button HorizontalAlignment="Left" Content="обновить" Command="{Binding LoadAvailableCommand}" />
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <HeaderedContentControl Classes="box" Header="СБОРКИ">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding BuildsMessage, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
+                                   IsVisible="{Binding BuildsMessage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <ItemsControl ItemsSource="{Binding Builds}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LocalBuildRow">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Classes="key" Text="{Binding Subtitle}" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <Panel Grid.Column="1" VerticalAlignment="Center">
+                                            <Button Classes="small" Content="{Binding DownloadLabel, Converter={x:Static vm:Lowercase.Instance}}"
+                                                    Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).DownloadBuildCommand}" CommandParameter="{Binding}"
+                                                    IsVisible="{Binding !Installed}" IsEnabled="{Binding Progress, Converter={x:Static ObjectConverters.IsNull}}" />
+                                            <Button Classes="small" Content="удалить"
+                                                    Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).DeleteBuildCommand}" CommandParameter="{Binding}"
+                                                    IsVisible="{Binding Installed}" />
+                                        </Panel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button HorizontalAlignment="Left" Content="обновить список" Command="{Binding LoadBuildsCommand}" IsEnabled="{Binding !LoadingBuilds}" />
+                    </StackPanel>
+                </HeaderedContentControl>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Right: the chosen server -->
+        <ContentControl Grid.Column="2" Content="{Binding Selected}" IsVisible="{Binding HasSelected}">
+            <ContentControl.ContentTemplate>
+            <DataTemplate x:DataType="vm:LocalServerRow">
+            <ScrollViewer Padding="0,0,8,0">
+                <StackPanel Spacing="14">
+                    <HeaderedContentControl Classes="box" Header="{Binding Name}">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <c:StatusGlyph Kind="{Binding Dot}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding StateText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <WrapPanel ItemSpacing="4" LineSpacing="4">
+                                <Button Classes="primary" MinWidth="112" HorizontalContentAlignment="Center" Content="ЗАПУСТИТЬ" IsVisible="{Binding IsStopped}"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).StartCommand}" CommandParameter="{Binding}" />
+                                <Button Classes="primary" MinWidth="112" HorizontalContentAlignment="Center" Content="ИГРАТЬ" IsVisible="{Binding IsRunning}"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).ConnectCommand}" CommandParameter="{Binding}" />
+                                <Button Content="остановить" IsVisible="{Binding CanStop}"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).StopCommand}" CommandParameter="{Binding}" />
+                                <Button Content="папка сервера"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).OpenFolderCommand}" CommandParameter="{Binding}" />
+                                <Button Content="удалить" IsVisible="{Binding !ConfirmDelete}"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}" />
+                            </WrapPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ConfirmDelete}">
+                                <TextBlock Text="удалить вместе с папкой? карты и база пропадут." VerticalAlignment="Center" />
+                                <Button Content="удалить"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}" />
+                                <Button Content="отмена"
+                                        Command="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).CancelDeleteCommand}" CommandParameter="{Binding}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- Access: who may join a server open to others (while it runs) -->
+                    <HeaderedContentControl Classes="box" Header="ДОСТУП" IsVisible="{Binding ShowAccess}">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Classes="key" Text="из интернета" />
+                                <Border Grid.Column="1" Classes="leader" />
+                                <TextBlock Grid.Column="2" Text="{Binding ReachShort}" ToolTip.Tip="{Binding ReachText, Converter={x:Static vm:Lowercase.Instance}}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding PublicAddress, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <TextBlock Classes="key" Text="адрес" />
+                                <Border Grid.Column="1" Classes="leader" />
+                                <SelectableTextBlock Grid.Column="2" Text="{Binding PublicAddress}" ToolTip.Tip="его получают только приглашённые" />
+                            </Grid>
+                            <Grid Classes="kv" ColumnDefinitions="Auto,8,*,Auto" ColumnSpacing="0" Margin="0,4,0,0">
+                                <TextBlock Classes="key" Text="пригласить:" />
+                                <TextBox Grid.Column="2" Text="{Binding InviteName}" Watermark="ник" MaxLength="32" ToolTip.Tip="игрок должен хоть раз зайти в лаунчер">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding InviteCommand}" />
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                                <Button Grid.Column="3" Content="ок" Command="{Binding InviteCommand}" Margin="4,0,0,0" />
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Members}" IsVisible="{Binding HasMembers}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LocalMemberRow">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinHeight="22">
+                                            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding Username}" /><Run Text="  " /><Run Text="{Binding StatusText, Converter={x:Static vm:Lowercase.Instance}}" Foreground="{StaticResource DhTextDimBrush}" />
+                                            </TextBlock>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                                                <Button Classes="small" Content="пустить" IsVisible="{Binding IsRequest}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:LocalServerRow)DataContext).AcceptMemberCommand}" CommandParameter="{Binding}" />
+                                                <Button Classes="small" Content="{Binding RemoveText, Converter={x:Static vm:Lowercase.Instance}}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:LocalServerRow)DataContext).RemoveMemberCommand}" CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding AccessError, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
+                                       IsVisible="{Binding AccessError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- Settings: only while it's off — a running server reads them once, at start -->
+                    <HeaderedContentControl Classes="box" Header="НАСТРОЙКИ">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="key" Text="остановите сервер, чтобы изменить" IsVisible="{Binding !IsStopped}" />
+                            <Grid Classes="kv" ColumnDefinitions="96,*" RowDefinitions="Auto,6,Auto,6,Auto,6,Auto,6,Auto,6,Auto" IsEnabled="{Binding IsStopped}">
+                                <TextBlock Classes="key" Text="название:" />
+                                <TextBox Grid.Column="1" Text="{Binding Name}" MaxLength="60" />
+
+                                <TextBlock Grid.Row="2" Classes="key" Text="режим:" />
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Classes="chip" Content="игра" Command="{Binding SetModeCommand}" CommandParameter="play"
+                                            Classes.on="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Play}}" />
+                                    <Button Classes="chip" Content="маппинг и тесты" Command="{Binding SetModeCommand}" CommandParameter="develop"
+                                            Classes.on="{Binding Mode, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static local:LocalServerMode.Develop}}" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="4" Classes="key" Text="сборка:" />
+                                <ComboBox Grid.Row="4" Grid.Column="1" Width="240"
+                                          ItemsSource="{Binding $parent[UserControl].((vm:LocalViewModel)DataContext).BuildChoices}"
+                                          SelectedItem="{Binding BuildChoice}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LocalBuildChoice">
+                                            <TextBlock Text="{Binding Title, Converter={x:Static vm:Lowercase.Instance}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="6" Classes="key" Text="порт:" />
+                                <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Port}" Width="72" MaxLength="5" HorizontalAlignment="Left" />
+
+                                <TextBlock Grid.Row="8" Classes="key" Text="игроков:" />
+                                <TextBox Grid.Row="8" Grid.Column="1" Text="{Binding MaxPlayers}" Width="72" MaxLength="3" HorizontalAlignment="Left" />
+
+                                <TextBlock Grid.Row="10" Classes="key" Text="карта:" />
+                                <TextBox Grid.Row="10" Grid.Column="1" Text="{Binding Map}" MaxLength="100" Watermark="по режиму" />
+                            </Grid>
+                            <CheckBox IsChecked="{Binding Shared}" Content="пускать приглашённых" IsEnabled="{Binding IsStopped}" IsVisible="{Binding SharingAvailable}"
+                                      ToolTip.Tip="сервер откроется в интернет, но зайдут только приглашённые. нужен вход в аккаунт. Windows при первом запуске спросит разрешение для Robust.Server." />
+                            <TextBlock Text="{Binding SettingsError, Converter={x:Static vm:Lowercase.Instance}}"
+                                       IsVisible="{Binding SettingsError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <!-- Console: the server's own output, and a prompt to type commands at -->
+                    <HeaderedContentControl Classes="box" Header="КОНСОЛЬ" Padding="8,8,4,6">
+                        <StackPanel Spacing="6">
+                            <ScrollViewer Classes="console" Height="240">
+                                <SelectableTextBlock Classes="console" Text="{Binding ConsoleText}" />
+                            </ScrollViewer>
+                            <Grid ColumnDefinitions="Auto,*" IsEnabled="{Binding HasConsole}">
+                                <TextBlock Text="&gt; " VerticalAlignment="Center" />
+                                <TextBox Grid.Column="1" Text="{Binding Command}" Watermark="команда"
+                                         ToolTip.Tip="mapping — открыть карту, savemap — сохранить в папку сервера">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding SendCommandCommand}" />
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                            </Grid>
+                        </StackPanel>
+                    </HeaderedContentControl>
+                </StackPanel>
+            </ScrollViewer>
+            </DataTemplate>
+            </ContentControl.ContentTemplate>
+        </ContentControl>
+    </Grid>
+</UserControl>

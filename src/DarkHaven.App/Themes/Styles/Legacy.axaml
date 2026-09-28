@@ -4,11 +4,17 @@
     <!-- The legacy layout: the rounded blue HUD from before the monochrome redesign, as it was.
          Colors come from the palette (Themes/Palettes). -->
     <Styles.Resources>
+        <!-- The legacy design is set in Inter (the launcher's own default is a monospace font). -->
+        <FontFamily x:Key="DhSans">avares://Frontier15Launcher/Assets/Fonts#Inter</FontFamily>
         <FontFamily x:Key="DhMono">Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace</FontFamily>
     </Styles.Resources>
 
     <Style Selector="Window">
         <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+    </Style>
+    <Style Selector="ToolTip, FlyoutPresenter, MenuFlyoutPresenter, ComboBoxItem, ContextMenu">
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
     </Style>
     <Style Selector="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />

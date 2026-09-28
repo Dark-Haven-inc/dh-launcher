@@ -30,6 +30,14 @@ public partial class SettingsViewModel : ViewModelBase
 
     public IReadOnlyList<Theme> ThemeChoices => Theme.All;
 
+    /// <summary>The retro theme has its tube effects instead of the color editor (its greens are the look).</summary>
+    public bool IsRetro => Theme.Current.Layout == ThemeLayout.Retro;
+    [ObservableProperty] private bool _retroScanlines = RetroEffects.Scanlines;
+    [ObservableProperty] private bool _retroGlow = RetroEffects.Glow;
+    [ObservableProperty] private bool _retroNoise = RetroEffects.Noise;
+    [ObservableProperty] private bool _retroBand = RetroEffects.Band;
+    [ObservableProperty] private bool _retroFlicker = RetroEffects.Flicker;
+
     /// <summary>The theme's colors, next to the theme picker: the background every gray follows, and active buttons.</summary>
     public HsvSetting BaseColor { get; } = new("ОБЩИЙ", shown: Theme.BackgroundFor);
     public HsvSetting ActiveColor { get; } = new("АКТИВНЫЕ КНОПКИ", shown: Theme.AccentFill);
@@ -101,8 +109,16 @@ public partial class SettingsViewModel : ViewModelBase
             SaveColors();
             App.SwitchTheme(value);
             ShowThemeColors();
+            OnPropertyChanged(nameof(IsRetro));
         });
     }
+
+    partial void OnRetroScanlinesChanged(bool value) => SaveRetroEffects();
+    partial void OnRetroGlowChanged(bool value) => SaveRetroEffects();
+    partial void OnRetroNoiseChanged(bool value) => SaveRetroEffects();
+    partial void OnRetroBandChanged(bool value) => SaveRetroEffects();
+    partial void OnRetroFlickerChanged(bool value) => SaveRetroEffects();
+    private void SaveRetroEffects() => RetroEffects.Set(_services.Settings, RetroScanlines, RetroGlow, RetroNoise, RetroBand, RetroFlicker);
 
     /// <summary>The editor shows the player's colors on the current theme, or its palette's own.</summary>
     private void ShowThemeColors()

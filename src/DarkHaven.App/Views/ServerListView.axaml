@@ -39,20 +39,19 @@
         <!-- Search, direct connect, tools -->
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,200,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="4">
             <Grid>
-                <TextBox Watermark="Поиск" Text="{Binding Search}" Padding="28,4,8,4" />
+                <TextBox Watermark="поиск" Text="{Binding Search}" Padding="28,4,8,4" />
                 <TextBlock Classes="icon dim" Text="&#xEA6D;" FontSize="11" Margin="10,0,0,0" IsHitTestVisible="False" />
             </Grid>
             <TextBox Grid.Column="1" Classes="mono" Watermark="ss14://" Text="{Binding DirectAddress}" />
-            <Button Grid.Column="2" Classes="icon" Content="&#xEA9C;" ToolTip.Tip="Подключиться" Command="{Binding ConnectDirectCommand}" />
+            <Button Grid.Column="2" Classes="icon" Content="&#xEA9C;" ToolTip.Tip="подключиться" Command="{Binding ConnectDirectCommand}" />
             <Border Grid.Column="3" Classes="sep" />
-            <ToggleButton Grid.Column="4" Classes="chip" Width="24" Padding="0" HorizontalContentAlignment="Center"
-                          FontFamily="{StaticResource DhMono}" FontSize="12" Content="&#xEC05;" ToolTip.Tip="Карта"
+            <ToggleButton Grid.Column="4" Classes="chip glyph" Content="&#xEC05;" ToolTip.Tip="карта"
                           IsChecked="{Binding MapView}" />
-            <Button Grid.Column="5" Classes="icon" Content="&#xEB37;" ToolTip.Tip="Обновить" Command="{Binding RefreshCommand}" />
+            <Button Grid.Column="5" Classes="icon" Content="&#xEB37;" ToolTip.Tip="обновить" Command="{Binding RefreshCommand}" />
             <Button Grid.Column="6" Command="{Binding ToggleApplyCommand}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Classes="icon" Text="&#xEA60;" FontSize="11" />
-                    <TextBlock Text="Разместить" VerticalAlignment="Center" />
+                    <TextBlock Text="разместить" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
         </Grid>
@@ -85,19 +84,19 @@
         <Border DockPanel.Dock="Top" Classes="card" Padding="16" Margin="0,16,0,0" IsVisible="{Binding ShowApply}">
             <StackPanel Spacing="8">
                 <TextBlock Text="ЗАЯВКА" Classes="caps" />
-                <TextBlock Classes="dim" IsVisible="{Binding !CanApply}" Text="Войдите в аккаунт" />
+                <TextBlock Classes="dim" IsVisible="{Binding !CanApply}" Text="войдите в аккаунт" />
                 <StackPanel Spacing="8" IsVisible="{Binding CanApply}">
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <TextBox Watermark="Название" Text="{Binding ApplyName}" MaxLength="60" />
+                        <TextBox Watermark="название" Text="{Binding ApplyName}" MaxLength="60" />
                         <TextBox Grid.Column="1" Classes="mono" Watermark="ss14://адрес:порт" Text="{Binding ApplyAddress}" MaxLength="200" />
                     </Grid>
-                    <TextBox Watermark="О сервере" Text="{Binding ApplyDescription}"
+                    <TextBox Watermark="о сервере" Text="{Binding ApplyDescription}"
                              AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" MaxLength="500" VerticalContentAlignment="Top" />
-                    <TextBox Watermark="Контакт" Text="{Binding ApplyContact}" MaxLength="100" />
+                    <TextBox Watermark="контакт" Text="{Binding ApplyContact}" MaxLength="100" />
                     <Button Classes="primary" HorizontalAlignment="Left" Content="ОТПРАВИТЬ"
                             Command="{Binding SubmitApplicationCommand}" IsEnabled="{Binding !ApplyBusy}" />
                 </StackPanel>
-                <TextBlock Text="{Binding ApplyStatus}" TextWrapping="Wrap"
+                <TextBlock Text="{Binding ApplyStatus, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
                            IsVisible="{Binding ApplyStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
                 <StackPanel IsVisible="{Binding HasMyApplications}" Margin="0,8,0,0">
@@ -109,12 +108,12 @@
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                             <TextBlock>
-                                                <Run Text="{Binding Name}" /><Run Text="  " /><Run Text="{Binding StatusText}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="  " /><Run Text="{Binding WhenText}" Foreground="{StaticResource DhTextFaintBrush}" />
+                                                <Run Text="{Binding Name}" /><Run Text="  " /><Run Text="{Binding StatusText, Converter={x:Static vm:Lowercase.Instance}}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="  " /><Run Text="{Binding WhenText}" Foreground="{StaticResource DhTextFaintBrush}" />
                                             </TextBlock>
                                             <TextBlock Text="{Binding Note}" Classes="dim" FontSize="11" TextWrapping="Wrap"
                                                        IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                         </StackPanel>
-                                        <Button Grid.Column="1" Classes="link" Content="Отозвать" VerticalAlignment="Center"
+                                        <Button Grid.Column="1" Classes="link" Content="отозвать" VerticalAlignment="Center"
                                                 IsVisible="{Binding CanWithdraw}"
                                                 Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).WithdrawApplicationCommand}"
                                                 CommandParameter="{Binding}" />
@@ -130,9 +129,9 @@
         <Panel DockPanel.Dock="Top" Margin="0,16,0,0" Height="1">
             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
         </Panel>
-        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Classes="dim" Margin="0,8,0,0"
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Error, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" Margin="0,8,0,0"
                    IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,8,0,0" IsVisible="{Binding IsEmpty}" Text="Серверов нет" />
+        <TextBlock DockPanel.Dock="Top" Classes="dim" Margin="0,8,0,0" IsVisible="{Binding IsEmpty}" Text="серверов нет" />
 
         <Panel Margin="0,4,0,0">
             <!-- Map -->
@@ -159,7 +158,7 @@
                                 <StackPanel>
                                     <Border Classes="hair" Height="24">
                                         <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                            <TextBlock Classes="dim" Text="Состояние" />
+                                            <TextBlock Classes="dim" Text="состояние" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                                 <c:StatusGlyph IsOnline="{Binding SelectedServer.IsOnline}" IsOffline="{Binding SelectedServer.IsOffline}"
                                                                IsFull="{Binding SelectedServer.IsFull}" />
@@ -169,15 +168,15 @@
                                     </Border>
                                     <Border Classes="hair" Height="24">
                                         <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                            <TextBlock Classes="dim" Text="Игроков" />
+                                            <TextBlock Classes="dim" Text="игроков" />
                                             <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding SelectedServer.Population}" />
                                         </Grid>
                                     </Border>
                                     <Border Classes="hair" Height="24"
                                             IsVisible="{Binding SelectedServer.RoundInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                         <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                            <TextBlock Classes="dim" Text="Раунд" />
-                                            <TextBlock Grid.Column="1" Text="{Binding SelectedServer.RoundInfo}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Classes="dim" Text="раунд" />
+                                            <TextBlock Grid.Column="1" Text="{Binding SelectedServer.RoundInfo, Converter={x:Static vm:Lowercase.Instance}}" TextTrimming="CharacterEllipsis" />
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -190,13 +189,13 @@
                                     </StackPanel>
                                 </Button>
                                 <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                        Content="{Binding SelectedServer.SlotLabel}" Command="{Binding SelectedServer.WaitForSlotCommand}"
+                                        Content="{Binding SelectedServer.SlotLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding SelectedServer.WaitForSlotCommand}"
                                         IsVisible="{Binding SelectedServer.CanWaitForSlot}" />
                                 <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                         Command="{Binding SelectedServer.ToggleFavoriteCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Classes="icon" FontSize="11" Text="{Binding SelectedServer.IsFavorite, Converter={x:Static vm:FavGlyph.Instance}}" />
-                                        <TextBlock Text="Избранное" VerticalAlignment="Center" />
+                                        <TextBlock Text="избранное" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -243,7 +242,7 @@
                                                     <TextBlock Grid.Column="5" Classes="mono" FontSize="10.5" Text="{Binding Population}"
                                                                HorizontalAlignment="Right" VerticalAlignment="Center"
                                                                Foreground="{Binding IsFull, Converter={x:Static vm:BoolBrush.DimText}}" />
-                                                    <Button Grid.Column="6" Classes="small" Content="Играть" HorizontalAlignment="Stretch"
+                                                    <Button Grid.Column="6" Classes="small" Content="играть" HorizontalAlignment="Stretch"
                                                             HorizontalContentAlignment="Center" Command="{Binding ConnectCommand}" IsVisible="{Binding IsOnline}" />
                                                 </Grid>
                                             </Border>

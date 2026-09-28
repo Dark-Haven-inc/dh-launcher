@@ -12,7 +12,7 @@
                 <Run Text="в сети " /><Run Text="{Binding TotalPlayers}" />
             </TextBlock>
             <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
-            <TextBlock Text="{Binding Error}" Classes="dim" TextWrapping="Wrap" Margin="16,12" VerticalAlignment="Bottom"
+            <TextBlock Text="{Binding Error, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" TextWrapping="Wrap" Margin="16,12" VerticalAlignment="Bottom"
                        IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
         </Panel>
 
@@ -29,7 +29,7 @@
                         <StackPanel>
                             <Border Classes="hair" Height="24">
                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                    <TextBlock Classes="dim" Text="Состояние" />
+                                    <TextBlock Classes="dim" Text="состояние" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                         <c:StatusGlyph IsOnline="{Binding Selected.IsOnline}" IsOffline="{Binding Selected.IsOffline}"
                                                        IsQuarantine="{Binding Selected.IsQuarantine}" IsFull="{Binding Selected.IsFull}" />
@@ -39,19 +39,19 @@
                             </Border>
                             <Border Classes="hair" Height="24" IsVisible="{Binding Selected.IsOnline}">
                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                    <TextBlock Classes="dim" Text="Игроков" />
+                                    <TextBlock Classes="dim" Text="игроков" />
                                     <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding Selected.Population}" />
                                 </Grid>
                             </Border>
                             <Border Classes="hair" Height="24" IsVisible="{Binding Selected.IsOnline}">
                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                    <TextBlock Classes="dim" Text="Раунд" />
+                                    <TextBlock Classes="dim" Text="раунд" />
                                     <TextBlock Grid.Column="1" Text="{Binding Selected.RoundText}" />
                                 </Grid>
                             </Border>
                             <Border Classes="hair" Height="24" IsVisible="{Binding !Selected.IsQuarantine}">
                                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
-                                    <TextBlock Classes="dim" Text="Отклик" />
+                                    <TextBlock Classes="dim" Text="отклик" />
                                     <TextBlock Grid.Column="1" Classes="mono" FontSize="11.5" Text="{Binding Selected.Ping}" />
                                 </Grid>
                             </Border>
@@ -67,13 +67,13 @@
                             </StackPanel>
                         </Button>
                         <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                Content="{Binding Selected.SlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
+                                Content="{Binding Selected.SlotLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding Selected.WaitForSlotCommand}"
                                 IsVisible="{Binding Selected.CanWaitForSlot}" />
                         <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                Content="{Binding Selected.WatchLabel}" Command="{Binding Selected.ToggleWatchCommand}"
+                                Content="{Binding Selected.WatchLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding Selected.ToggleWatchCommand}"
                                 IsVisible="{Binding Selected.CanWatch}" />
                         <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                Content="Баны игроков" Command="{Binding ShowBansCommand}" />
+                                Content="баны игроков" Command="{Binding ShowBansCommand}" />
                     </StackPanel>
 
                     <StackPanel IsVisible="{Binding HasNeighbours}">

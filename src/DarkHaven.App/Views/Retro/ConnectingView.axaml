@@ -2,42 +2,39 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:DarkHaven.App.ViewModels"
              xmlns:c="using:DarkHaven.App.Controls"
-             x:Class="DarkHaven.App.Views.ConnectingView"
+             x:Class="DarkHaven.App.Views.Retro.ConnectingView"
              x:DataType="vm:ConnectingViewModel">
     <UserControl.Styles>
-        <Style Selector="Border#Card">
-            <Setter Property="Width" Value="400" />
+        <Style Selector="HeaderedContentControl#Card">
+            <Setter Property="Width" Value="440" />
         </Style>
         <!-- Stack traces are long; give them room instead of wrapping every frame twice. -->
-        <Style Selector="Border#Card.wide">
-            <Setter Property="Width" Value="600" />
+        <Style Selector="HeaderedContentControl#Card.wide">
+            <Setter Property="Width" Value="640" />
         </Style>
     </UserControl.Styles>
 
-    <Border x:Name="Card" Classes.wide="{Binding HasLogTail}" Padding="16"
-            Background="{StaticResource DhBgBrush}" BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1"
-            VerticalAlignment="Center" HorizontalAlignment="Center">
-        <StackPanel Spacing="12">
-            <StackPanel Spacing="8">
-                <TextBlock Text="{Binding Subtitle}" Classes="lbl" />
-                <TextBlock Text="{Binding Title}" Classes="name" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+    <!-- Connecting as a text-mode dialog: the steps as a checklist with block progress bars. -->
+    <HeaderedContentControl x:Name="Card" Classes="box double" Classes.wide="{Binding HasLogTail}" Header="{Binding Subtitle}"
+                            Padding="14,14,14,12" Background="{StaticResource DhBgBrush}"
+                            VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Spacing="10">
+            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
 
             <ItemsControl ItemsSource="{Binding Steps}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ChecklistStepViewModel">
-                        <Panel Height="24">
-                            <Border Classes="hair" />
-                            <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                <c:StatusGlyph Kind="{Binding GlyphKind}"
+                        <StackPanel Spacing="2" Margin="0,2">
+                            <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="10">
+                                <c:StatusGlyph Kind="{Binding GlyphKind}" VerticalAlignment="Center"
                                                Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
                                 <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center"
                                            Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
-                                <TextBlock Grid.Column="2" Text="{Binding Detail}" Classes="mono dim" FontSize="10.5" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Classes="key" Text="{Binding Detail}" VerticalAlignment="Center" />
                             </Grid>
-                            <ProgressBar VerticalAlignment="Bottom" Value="{Binding Fraction}" Minimum="0" Maximum="100"
-                                         Background="Transparent" IsVisible="{Binding ShowBar}" />
-                        </Panel>
+                            <ProgressBar Classes="blocks" Margin="18,0,0,0" Value="{Binding Fraction}" Minimum="0" Maximum="100"
+                                         IsVisible="{Binding ShowBar}" />
+                        </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -46,29 +43,28 @@
                                  IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
             <!-- What the client itself said before it died: selectable, so a line can be quoted. -->
-            <StackPanel IsVisible="{Binding HasLogTail}">
-                <Border Classes="cap"><TextBlock Classes="caps" Text="ВЫВОД ИГРЫ" /></Border>
-                <ScrollViewer MaxHeight="200" Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
-                    <SelectableTextBlock Text="{Binding LogTail}" Classes="mono" FontSize="10" TextWrapping="Wrap"
+            <HeaderedContentControl Classes="box" Header="ВЫВОД ИГРЫ" Padding="8,8,4,6" IsVisible="{Binding HasLogTail}">
+                <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+                    <SelectableTextBlock Text="{Binding LogTail}" FontSize="10.5" TextWrapping="Wrap"
                                          Foreground="{StaticResource DhTextDimBrush}" />
                 </ScrollViewer>
-            </StackPanel>
+            </HeaderedContentControl>
 
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="{Binding SpeedEta}" Classes="mono dim" FontSize="10.5"
+                    <TextBlock Text="{Binding SpeedEta}" Classes="key"
                                IsVisible="{Binding SpeedEta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Text="{Binding BuildTag}" Classes="mono faint" FontSize="10" IsVisible="{Binding !IsBusy}" />
+                    <TextBlock Text="{Binding BuildTag}" Classes="faint" FontSize="10.5" IsVisible="{Binding !IsBusy}" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <WrapPanel Grid.Column="1" ItemSpacing="4" HorizontalAlignment="Right">
                     <Button Content="отмена" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" IsCancel="True" />
                     <Button Content="{Binding CopyLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding CopyLogCommand}" IsVisible="{Binding HasLogTail}" />
                     <Button Content="логи" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
                     <Button Content="всё равно подключиться" Command="{Binding ConnectAnywayCommand}" IsVisible="{Binding CanConnectAnyway}" />
                     <Button Classes="primary" Content="ЕЩЁ РАЗ" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
                     <Button Content="закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
-                </StackPanel>
+                </WrapPanel>
             </Grid>
         </StackPanel>
-    </Border>
+    </HeaderedContentControl>
 </UserControl>

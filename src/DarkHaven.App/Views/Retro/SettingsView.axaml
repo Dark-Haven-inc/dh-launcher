@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:themes="using:DarkHaven.App.Themes"
+             x:Class="DarkHaven.App.Views.Retro.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <!-- НАСТРОЙКИ as a setup screen: two columns of boxes, "key: value" lines in them. (The theme's
+         color editor is monochrome's; retro's greens are the look, so it has none.) -->
+    <UserControl.Styles>
+        <Style Selector="Grid.kv > TextBlock.key">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Margin="16,10,16,12" Spacing="14">
+            <TextBlock Text="{Binding Status, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
+                       IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <Grid ColumnDefinitions="*,16,*">
+                <StackPanel Spacing="14">
+                    <HeaderedContentControl Classes="box" Header="ВИД">
+                        <StackPanel Spacing="10">
+                            <Grid Classes="kv" ColumnDefinitions="96,*">
+                                <TextBlock Classes="key" Text="тема:" />
+                                <ComboBox Grid.Column="1" Width="160" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="themes:Theme"><TextBlock Text="{Binding Title}" /></DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                            <Grid ColumnDefinitions="96,*" IsVisible="{Binding IsRetro}">
+                                <TextBlock Classes="key" Text="эффекты:" Margin="0,3,0,0" />
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <CheckBox Content="свечение" IsChecked="{Binding RetroGlow}" />
+                                    <CheckBox Content="развёртка" IsChecked="{Binding RetroScanlines}" />
+                                    <CheckBox Content="шум" IsChecked="{Binding RetroNoise}" />
+                                    <CheckBox Content="полоса" IsChecked="{Binding RetroBand}" />
+                                    <CheckBox Content="мерцание" IsChecked="{Binding RetroFlicker}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Classes="box" Header="ПОВЕДЕНИЕ">
+                        <StackPanel Spacing="8">
+                            <CheckBox Content="обновлять контент автоматически" IsChecked="{Binding AutoUpdate}" />
+                            <CheckBox Content="сворачивать при запуске игры" IsChecked="{Binding MinimizeOnLaunch}" />
+                            <CheckBox Content="совместимость рендера (GLES2)" IsChecked="{Binding CompatMode}" />
+                            <CheckBox Content="подробный журнал" IsChecked="{Binding VerboseLog}" />
+                            <Grid Classes="kv" ColumnDefinitions="Auto,8,96,Auto" Margin="0,4,0,0">
+                                <TextBlock Classes="key" Text="лимит загрузки:" />
+                                <TextBox Grid.Column="2" Text="{Binding DownloadLimit}" Watermark="—" />
+                                <TextBlock Grid.Column="3" Classes="key" Text=" КБ/с" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Classes="kv" ColumnDefinitions="Auto,8,Auto">
+                                <TextBlock Classes="key" Text="обновления:" />
+                                <Button Grid.Column="2" Content="проверить" Command="{Binding CheckForUpdatesCommand}" />
+                            </Grid>
+                        </StackPanel>
+                    </HeaderedContentControl>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Spacing="14">
+                    <HeaderedContentControl Classes="box" Header="ФАЙЛЫ">
+                        <StackPanel Spacing="8">
+                            <Grid Classes="kv" ColumnDefinitions="Auto,8,*,Auto">
+                                <TextBlock Classes="key" Text="папка:" />
+                                <TextBlock Grid.Column="2" Text="{Binding DataDir}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <Button Grid.Column="3" Classes="icon" Content="&#xEA83;" ToolTip.Tip="открыть" Command="{Binding OpenDataDirCommand}" />
+                            </Grid>
+                            <Grid Classes="kv" ColumnDefinitions="Auto,8,*,Auto">
+                                <TextBlock Classes="key" Text="кэш:" />
+                                <TextBlock Grid.Column="2" Text="{Binding CacheSummary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <Button Grid.Column="3" Content="очистить" Command="{Binding ClearContentCacheCommand}" />
+                            </Grid>
+                            <WrapPanel ItemSpacing="4" LineSpacing="4" Margin="0,4,0,0">
+                                <Button Content="проверить кэш" Command="{Binding VerifyContentCommand}" />
+                                <Button Content="удалить старые движки" Command="{Binding CullEnginesCommand}" />
+                                <Button Content="собрать логи" Command="{Binding CollectLogsCommand}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Classes="box" Header="DISCORD">
+                        <Grid Classes="kv" ColumnDefinitions="Auto,8,*">
+                            <TextBlock Classes="key" Text="id приложения:" />
+                            <TextBox Grid.Column="2" Text="{Binding DiscordAppId}" Watermark="—" />
+                        </Grid>
+                    </HeaderedContentControl>
+                </StackPanel>
+            </Grid>
+
+            <!-- Developers only: in a player's launcher these addresses can't be changed (AppServices.DevOverrides). -->
+            <HeaderedContentControl Classes="box" Header="ПОДКЛЮЧЕНИЕ" IsVisible="{Binding ShowConnection}">
+                <Grid Classes="kv" ColumnDefinitions="Auto,8,*,Auto" RowDefinitions="Auto,6,Auto,6,Auto,6,Auto" ColumnSpacing="0">
+                    <TextBlock Classes="key" Text="авторизация:" />
+                    <TextBox Grid.Column="2" Text="{Binding AuthUrl}" />
+                    <Button Grid.Column="3" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="по умолчанию" Command="{Binding ResetAuthUrlCommand}" />
+                    <TextBlock Grid.Row="2" Classes="key" Text="сборки движка:" />
+                    <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding BuildsUrl}" />
+                    <Button Grid.Row="2" Grid.Column="3" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="по умолчанию" Command="{Binding ResetBuildsUrlCommand}" />
+                    <TextBlock Grid.Row="4" Classes="key" Text="список регионов:" />
+                    <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding RegionsUrl}" Watermark="—" />
+                    <TextBlock Grid.Row="6" Classes="key" Text="платформа:" />
+                    <TextBox Grid.Row="6" Grid.Column="2" Text="{Binding PlatformUrl}" Watermark="https://api.dark-haven.xyz" />
+                </Grid>
+            </HeaderedContentControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

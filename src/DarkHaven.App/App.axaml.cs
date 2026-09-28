@@ -22,6 +22,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             Services = new AppServices();
+            RetroEffects.Load(Services.Settings);
             desktop.ShutdownRequested += (_, _) => Services.Dispose();
 
             var theme = Theme.Find(Services.Settings.GetConfig("Theme"));

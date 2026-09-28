@@ -224,7 +224,6 @@ public sealed class FlatMap : Control
         var dim = Brush("DhTextDim", "#8A8A8F");
         var faint = Brush("DhTextFaint", "#7A7A80");
         var bg = Brush("DhBg", "#0B0B0C");
-        var sans = Font("DhSans", "Inter");
         var mono = Font("DhMono", "monospace");
 
         // Links, each pair once.
@@ -287,7 +286,7 @@ public sealed class FlatMap : Control
             }
 
             var x = p.X + (selected ? Ring / 2 + 8 : Square / 2 + 8);
-            var name = Text(n.Name, sans, selected ? 14 : 12, selected ? FontWeight.SemiBold : FontWeight.Medium, fg);
+            var name = Text(n.Name, mono, selected ? 14 : 12, selected ? FontWeight.SemiBold : FontWeight.Medium, fg);
             ctx.DrawText(name, new Point(x, p.Y - name.Height / 2 - (n.IsOnline ? 6 : 0)));
             if (n.IsOnline && !string.IsNullOrEmpty(n.Population))
             {

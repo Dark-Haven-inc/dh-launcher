@@ -83,7 +83,7 @@
                             </Border>
                             <Border Grid.Column="2" Classes="stat" IsVisible="{Binding Hero.HasRound}">
                                 <StackPanel VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Classes="v" Text="{Binding Hero.Round}" FontFamily="{StaticResource DhSans}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Classes="v" Text="{Binding Hero.Round}" TextTrimming="CharacterEllipsis" />
                                     <TextBlock Classes="k" Text="раунд" />
                                 </StackPanel>
                             </Border>

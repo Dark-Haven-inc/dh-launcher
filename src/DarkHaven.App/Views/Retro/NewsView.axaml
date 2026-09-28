@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.Retro.NewsView"
+             x:DataType="vm:NewsViewModel">
+    <!-- НОВОСТИ as a text screen: the list in one box, the one being read in another. -->
+    <Grid Margin="16,10,16,12" ColumnDefinitions="260,16,*">
+        <HeaderedContentControl Classes="box" Header="НОВОСТИ" Padding="4,8,4,6">
+            <Panel>
+                <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
+                <TextBlock Classes="key" Margin="6,0" Text="новостей нет" IsVisible="{Binding IsEmpty}" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NewsItemViewModel">
+                                <Button Classes="trow" Classes.sel="{Binding IsSelected}" Padding="6,4"
+                                        Command="{Binding $parent[ItemsControl].((vm:NewsViewModel)DataContext).SelectCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Opacity="0.75">
+                                            <Run Text="{Binding DateText}" /><Run Text="  " /><Run Text="{Binding TagCaps}" /><Run Text="{Binding Pinned, Converter={x:Static vm:PinMark.Instance}}" />
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+        </HeaderedContentControl>
+
+        <HeaderedContentControl Grid.Column="2" Classes="box" Padding="14,12,14,10"
+                                IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <HeaderedContentControl.Header>
+                <TextBlock><Run Text="{Binding Selected.TagCaps}" /><Run Text="  " /><Run Text="{Binding Selected.DateText}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding Selected.Pinned, Converter={x:Static vm:PinMark.Instance}}" Foreground="{StaticResource DhTextDimBrush}" /></TextBlock>
+            </HeaderedContentControl.Header>
+            <ScrollViewer>
+                <StackPanel Spacing="12" MaxWidth="640" HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding Selected.Title}" FontSize="14" FontWeight="Medium" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding Selected.Paragraphs}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <SelectableTextBlock Text="{Binding}" LineHeight="19" TextWrapping="Wrap" Foreground="{StaticResource DhBodyBrush}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button HorizontalAlignment="Left" Content="подробнее" Command="{Binding Selected.OpenCommand}" IsVisible="{Binding Selected.HasLink}" />
+                </StackPanel>
+            </ScrollViewer>
+        </HeaderedContentControl>
+    </Grid>
+</UserControl>

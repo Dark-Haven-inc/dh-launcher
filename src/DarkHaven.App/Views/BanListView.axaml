@@ -27,14 +27,14 @@
     <DockPanel Margin="20,16">
         <!-- Header -->
         <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <Button Classes="icon" Content="&#xEA9B;" ToolTip.Tip="Назад" Command="{Binding BackCommand}" />
+            <Button Classes="icon" Content="&#xEA9B;" ToolTip.Tip="назад" Command="{Binding BackCommand}" />
             <TextBlock Grid.Column="1" Classes="name" Text="{Binding Title}" VerticalAlignment="Center" />
             <TextBlock Grid.Column="2" Text="{Binding TotalText}" Classes="mono dim" VerticalAlignment="Center" />
         </Grid>
 
         <!-- Search and filters -->
         <Grid DockPanel.Dock="Top" Margin="0,16,0,0">
-            <TextBox Watermark="Поиск по нику" Text="{Binding Search}" Padding="28,4,8,4" />
+            <TextBox Watermark="поиск по нику" Text="{Binding Search}" Padding="28,4,8,4" />
             <TextBlock Classes="icon dim" Text="&#xEA6D;" FontSize="11" Margin="10,0,0,0" IsHitTestVisible="False" />
         </Grid>
         <Grid DockPanel.Dock="Top" Margin="0,8,0,0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
@@ -75,7 +75,7 @@
         <Panel DockPanel.Dock="Top" Margin="0,16,0,0" Height="1">
             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
         </Panel>
-        <TextBlock DockPanel.Dock="Top" Text="{Binding Message}" Classes="dim" Margin="0,8,0,0" TextWrapping="Wrap"
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Message, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" Margin="0,8,0,0" TextWrapping="Wrap"
                    IsVisible="{Binding Message, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
         <!-- The list -->
@@ -108,7 +108,7 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <Button HorizontalAlignment="Center" Content="Показать ещё"
+                <Button HorizontalAlignment="Center" Content="показать ещё"
                         Command="{Binding LoadMoreCommand}" IsVisible="{Binding CanLoadMore}" IsEnabled="{Binding !IsLoading}" />
             </StackPanel>
         </ScrollViewer>

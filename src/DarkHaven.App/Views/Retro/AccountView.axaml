@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             x:Class="DarkHaven.App.Views.Retro.AccountView"
+             x:DataType="vm:AccountViewModel">
+    <!-- АККАУНТ as a text-mode dialog: a double-framed ВХОД box, the saved accounts in a box under it. -->
+    <ScrollViewer>
+        <StackPanel Width="360" Margin="0,40" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <HeaderedContentControl Classes="box double" Header="ВХОД" Padding="14,14,14,12">
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="76,*" RowDefinitions="Auto,8,Auto,8,Auto">
+                        <TextBlock Classes="key" Text="логин:" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Username}" />
+                        <TextBlock Grid.Row="2" Classes="key" Text="пароль:" VerticalAlignment="Center" />
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Password}" PasswordChar="*" />
+                        <TextBlock Grid.Row="4" Classes="key" Text="код 2fa:" VerticalAlignment="Center" IsVisible="{Binding NeedsTfa}" />
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TfaCode}" IsVisible="{Binding NeedsTfa}" />
+                    </Grid>
+                    <TextBlock Text="{Binding Error, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Button Classes="primary" Content="ВОЙТИ" IsDefault="True" MinWidth="96" Margin="0,6,0,0"
+                            HorizontalAlignment="Right" HorizontalContentAlignment="Center"
+                            Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}" />
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+                        <Button Classes="link" Content="создать аккаунт" Command="{Binding OpenRegisterCommand}" />
+                        <Button Classes="link" Content="забыли пароль?" Command="{Binding OpenForgotCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </HeaderedContentControl>
+
+            <HeaderedContentControl Classes="box" IsVisible="{Binding HasAccounts}">
+                <HeaderedContentControl.Header>
+                    <TextBlock><Run Text="АККАУНТЫ " /><Run Text="{Binding Accounts.Count}" Foreground="{StaticResource DhTextDimBrush}" /></TextBlock>
+                </HeaderedContentControl.Header>
+                <ItemsControl ItemsSource="{Binding Accounts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccountRowViewModel">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="6" MinHeight="24">
+                                <TextBlock Text="{Binding IsActive, Converter={x:Static vm:ActiveMark.Instance}}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding Username}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Classes="key" Text="{Binding StatusHint}" VerticalAlignment="Center" />
+                                <Button Grid.Column="3" Classes="link" Content="выбрать" IsVisible="{Binding !IsActive}"
+                                        Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
+                                        CommandParameter="{Binding}" />
+                                <Button Grid.Column="4" Classes="link" Content="выйти"
+                                        Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).LogoutCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </HeaderedContentControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

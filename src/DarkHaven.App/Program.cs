@@ -97,8 +97,9 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            // The bundled Inter (Assets/Fonts), so text looks the same on every machine.
-            .With(new FontManagerOptions { DefaultFamilyName = "avares://Frontier15Launcher/Assets/Fonts#Inter" })
+            // The bundled JetBrains Mono (Assets/Fonts), so text looks the same on every machine: the
+            // launcher is set in a monospace font throughout.
+            .With(new FontManagerOptions { DefaultFamilyName = "avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo" })
             .LogToTrace();
 
     /// <summary>Decodes the <c>C&lt;hex&gt;</c> connect address out of a <c>--commands</c> redial batch.</summary>

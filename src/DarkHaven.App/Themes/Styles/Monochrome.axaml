@@ -4,9 +4,8 @@
     <!-- The monochrome layout: minimal, square, a 4 px grid, compact 24 px controls. Colors come from
          the palette (Themes/Palettes); this file is shape, type and states. -->
     <Styles.Resources>
-        <!-- Bundled fonts (Assets/Fonts): Inter for text, JetBrains Mono Nerd Font for numbers,
-             addresses, labels and icons (icons are its glyphs, e.g. U+EAA2 bell). -->
-        <FontFamily x:Key="DhSans">avares://Frontier15Launcher/Assets/Fonts#Inter</FontFamily>
+        <!-- The bundled JetBrains Mono Nerd Font (Assets/Fonts), for all text and the icons (icons are
+             its glyphs, e.g. U+EAA2 bell). -->
         <FontFamily x:Key="DhMono">avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
 
         <!-- Fluent theme: square corners. -->
@@ -62,7 +61,7 @@
     <!-- ============================================================ text -->
     <Style Selector="Window">
         <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
-        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
         <Setter Property="FontSize" Value="12" />
     </Style>
     <Style Selector="TextBlock">
@@ -105,7 +104,7 @@
     <Style Selector="TextBlock.name">
         <Setter Property="FontSize" Value="20" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="LineHeight" Value="20" />
+        <Setter Property="LineHeight" Value="26" />
     </Style>
 
     <!-- ============================================================ surfaces -->
@@ -241,6 +240,11 @@
         <Setter Property="HorizontalContentAlignment" Value="Center" />
     </Style>
 
+    <Style Selector="Button.icon.mini">
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+    </Style>
+
     <!-- Text-only action: no border, dim until hovered. -->
     <Style Selector="Button.link">
         <Setter Property="BorderThickness" Value="0" />
@@ -349,6 +353,14 @@
     <Style Selector="ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="BorderBrush" Value="{StaticResource DhBorderBrush}" />
         <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <!-- A chip that is one icon (the map toggle), square like Button.icon. -->
+    <Style Selector="ToggleButton.chip.glyph">
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="12" />
     </Style>
     <!-- Chips in a row overlap by 1 px (Margin -1) to share borders; the selected one sits on top,
          or its right edge would be under the next chip's. -->

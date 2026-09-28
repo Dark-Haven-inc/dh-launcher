@@ -48,6 +48,14 @@ window with its views and the control styles they use (`Views/` + `Themes/Styles
 `Views/Legacy/` + `Themes/Styles/Legacy.axaml`, the pre-redesign blue HUD) — painted in a *palette*
 (`Themes/Palettes/*.axaml`). A new palette on an existing layout is one file there plus one line in
 `Theme.All` (`src/DarkHaven.App/Themes/Theme.cs`, which lists the keys every palette defines).
+`retro` is a text-mode program on a green CRT, after Midnight Commander and cool-retro-term: its own window
+(`Views/Retro/`: a menu bar, the page in a double frame, a function-key bar — F1–F7 open the pages) and its own
+main pages, laid out as text screens (titled boxes, `key ····· value` lines, tables); the rest are the monochrome
+pages, which `Themes/Styles/Retro.axaml` redraws in text-mode terms (`[ bracketed ]` buttons, `[x]` boxes,
+reverse video, dotted rules). НАСТРОЙКИ and АДМИН open over the blurred page they were opened from;
+`Controls/CrtScreen.cs` lays the tube over it all — glow, scanlines, grain, a rolling band, flicker, switched in
+НАСТРОЙКИ → ВИД (config `Retro.*`); the moving ones stand still while the window isn't active. Monochrome and retro
+are set in JetBrains Mono (the launcher's default font); legacy keeps its Inter.
 The button next to the monochrome theme recolors it live with two HSV picks, saved per theme
 (`Theme.<id>.Base`, `Theme.<id>.Active`), worked out much like Material You (`Themes/ColorMath.cs`): a
 pick sets the hue, and each color's lightness follows from what it must stand out against. The

@@ -13,7 +13,7 @@
             </Grid>
         </Border>
         <Panel>
-            <TextBlock Text="Нет уведомлений" Classes="dim" Margin="12" IsVisible="{Binding IsEmpty}" />
+            <TextBlock Text="нет уведомлений" Classes="dim" Margin="12" IsVisible="{Binding IsEmpty}" />
             <ScrollViewer MaxHeight="360" IsVisible="{Binding HasUnread}">
                 <ItemsControl ItemsSource="{Binding Items}">
                     <ItemsControl.ItemTemplate>
@@ -25,8 +25,8 @@
                                         <TextBlock Text="{Binding When}" Classes="mono dim" FontSize="10" />
                                     </StackPanel>
                                     <TextBlock Grid.Row="1" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,4,8,0" />
-                                    <Button Grid.Column="1" Grid.RowSpan="2" Classes="link icon" Width="20" Height="20" Content="&#xEAB2;"
-                                            VerticalAlignment="Top" ToolTip.Tip="Прочитано"
+                                    <Button Grid.Column="1" Grid.RowSpan="2" Classes="link icon mini" Content="&#xEAB2;"
+                                            VerticalAlignment="Top" ToolTip.Tip="прочитано"
                                             Command="{Binding $parent[ItemsControl].((vm:NotificationsViewModel)DataContext).MarkReadCommand}"
                                             CommandParameter="{Binding}" />
                                 </Grid>

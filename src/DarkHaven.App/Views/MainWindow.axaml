@@ -42,7 +42,7 @@
                                FontFamily="{StaticResource DhMono}" FontWeight="Medium" FontSize="10.5" LetterSpacing="2.3" />
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Classes="top" ToolTip.Tip="Уведомления" IsVisible="{Binding Notifications.IsAvailable}">
+                        <Button Classes="top" ToolTip.Tip="уведомления" IsVisible="{Binding Notifications.IsAvailable}">
                             <Panel>
                                 <TextBlock Classes="icon" Text="&#xEAA2;" FontSize="13" />
                                 <Border Width="5" Height="5" Background="{StaticResource DhTextBrush}"
@@ -59,15 +59,15 @@
                                 Classes.active="{Binding IsAccountPage}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Classes="icon" Text="&#xEB99;" FontSize="13" />
-                                <TextBlock Text="{Binding AccountName, TargetNullValue='Гость', FallbackValue='Гость'}"
+                                <TextBlock Text="{Binding AccountName, TargetNullValue='гость', FallbackValue='гость'}"
                                            FontSize="11.5" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
                         <StackPanel Orientation="Horizontal" Spacing="4" Margin="8,0">
-                            <Button Classes="wc" ToolTip.Tip="Свернуть" Click="OnMinimize">
+                            <Button Classes="wc" ToolTip.Tip="свернуть" Click="OnMinimize">
                                 <Path Data="M0,0.5 H8" Width="8" Height="1" />
                             </Button>
-                            <Button Classes="wc close" ToolTip.Tip="Закрыть" Click="OnClose">
+                            <Button Classes="wc close" ToolTip.Tip="закрыть" Click="OnClose">
                                 <Path Data="M0.5,0.5 L8.5,8.5 M8.5,0.5 L0.5,8.5" Width="9" Height="9" />
                             </Button>
                         </StackPanel>
@@ -101,35 +101,35 @@
                     <StackPanel Margin="0,8,0,0">
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Главная" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="главная" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
                                 Classes.active="{Binding IsRegionsPage}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Регионы" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="регионы" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Серверы" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="серверы" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Мониторинг" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="мониторинг" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhTextBrush}" Margin="-8,0,4,0" /><TextBlock Text="Локалка" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="локалка" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Новости" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="новости" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Настройки" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="настройки" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                         <Button Classes="navitem" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
                                 Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="Админ" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
+                            <StackPanel Orientation="Horizontal"><Border Classes="marker" Width="4" Height="4" Background="{StaticResource DhActiveLineBrush}" Margin="-8,0,4,0" /><TextBlock Text="админ" Foreground="{Binding $parent[Button].Foreground}" /></StackPanel>
                         </Button>
                     </StackPanel>
                 </DockPanel>
@@ -143,7 +143,7 @@
                     <TextBlock Grid.Column="1" Text="{Binding RegionBannerText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
                         <Button Classes="primary small" Content="ИГРАТЬ" Command="{Binding ConnectOnlineRegionCommand}" />
-                        <Button Classes="small" Content="Позже" Command="{Binding DismissRegionBannerCommand}" />
+                        <Button Classes="small" Content="позже" Command="{Binding DismissRegionBannerCommand}" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -151,8 +151,8 @@
                     Background="{StaticResource DhBgPanelBrush}" IsVisible="{Binding ShowSlotWaitBanner}">
                 <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                     <c:StatusGlyph Kind="full" Margin="0,0,8,0" />
-                    <TextBlock Grid.Column="1" Text="{Binding SlotWaitBannerText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                    <Button Grid.Column="2" Classes="small" Content="Не ждать" Command="{Binding CancelSlotWaitCommand}" />
+                    <TextBlock Grid.Column="1" Text="{Binding SlotWaitBannerText, Converter={x:Static vm:Lowercase.Instance}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="2" Classes="small" Content="не ждать" Command="{Binding CancelSlotWaitCommand}" />
                 </Grid>
             </Border>
 

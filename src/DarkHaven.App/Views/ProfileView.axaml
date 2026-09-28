@@ -35,10 +35,10 @@
             <StackPanel Grid.Column="0" Spacing="12" VerticalAlignment="Top">
                 <views:ProfileCard />
 
-                <Button Classes="primary" Content="Изменить профиль" HorizontalAlignment="Stretch"
+                <Button Classes="primary" Content="изменить профиль" HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center" Command="{Binding EditCommand}"
                         IsVisible="{Binding !IsEditing}" />
-                <Button Content="Аккаунты" HorizontalAlignment="Stretch"
+                <Button Content="аккаунты" HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Center" Command="{Binding ManageAccountsCommand}"
                         IsVisible="{Binding !IsEditing}" />
 
@@ -50,7 +50,7 @@
                             <Binding Path="!IsEditing" />
                         </MultiBinding>
                     </Border.IsVisible>
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Classes="dim" Text="Профиль виден только вам — сохраните его" />
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Classes="dim" Text="профиль виден только вам — сохраните его" />
                 </Border>
             </StackPanel>
 
@@ -64,7 +64,7 @@
                             <c:StatusGlyph Kind="off" />
                             <TextBlock Text="ДОСТУП ОГРАНИЧЕН" Classes="caps" Foreground="{StaticResource DhTextBrush}" />
                         </StackPanel>
-                        <TextBlock Text="{Binding LauncherBanText}" Classes="dim" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding LauncherBanText, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
@@ -93,7 +93,7 @@
                 <!-- Characters from the game DB, with Frontier bank balance (platform only) -->
                 <StackPanel IsVisible="{Binding IsPlatformConnected}">
                     <Border Classes="cap"><TextBlock Text="ПЕРСОНАЖИ" Classes="caps" /></Border>
-                    <TextBlock Text="{Binding CharactersNote}" Classes="dim" TextWrapping="Wrap"
+                    <TextBlock Text="{Binding CharactersNote, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" TextWrapping="Wrap"
                                IsVisible="{Binding CharactersNote, Converter={x:Static ObjectConverters.IsNotNull}}" />
                     <ItemsControl ItemsSource="{Binding Characters}" IsVisible="{Binding HasCharacters}">
                         <ItemsControl.ItemTemplate>
@@ -138,16 +138,16 @@
                             <!-- Linked -->
                             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DiscordLinkedName, Converter={x:Static ObjectConverters.IsNotNull}}">
                                 <TextBlock VerticalAlignment="Center" Text="{Binding DiscordLinkedName}" />
-                                <Button Grid.Column="1" Content="Отвязать" Command="{Binding UnlinkDiscordCommand}" />
+                                <Button Grid.Column="1" Content="отвязать" Command="{Binding UnlinkDiscordCommand}" />
                             </Grid>
                             <!-- Not linked -->
-                            <Button HorizontalAlignment="Left" Content="Привязать"
+                            <Button HorizontalAlignment="Left" Content="привязать"
                                     IsVisible="{Binding DiscordLinkedName, Converter={x:Static ObjectConverters.IsNull}}"
                                     Command="{Binding RequestDiscordLinkCommand}" IsEnabled="{Binding !DiscordLinkRequesting}" />
-                            <TextBlock Text="{Binding DiscordStatus}" FontSize="11" TextWrapping="Wrap"
+                            <TextBlock Text="{Binding DiscordStatus, Converter={x:Static vm:Lowercase.Instance}}" FontSize="11" TextWrapping="Wrap"
                                        IsVisible="{Binding DiscordStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
                             <StackPanel Spacing="2" IsVisible="{Binding DiscordLinkCode, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                <TextBlock Classes="dim" Text="Боту «Дозорный» в Discord:" />
+                                <TextBlock Classes="dim" Text="боту «Дозорный» в Discord:" />
                                 <SelectableTextBlock Classes="mono" FontSize="16">
                                     <Run Text="!link " /><Run Text="{Binding DiscordLinkCode}" />
                                 </SelectableTextBlock>
@@ -166,21 +166,21 @@
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="ПРОФИЛЬ" Classes="caps" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                            <Button Content="Отмена" Command="{Binding CancelEditCommand}"
+                            <Button Content="отмена" Command="{Binding CancelEditCommand}"
                                     IsEnabled="{Binding !IsSaving}" />
-                            <Button Classes="primary" Content="{Binding SaveLabel}" Command="{Binding SaveProfileCommand}"
+                            <Button Classes="primary" Content="{Binding SaveLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding SaveProfileCommand}"
                                     IsEnabled="{Binding !IsSaving}" />
                         </StackPanel>
                     </Grid>
-                    <TextBlock Text="{Binding SaveError}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
+                    <TextBlock Text="{Binding SaveError, Converter={x:Static vm:Lowercase.Instance}}" Foreground="{StaticResource DhDangerBrush}" TextWrapping="Wrap"
                                IsVisible="{Binding HasSaveError}" />
                 </StackPanel>
 
                 <StackPanel Spacing="8">
                     <TextBlock Text="АВАТАР" Classes="caps" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Сменить аватар" Name="PickAvatarButton" />
-                        <Button Content="Убрать" Command="{Binding RemoveAvatarCommand}"
+                        <Button Content="сменить аватар" Name="PickAvatarButton" />
+                        <Button Content="убрать" Command="{Binding RemoveAvatarCommand}"
                                 IsVisible="{Binding HasAvatar}" />
                     </StackPanel>
                 </StackPanel>
@@ -190,8 +190,8 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="БАННЕР" Classes="caps" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Загрузить баннер" Name="PickBannerButton" />
-                        <Button Content="Убрать" Command="{Binding RemoveBannerCommand}"
+                        <Button Content="загрузить баннер" Name="PickBannerButton" />
+                        <Button Content="убрать" Command="{Binding RemoveBannerCommand}"
                                 IsVisible="{Binding HasBanner}" />
                     </StackPanel>
                     <TextBlock Classes="mono dim" FontSize="10.5" Text="3:1, например 960×320" />
@@ -252,7 +252,7 @@
                 </StackPanel>
 
                 <TextBlock Classes="dim" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !IsPlatformConnected}"
-                           Text="Нет связи с платформой — профиль сохранится только здесь" />
+                           Text="нет связи с платформой — профиль сохранится только здесь" />
             </StackPanel>
         </Grid>
     </ScrollViewer>

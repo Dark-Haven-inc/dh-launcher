@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Retro.HomeView"
+             x:DataType="vm:HomeViewModel">
+    <!-- ГЛАВНАЯ as a text screen: the server to continue on, the sector's regions and friends down the
+         right, favourites and recent below — each in a titled box. -->
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="Row" x:DataType="vm:HomeServerRow">
+            <Button Classes="trow" Classes.off="{Binding IsOffline}"
+                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).ConnectRowCommand}" CommandParameter="{Binding}">
+                <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="8">
+                    <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}" IsFull="{Binding IsFull}"
+                                   IsQuarantine="{Binding IsQuarantine}" IsVisible="{Binding HasStatus}"
+                                   Foreground="{Binding $parent[Button].Foreground}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Population}" IsVisible="{Binding HasPopulation}" VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="16,10,16,12" ColumnDefinitions="*,16,220">
+        <ScrollViewer>
+            <StackPanel Spacing="14">
+                <HeaderedContentControl Classes="box" Header="ПРОДОЛЖИТЬ" IsVisible="{Binding HasHero}">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16">
+                        <TextBlock Text="{Binding Hero.Name}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Row="1" Classes="key" Text="{Binding Hero.Address}" TextTrimming="CharacterEllipsis" />
+                        <WrapPanel Grid.Row="2" Margin="0,8,0,0" ItemSpacing="24">
+                            <TextBlock IsVisible="{Binding Hero.HasPopulation}">
+                                <Run Classes="key" Text="игроков: " Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding Hero.Population}" />
+                            </TextBlock>
+                            <TextBlock IsVisible="{Binding Hero.HasRound}">
+                                <Run Text="раунд: " Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding Hero.Round}" />
+                            </TextBlock>
+                            <TextBlock IsVisible="{Binding Hero.HasPing}">
+                                <Run Text="отклик: " Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding Hero.Ping}" />
+                            </TextBlock>
+                        </WrapPanel>
+                        <Button Grid.Column="1" Grid.RowSpan="3" Classes="primary" VerticalAlignment="Center" MinWidth="120"
+                                HorizontalContentAlignment="Center" Content="ИГРАТЬ" Command="{Binding ConnectHeroCommand}" />
+                    </Grid>
+                </HeaderedContentControl>
+
+                <Grid ColumnDefinitions="*,16,*">
+                    <HeaderedContentControl Classes="box" IsVisible="{Binding HasFavorites}">
+                        <HeaderedContentControl.Header>
+                            <TextBlock><Run Text="ИЗБРАННОЕ " /><Run Text="{Binding Favorites.Count}" Foreground="{StaticResource DhTextDimBrush}" /></TextBlock>
+                        </HeaderedContentControl.Header>
+                        <ItemsControl ItemsSource="{Binding Favorites}" ItemTemplate="{StaticResource Row}" />
+                    </HeaderedContentControl>
+                    <HeaderedContentControl Grid.Column="2" Classes="box" IsVisible="{Binding HasRecent}">
+                        <HeaderedContentControl.Header>
+                            <TextBlock><Run Text="НЕДАВНИЕ " /><Run Text="{Binding Recent.Count}" Foreground="{StaticResource DhTextDimBrush}" /></TextBlock>
+                        </HeaderedContentControl.Header>
+                        <ItemsControl ItemsSource="{Binding Recent}" ItemTemplate="{StaticResource Row}" />
+                    </HeaderedContentControl>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Down the right: the sector, then friends -->
+        <DockPanel Grid.Column="2">
+            <HeaderedContentControl DockPanel.Dock="Top" Classes="box" Header="СЕКТОР" IsVisible="{Binding HasRegions}" Margin="0,0,0,14">
+                <ItemsControl ItemsSource="{Binding RegionStrip}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HomeRegionItem">
+                            <Button Classes="trow" Classes.sel="{Binding IsHero}" Classes.off="{Binding Node.IsOffline}"
+                                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).OpenRegionCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid ColumnDefinitions="8,*,Auto" ColumnSpacing="8">
+                                    <c:StatusGlyph IsOnline="{Binding Node.IsOnline}" IsOffline="{Binding Node.IsOffline}"
+                                                   IsQuarantine="{Binding Node.IsQuarantine}" IsFull="{Binding Node.IsFull}"
+                                                   Foreground="{Binding $parent[Button].Foreground}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Node.Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Node.Entry.Players}" IsVisible="{Binding Node.IsOnline}" VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </HeaderedContentControl>
+            <HeaderedContentControl Classes="box" Header="ДРУЗЬЯ" Padding="0,4,0,0" IsVisible="{Binding Friends.IsAvailable}">
+                <views:FriendsPanel DataContext="{Binding Friends}" />
+            </HeaderedContentControl>
+        </DockPanel>
+    </Grid>
+</UserControl>

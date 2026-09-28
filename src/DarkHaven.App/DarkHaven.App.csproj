@@ -15,6 +15,9 @@
          1.0.0.0 to match the engine builds — otherwise the loader can't start the game at all. -->
     <Version Condition="'$(LauncherVersion)' == ''">0.2.4</Version>
     <Version Condition="'$(LauncherVersion)' != ''">$(LauncherVersion)</Version>
+    <!-- A plain build (dotnet build / run) shows up as "dev" (LauncherInfo.Version): a number there
+         would only be a stale fallback. dotnet publish keeps the number. -->
+    <InformationalVersion Condition="'$(LauncherVersion)' == '' and '$(_IsPublishing)' != 'true'">dev</InformationalVersion>
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
     <!-- The launcher holds the launch signing key and starts the game it vouches for: no startup hook
          from the environment runs in it. Debug keeps them for hot reload. -->

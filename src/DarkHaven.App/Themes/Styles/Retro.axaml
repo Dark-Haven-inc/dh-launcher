@@ -1,0 +1,450 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:t="using:DarkHaven.App.Themes">
+    <!-- The retro layout: a text-mode program on a green phosphor CRT, after Midnight Commander and
+         cool-retro-term. Its window is its own (Views/Retro/MainWindow.axaml: menu bar, double frame,
+         function-key bar, and the CrtScreen tube over it all); the pages are the monochrome ones, and
+         this redraws them in text-mode terms — [ bracketed ] buttons, [x] boxes, reverse video for
+         whatever stands out, section names as inverse labels, dotted rules, filled input fields, a
+         shaded scrollbar. Everything else is monochrome's, included first. -->
+    <StyleInclude Source="avares://Frontier15Launcher/Themes/Styles/Monochrome.axaml" />
+
+    <Styles.Resources>
+        <!-- A dotted rule, one pixel in three, for the lines between rows. -->
+        <DrawingBrush x:Key="RetroDotsBrush" TileMode="Tile" DestinationRect="0,0,3,1">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="Transparent" Geometry="M0,0 H3 V1 H0 Z" />
+                    <GeometryDrawing Brush="{StaticResource DhTextFaintBrush}" Geometry="M0,0 H1 V1 H0 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <!-- A checkerboard shade, the ░ of a text-mode scrollbar's track. -->
+        <DrawingBrush x:Key="RetroShadeBrush" TileMode="Tile" DestinationRect="0,0,2,2">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="Transparent" Geometry="M0,0 H2 V2 H0 Z" />
+                    <GeometryDrawing Brush="{StaticResource DhBorderStrongBrush}" Geometry="M0,0 H1 V1 H0 Z M1,1 H2 V2 H1 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <!-- Fluent draws its scrollbar from these: a shaded track, a solid green block. -->
+        <StaticResource x:Key="ScrollBarBackground" ResourceKey="RetroShadeBrush" />
+        <StaticResource x:Key="ScrollBarBackgroundPointerOver" ResourceKey="RetroShadeBrush" />
+        <StaticResource x:Key="ScrollBarTrackFill" ResourceKey="RetroShadeBrush" />
+        <StaticResource x:Key="ScrollBarTrackFillPointerOver" ResourceKey="RetroShadeBrush" />
+        <SolidColorBrush x:Key="ScrollBarTrackStroke" Color="Transparent" />
+        <SolidColorBrush x:Key="ScrollBarTrackStrokePointerOver" Color="Transparent" />
+        <StaticResource x:Key="ScrollBarColor" ResourceKey="DhTextFaint" />
+        <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="DhTextFaint" />
+        <StaticResource x:Key="ScrollBarPanningThumbBackgroundColor" ResourceKey="DhTextFaint" />
+        <StaticResource x:Key="ScrollBarPanningThumbBackground" ResourceKey="DhTextFaintBrush" />
+        <StaticResource x:Key="ScrollBarThumbFillPointerOver" ResourceKey="DhTextDimBrush" />
+        <StaticResource x:Key="ScrollBarThumbFillPressed" ResourceKey="DhTextBrush" />
+        <x:Double x:Key="ScrollBarSize">10</x:Double>
+    </Styles.Resources>
+
+    <!-- ============================================================ the window -->
+    <!-- Menu bar: reverse video, its buttons plain text that turn back to screen colors under the pointer. -->
+    <Style Selector="TextBlock.menutitle">
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="LetterSpacing" Value="1" />
+    </Style>
+    <Style Selector="Button.bar">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="Height" Value="24" />
+    </Style>
+    <Style Selector="Button.bar > TextBlock, Button.bar > :is(Panel) TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.bar:pointerover, Button.bar.active">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.bar:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.bar:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.bar.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+
+    <!-- Function-key bar: "1" then "главная" in reverse video; dimmer, brighter under the pointer, brightest open. -->
+    <Style Selector="Button.fkey">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="Button.fkey:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.fkey:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.fkey TextBlock.fk">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="Margin" Value="0,0,2,0" />
+    </Style>
+    <Style Selector="Button.fkey Border.fl">
+        <Setter Property="Background" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="Padding" Value="4,0" />
+    </Style>
+    <Style Selector="Button.fkey Border.fl > TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.fkey:pointerover Border.fl">
+        <Setter Property="Background" Value="{StaticResource DhActivePressBrush}" />
+    </Style>
+    <Style Selector="Button.fkey.active Border.fl">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+    </Style>
+
+    <!-- The page's double frame (two of these, one inside the other). -->
+    <Style Selector="Border.frame">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextFaintBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- ============================================================ the retro pages' own pieces (Views/Retro/)
+         A box: a frame with its title cut into the top line, ┌─ РЕГИОНЫ ──┐; .double for dialogs, ╔═╗. -->
+    <Style Selector="HeaderedContentControl.box">
+        <Setter Property="Padding" Value="10,10,10,8" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="HeaderedContentControl">
+                <Panel>
+                    <Border Name="PART_Frame" Margin="0,7,0,0" BorderThickness="1" BorderBrush="{StaticResource DhTextFaintBrush}"
+                            Background="{TemplateBinding Background}">
+                        <Border Name="PART_Inner" Margin="2" BorderThickness="0" BorderBrush="{StaticResource DhTextFaintBrush}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        </Border>
+                    </Border>
+                    <Border Margin="10,0,0,0" Padding="4,0" Background="{StaticResource DhBgBrush}"
+                            HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <ContentPresenter Name="PART_HeaderPresenter" Content="{TemplateBinding Header}"
+                                          ContentTemplate="{TemplateBinding HeaderTemplate}" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="HeaderedContentControl.box /template/ ContentPresenter#PART_HeaderPresenter">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <Style Selector="HeaderedContentControl.box.double /template/ Border#PART_Frame, HeaderedContentControl.box.double /template/ Border#PART_Inner">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="HeaderedContentControl.box.double /template/ Border#PART_Inner">
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- A list row: text on the screen, a reverse-video bar under the pointer and when chosen (.sel);
+         .off rows are dim. What the row holds takes its color from the row. -->
+    <Style Selector="Button.trow">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="MinHeight" Value="22" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.trow.off">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button.trow:pointerover, Button.trow.sel">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.trow:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.trow:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.trow:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.trow TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+
+    <!-- A progress bar of character cells: a shaded track, a solid fill. -->
+    <Style Selector="ProgressBar.blocks">
+        <Setter Property="Height" Value="8" />
+        <Setter Property="MinHeight" Value="8" />
+        <Setter Property="Background" Value="{StaticResource RetroShadeBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+
+    <!-- The dotted leader of a "key ······ value" line. -->
+    <Style Selector="Border.leader">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Background" Value="{StaticResource RetroDotsBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="6,3,6,0" />
+    </Style>
+    <Style Selector="TextBlock.key">
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+
+    <!-- ============================================================ type and rules -->
+    <!-- One size of type, as on a terminal: headings are only a little larger. -->
+    <Style Selector="TextBlock.name, TextBlock.h1">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="LineHeight" Value="20" />
+    </Style>
+    <Style Selector="TextBlock.caps, TextBlock.statlabel">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="LetterSpacing" Value="0.5" />
+    </Style>
+    <!-- Section headers: the name as an inverse label on a brighter rule. -->
+    <Style Selector="Border.cap">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Border.cap > TextBlock.caps, Border.cap > Grid > TextBlock.caps:nth-child(1)">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <!-- Rows are parted by dotted rules. -->
+    <Style Selector="Border.hair">
+        <Setter Property="BorderBrush" Value="{StaticResource RetroDotsBrush}" />
+    </Style>
+    <Style Selector="Button.row">
+        <Setter Property="BorderBrush" Value="{StaticResource RetroDotsBrush}" />
+    </Style>
+    <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.row:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource RetroDotsBrush}" />
+    </Style>
+
+    <!-- Selected text in reverse video. -->
+    <Style Selector="TextBox">
+        <Setter Property="SelectionBrush" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="SelectionForegroundBrush" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="SelectableTextBlock">
+        <Setter Property="SelectionBrush" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="SelectionForegroundBrush" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+
+    <!-- ============================================================ input fields: a filled, underlined cell -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextFaintBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextFaintBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="ComboBox:pointerover /template/ Border#Background">
+        <Setter Property="Background" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+
+    <!-- A text-mode scrollbar: always there, a shaded track and a solid block. -->
+    <Style Selector="ScrollBar">
+        <Setter Property="AllowAutoHide" Value="False" />
+        <Setter Property="Background" Value="{StaticResource RetroShadeBrush}" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb">
+        <Setter Property="Background" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb:pointerover">
+        <Setter Property="Background" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+
+    <!-- Boxes in the brighter green of box-drawing lines. -->
+    <Style Selector="Border.card, Border.panel">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+        <Setter Property="Data" Value="M0,0 L10,0 L5,6 Z" />
+        <Setter Property="Width" Value="8" />
+        <Setter Property="Height" Value="5" />
+    </Style>
+
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="FlyoutPresenter.dh">
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+
+    <!-- ============================================================ buttons: [ label ]
+         Monochrome's buttons (plain, .ghost, .small, .primary, .danger, and the .icon and .link ones)
+         lose their box and get brackets; under the pointer or keyboard focus they invert, and .primary
+         always is. An icon is written out: its tooltip becomes its label (Themes/RetroLabel.cs).
+         Buttons with a look of their own (the classes below, and ones views style locally) keep it. -->
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow)">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Border Name="PART_Box" Background="{TemplateBinding Background}" Padding="2,0"
+                        MinHeight="{TemplateBinding MinHeight}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Name="PART_Open" Text="[" Margin="0,0,3,0" VerticalAlignment="Center"
+                                   Foreground="{TemplateBinding Foreground}" />
+                        <ContentPresenter Name="PART_ContentPresenter" Grid.Column="1"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          VerticalAlignment="Center">
+                            <ContentPresenter.Content>
+                                <MultiBinding Converter="{x:Static t:RetroLabel.Instance}">
+                                    <Binding Path="Content" RelativeSource="{RelativeSource TemplatedParent}" />
+                                    <Binding Path="(ToolTip.Tip)" RelativeSource="{RelativeSource TemplatedParent}" />
+                                </MultiBinding>
+                            </ContentPresenter.Content>
+                        </ContentPresenter>
+                        <TextBlock Name="PART_Close" Grid.Column="2" Text="]" Margin="3,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{TemplateBinding Foreground}" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <!-- A written-out icon is as wide as its label. -->
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow).icon">
+        <Setter Property="Width" Value="NaN" />
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <!-- Text the view put in a button takes the button's color, which the states set; its icons go. -->
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow) > TextBlock, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow) > :is(Panel) TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button TextBlock.icon, ToggleButton TextBlock.icon">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- States. Monochrome's paint the content presenter; here it stays clear and the box is painted. -->
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):pressed /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):disabled /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):pointerover, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):focus-visible">
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):pointerover /template/ Border#PART_Box, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):focus-visible /template/ Border#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):pressed /template/ Border#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhActivePressBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow).primary:pointerover /template/ Border#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhActiveHoverBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):disabled">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.bar):not(.fkey):not(.trow):disabled /template/ Border#PART_Box">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- ============================================================ chips: [x] toggles, (•) choices
+         A chip that toggles (ToggleButton) is a check box, one of a set (Button.chip, .on) a radio button. -->
+    <Style Selector="ToggleButton.chip, Button.chip">
+        <Setter Property="Width" Value="NaN" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chip">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="ToggleButton">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" Background="Transparent">
+                    <TextBlock Name="PART_Mark" Text="[ ]" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}" />
+                    <ContentPresenter Name="PART_ContentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center">
+                        <ContentPresenter.Content>
+                            <MultiBinding Converter="{x:Static t:RetroLabel.Instance}">
+                                <Binding Path="Content" RelativeSource="{RelativeSource TemplatedParent}" />
+                                <Binding Path="(ToolTip.Tip)" RelativeSource="{RelativeSource TemplatedParent}" />
+                            </MultiBinding>
+                        </ContentPresenter.Content>
+                    </ContentPresenter>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.chip">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,12,0" Background="Transparent">
+                    <TextBlock Name="PART_Mark" Text="( )" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}" />
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="ToggleButton.chip:checked /template/ TextBlock#PART_Mark">
+        <Setter Property="Text" Value="[x]" />
+    </Style>
+    <Style Selector="Button.chip.on /template/ TextBlock#PART_Mark">
+        <Setter Property="Text" Value="(•)" />
+    </Style>
+    <Style Selector="ToggleButton.chip:checked, Button.chip.on, ToggleButton.chip:pointerover, Button.chip:pointerover">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chip /template/ ContentPresenter#PART_ContentPresenter, Button.chip /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter, Button.chip.on /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.chip:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.chip:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.chip:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{Binding $parent[TemplatedControl].Foreground}" />
+    </Style>
+    <Style Selector="ToggleButton.chip TextBlock, Button.chip TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[TemplatedControl].Foreground}" />
+    </Style>
+
+    <!-- ============================================================ check boxes: [x] -->
+    <Style Selector="CheckBox">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,*" Background="{TemplateBinding Background}">
+                    <TextBlock Name="PART_Mark" Text="[ ]" VerticalAlignment="Center"
+                               Foreground="{StaticResource DhTextDimBrush}" />
+                    <ContentPresenter Name="PART_ContentPresenter" Grid.Column="1" Margin="8,0,0,0"
+                                      Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center"
+                                      IsVisible="{TemplateBinding Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="CheckBox:checked /template/ TextBlock#PART_Mark">
+        <Setter Property="Text" Value="[x]" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="CheckBox:pointerover /template/ TextBlock#PART_Mark, CheckBox:focus-visible /template/ TextBlock#PART_Mark">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="CheckBox:disabled /template/ TextBlock#PART_Mark">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+</Styles>

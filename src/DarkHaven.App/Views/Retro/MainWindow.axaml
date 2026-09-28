@@ -1,0 +1,182 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DarkHaven.App.ViewModels"
+        xmlns:views="using:DarkHaven.App.Views"
+        xmlns:retro="using:DarkHaven.App.Views.Retro"
+        xmlns:c="using:DarkHaven.App.Controls"
+        x:Class="DarkHaven.App.Views.Retro.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Frontier 15 Launcher" Width="960" Height="600"
+        MinWidth="880" MinHeight="560"
+        Icon="/Assets/icon.ico"
+        SystemDecorations="None"
+        Background="{StaticResource DhBgBrush}">
+    <!-- The retro theme's window: a text-mode program on a CRT, after Midnight Commander. A menu bar in
+         reverse video on top, the page in a double-line frame, the function-key bar at the bottom (F1–F7
+         open the pages). The main pages are its own (Views/Retro/: boxes, lists, "key ····· value" lines); the
+         rest are the monochrome ones, restyled by Themes/Styles/Retro.axaml. -->
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenPaletteCommand}" />
+        <KeyBinding Gesture="F1" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}" />
+        <KeyBinding Gesture="F2" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}" />
+        <KeyBinding Gesture="F3" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}" />
+        <KeyBinding Gesture="F4" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}" />
+        <KeyBinding Gesture="F5" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}" />
+        <KeyBinding Gesture="F6" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}" />
+        <KeyBinding Gesture="F7" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}" />
+    </Window.KeyBindings>
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:HomeViewModel"><retro:HomeView /></DataTemplate>
+        <DataTemplate DataType="vm:RegionsViewModel"><retro:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><retro:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><retro:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><retro:LocalView /></DataTemplate>
+        <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><retro:NewsView /></DataTemplate>
+        <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><retro:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:ProfileViewModel"><views:ProfileView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><retro:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><retro:ConnectingView /></DataTemplate>
+        <DataTemplate DataType="vm:PaletteViewModel"><views:PaletteView /></DataTemplate>
+    </Window.DataTemplates>
+
+    <c:CrtScreen IsOn="True">
+    <Panel>
+        <DockPanel>
+            <!-- Menu bar. With no OS frame it is the title bar too: drag to move, double-click to maximize. -->
+            <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="24" Background="{StaticResource DhActiveBrush}" Padding="12,0">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Classes="menutitle" Text="FRONTIER 15" VerticalAlignment="Center" />
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Classes="bar" IsVisible="{Binding Notifications.IsAvailable}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="уведомления" />
+                                <TextBlock Text=" [!]" IsVisible="{Binding Notifications.HasUnread}" />
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="dh">
+                                    <views:NotificationsPanel DataContext="{Binding Notifications}" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Classes="bar" Command="{Binding OpenAccountCommand}" Classes.active="{Binding IsAccountPage}">
+                            <TextBlock Text="{Binding AccountName, TargetNullValue='гость', FallbackValue='гость'}" />
+                        </Button>
+                        <Button Classes="bar" Content="_" ToolTip.Tip="свернуть" Click="OnMinimize" />
+                        <Button Classes="bar" Content="x" ToolTip.Tip="закрыть" Click="OnClose" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Function-key bar: the key's number, then its label in reverse video; the open page's is brightest. -->
+            <Grid DockPanel.Dock="Bottom" Height="24" Margin="12,0" ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="fkey" ToolTip.Tip="F1" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="1" /><Border Classes="fl"><TextBlock Text="главная" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F2" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
+                            Classes.active="{Binding IsRegionsPage}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="2" /><Border Classes="fl"><TextBlock Text="регионы" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F3" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="3" /><Border Classes="fl"><TextBlock Text="серверы" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F4" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="4" /><Border Classes="fl"><TextBlock Text="мониторинг" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F5" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="5" /><Border Classes="fl"><TextBlock Text="локалка" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F6" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="6" /><Border Classes="fl"><TextBlock Text="новости" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" ToolTip.Tip="F7" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="7" /><Border Classes="fl"><TextBlock Text="настройки" /></Border></StackPanel>
+                    </Button>
+                    <Button Classes="fkey" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Classes="fk" Text="8" /><Border Classes="fl"><TextBlock Text="админ" /></Border></StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Versions, and the launcher's own update. -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Button Classes="small primary" Content="{Binding UpdateButtonText}" Command="{Binding UpdateActionCommand}"
+                            IsVisible="{Binding ShowUpdateButton}" />
+                    <TextBlock Classes="mono dim" Text="{Binding UpdateStatusText}" IsVisible="{Binding ShowUpdateStatus}" VerticalAlignment="Center" />
+                    <TextBlock Classes="mono faint" VerticalAlignment="Center">
+                        <Run Text="{Binding LauncherVersion}" /><Run Text=" · " /><Run Text="{Binding EngineVersion}" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+
+            <!-- The page, in a double-line frame. -->
+            <Border Classes="frame" Margin="8,8,8,0" Padding="2">
+                <Border Classes="frame">
+                    <DockPanel>
+                        <!-- A watched region came back, or a slot opened: one line on top of the page. -->
+                        <Border DockPanel.Dock="Top" Height="28" Padding="16,0" Classes="hair" IsVisible="{Binding ShowRegionBanner}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                <c:StatusGlyph Kind="on" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding RegionBannerText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                    <Button Classes="primary small" Content="ИГРАТЬ" Command="{Binding ConnectOnlineRegionCommand}" />
+                                    <Button Classes="small" Content="позже" Command="{Binding DismissRegionBannerCommand}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Border DockPanel.Dock="Top" Height="28" Padding="16,0" Classes="hair" IsVisible="{Binding ShowSlotWaitBanner}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                <c:StatusGlyph Kind="full" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding SlotWaitBannerText, Converter={x:Static vm:Lowercase.Instance}}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <Button Grid.Column="2" Classes="small" Content="не ждать" Command="{Binding CancelSlotWaitCommand}" />
+                            </Grid>
+                        </Border>
+
+                        <!-- НАСТРОЙКИ and АДМИН open over the page they were opened from, blurred behind them. -->
+                        <Panel>
+                            <Image x:Name="Backdrop" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                   IsHitTestVisible="False" Opacity="0.35">
+                                <Image.Effect><BlurEffect Radius="6" /></Image.Effect>
+                            </Image>
+                            <ContentControl x:Name="Page" Content="{Binding Current}" />
+                        </Panel>
+                    </DockPanel>
+                </Border>
+            </Border>
+        </DockPanel>
+
+        <!-- Connecting: a dialog over the dimmed page. -->
+        <Border Margin="0,24,0,0" Background="{StaticResource DhScrimBrush}"
+                IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ContentControl Content="{Binding Connecting}" />
+        </Border>
+
+        <!-- Quick switcher (Ctrl+K). -->
+        <Border Margin="0,24,0,0" Background="{StaticResource DhScrimBrush}" PointerPressed="OnPaletteBackdropPressed"
+                IsVisible="{Binding Palette, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ContentControl Content="{Binding Palette}" />
+        </Border>
+
+        <!-- Resize grips along the edges (there is no OS frame to grab). -->
+        <Border Classes="grip" Tag="N" Height="4" VerticalAlignment="Top" Cursor="TopSide" />
+        <Border Classes="grip" Tag="S" Height="4" VerticalAlignment="Bottom" Cursor="BottomSide" />
+        <Border Classes="grip" Tag="W" Width="4" HorizontalAlignment="Left" Cursor="LeftSide" />
+        <Border Classes="grip" Tag="E" Width="4" HorizontalAlignment="Right" Cursor="RightSide" />
+        <Border Classes="grip" Tag="NW" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="TopLeftCorner" />
+        <Border Classes="grip" Tag="NE" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="TopRightCorner" />
+        <Border Classes="grip" Tag="SW" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="BottomLeftCorner" />
+        <Border Classes="grip" Tag="SE" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="BottomRightCorner" />
+    </Panel>
+    </c:CrtScreen>
+</Window>
