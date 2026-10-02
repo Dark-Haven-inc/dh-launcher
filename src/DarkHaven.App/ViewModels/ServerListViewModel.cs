@@ -10,9 +10,26 @@ using Serilog;
 namespace DarkHaven.App.ViewModels;
 
 /// <summary>One of the player's own server applications, as the СЕРВЕРЫ tab lists them.</summary>
-public sealed class MyApplicationRow(PlatformServerApplication a)
+public sealed partial class MyApplicationRow(PlatformServerApplication a) : ObservableObject
 {
     public int Id => a.Id;
+
+    /// <summary>A listed server can count down to its next launch (servers that run at set times).</summary>
+    public bool CanSchedule => a.Status == "approved";
+
+    public string LaunchNow => a.NextLaunchAt is { } t
+        ? $"Следующий запуск: {t.ToLocalTime():dd.MM HH:mm}" + (string.IsNullOrWhiteSpace(a.LaunchNote) ? "" : $" · {a.LaunchNote}")
+        : "Таймер не задан — сервер считается всегда включённым.";
+
+    [ObservableProperty] private DateTime? _launchDate = a.NextLaunchAt?.ToLocalTime().Date;
+    [ObservableProperty] private TimeSpan? _launchTime = a.NextLaunchAt?.ToLocalTime().TimeOfDay;
+    [ObservableProperty] private string _launchNote = a.LaunchNote ?? "";
+
+    /// <summary>The date and time picked, in this PC's time zone; null until both are.</summary>
+    public DateTimeOffset? LaunchAt => LaunchDate is { } d && LaunchTime is { } t
+        ? new DateTimeOffset(DateTime.SpecifyKind(d.Date + t, DateTimeKind.Local))
+        : null;
+
     public string Name => a.Name;
     public string Address => a.Address;
     public bool CanWithdraw => a.Status == "pending";
@@ -125,7 +142,58 @@ public partial class ServerListViewModel : ViewModelBase
         await LoadMyApplicationsAsync();
     }
 
+    [RelayCommand]
+    private async Task SaveLaunch(MyApplicationRow? row)
+    {
+        if (row is null) return;
+        if (row.LaunchAt is not { } at)
+        {
+            ApplyStatus = "Выберите дату и время запуска.";
+            return;
+        }
+        ApplyStatus = await _services.Platform.SetServerLaunchAsync(row.Id, at, NullIfBlank(row.LaunchNote))
+                      ?? $"«{row.Name}»: запуск {at:dd.MM HH:mm}. Кто добавил сервер в избранное, получит уведомления.";
+        await LoadMyApplicationsAsync();
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task ClearLaunch(MyApplicationRow? row)
+    {
+        if (row is null) return;
+        ApplyStatus = await _services.Platform.SetServerLaunchAsync(row.Id, null, null)
+                      ?? $"«{row.Name}»: таймер убран.";
+        await LoadMyApplicationsAsync();
+        await RefreshAsync();
+    }
+
     private static string? NullIfBlank(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    // --- Servers that run at set times: the countdown and the favourites' alerts ---
+
+    private readonly LaunchAlerts _launchAlerts = new();
+    private readonly DispatcherTimer _launchTimer = new() { Interval = TimeSpan.FromMinutes(1) };
+
+    /// <summary>A favourite server about to start, or just started: the main window puts it in the bell.</summary>
+    public event Action<string>? LaunchAlert;
+
+    private async Task LaunchTickAsync()
+    {
+        LoadFavorites();
+        var now = DateTimeOffset.UtcNow;
+        // Close to a favourite's launch the list is refreshed every minute, so "запущен" comes as the server comes up;
+        // otherwise every 10 minutes is plenty for the countdowns.
+        var near = _services.ServerList.Servers.Any(s => s.NextLaunchAt is { } at && _favorites.Contains(s.Address)
+            && now >= at - LaunchSchedule.SoonBefore - TimeSpan.FromMinutes(1) && now - at <= LaunchSchedule.StartWindow);
+        var age = now - (_services.ServerList.LastRefresh ?? DateTimeOffset.MinValue);
+        if (!IsLoading && (age >= TimeSpan.FromMinutes(10) || near && age >= TimeSpan.FromSeconds(50)))
+            await RefreshAsync();
+
+        foreach (var text in _launchAlerts.Check(_services.ServerList.Servers, _favorites, DateTimeOffset.UtcNow))
+            LaunchAlert?.Invoke(text);
+        foreach (var row in Servers)
+            row.RefreshLaunch();
+    }
 
     /// <summary>Flat list — every row, for counts and favourites lookups, and the grouped list view.</summary>
     public ObservableCollection<ServerRowViewModel> Servers { get; } = [];
@@ -144,6 +212,8 @@ public partial class ServerListViewModel : ViewModelBase
         _connect = connect;
 
         _searchDebounce.Tick += (_, _) => { _searchDebounce.Stop(); ApplyFilter(); };
+        _launchTimer.Tick += (_, _) => _ = LaunchTickAsync();
+        _launchTimer.Start();
 
         // Every filter below sticks across launches — a player's own choices shouldn't reset every
         // time they reopen the launcher. Hide18Plus is the one with a non-off default: new/regular

@@ -65,6 +65,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Settings = new SettingsViewModel(services);
         Admin = new AdminViewModel(services);
         Notifications = new NotificationsViewModel(services);
+        Servers.LaunchAlert += text => Notifications.AddLocal("launch", text);
         Monitoring = new MonitoringViewModel(services, Connect);
         Local = new LocalViewModel(services, Connect);
         Bans = new BanListViewModel(services, back: () => Page = NavPage.Regions);

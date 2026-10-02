@@ -112,6 +112,19 @@
                                             </TextBlock>
                                             <TextBlock Text="{Binding Note}" Classes="dim" FontSize="11" TextWrapping="Wrap"
                                                        IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                            <!-- A listed server that runs at set times: its next launch (the countdown, favourites' alerts). -->
+                                            <StackPanel Spacing="4" Margin="0,2,0,0" IsVisible="{Binding CanSchedule}">
+                                                <TextBlock Text="{Binding LaunchNow, Converter={x:Static vm:Lowercase.Instance}}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                                <WrapPanel Orientation="Horizontal">
+                                                    <CalendarDatePicker SelectedDate="{Binding LaunchDate}" Watermark="дата" Width="130" Margin="0,0,6,4" />
+                                                    <TimePicker SelectedTime="{Binding LaunchTime}" ClockIdentifier="24HourClock" MinuteIncrement="5" Margin="0,0,6,4" />
+                                                    <TextBox Text="{Binding LaunchNote}" Watermark="подпись: ивент, карта" MaxLength="100" Width="190" Margin="0,0,6,4" />
+                                                    <Button Classes="small" Content="поставить таймер" Margin="0,0,6,4"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).SaveLaunchCommand}" CommandParameter="{Binding}" />
+                                                    <Button Classes="link" Content="убрать" Margin="0,0,0,4" VerticalAlignment="Center"
+                                                            Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).ClearLaunchCommand}" CommandParameter="{Binding}" />
+                                                </WrapPanel>
+                                            </StackPanel>
                                         </StackPanel>
                                         <Button Grid.Column="1" Classes="link" Content="отозвать" VerticalAlignment="Center"
                                                 IsVisible="{Binding CanWithdraw}"
@@ -227,8 +240,13 @@
                                                             Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.TextOrDim}}" />
                                                     <c:StatusGlyph Grid.Column="1" IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}" IsFull="{Binding IsFull}"
                                                                    Foreground="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
-                                                    <TextBlock Grid.Column="2" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
-                                                               Foreground="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                                    <Grid Grid.Column="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                                   Foreground="{Binding IsOnline, Converter={x:Static vm:BoolBrush.OnlineOffline}}" />
+                                                        <TextBlock Grid.Column="1" Classes="mono" FontSize="10.5" VerticalAlignment="Center"
+                                                                   Text="{Binding LaunchText, Converter={x:Static vm:Lowercase.Instance}}" IsVisible="{Binding HasLaunch}"
+                                                                   Foreground="{StaticResource DhWarnBrush}" />
+                                                    </Grid>
                                                     <ItemsControl Grid.Column="3" ItemsSource="{Binding VisibleTags}" VerticalAlignment="Center">
                                                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>

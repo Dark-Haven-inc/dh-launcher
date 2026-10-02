@@ -42,6 +42,20 @@ public partial class ServerRowViewModel : ViewModelBase, IMapNode
 
     public string StateText => IsOnline ? (IsFull ? "полный" : "в сети") : "офлайн";
 
+    /// <summary>A server that runs at set times: "запуск через 2 ч 15 мин" and the owner's line about it.</summary>
+    public string? LaunchText => LaunchSchedule.Describe(Entry.NextLaunchAt, IsOnline, DateTimeOffset.UtcNow) is { } t
+        ? string.IsNullOrWhiteSpace(Entry.LaunchNote) ? t : $"{t} · {Entry.LaunchNote.Trim()}"
+        : null;
+
+    public bool HasLaunch => LaunchText is not null;
+
+    /// <summary>The countdown moves on: called once a minute.</summary>
+    public void RefreshLaunch()
+    {
+        OnPropertyChanged(nameof(LaunchText));
+        OnPropertyChanged(nameof(HasLaunch));
+    }
+
     public string RoundInfo => Entry.RunLevel switch
     {
         Launcher.Models.RunLevel.InRound => Entry.Map is { } m ? $"В раунде · {m}" : "В раунде",

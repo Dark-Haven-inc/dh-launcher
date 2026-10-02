@@ -199,6 +199,10 @@ public sealed class PlatformApi(HttpClient http, string? baseUrl, string? authBa
     public Task<string?> WithdrawServerApplicationAsync(int id, CancellationToken cancel = default) =>
         SendAuthed(HttpMethod.Delete, $"/api/servers/applications/{id}", null, cancel);
 
+    /// <summary>When the player's listed server starts next (null: always on). Error text, or null on success.</summary>
+    public Task<string?> SetServerLaunchAsync(int id, DateTimeOffset? at, string? note, CancellationToken cancel = default) =>
+        SendAuthed(HttpMethod.Put, $"/api/servers/{id}/launch", new { at, note }, cancel);
+
     // --- Admin side of the list (admin, owner) ---
 
     public Task<IReadOnlyList<PlatformAdminServer>> GetAdminServersAsync(CancellationToken cancel = default) =>
@@ -869,13 +873,19 @@ public sealed record PlatformPublicBan(
 /// <summary><c>Available</c> is false while the platform has no game database to read.</summary>
 public sealed record PlatformBanListPage(bool Available, long Total, PlatformPublicBan[] Items);
 
-/// <summary>A server on the СЕРВЕРЫ list, as staff approved it.</summary>
-public sealed record PlatformListedServer(int Id, string Name, string Address, string? Description);
+/// <summary>
+/// A server on the СЕРВЕРЫ list, as staff approved it. <paramref name="NextLaunchAt"/>: for a server that runs at set
+/// times, when it starts next (its owner sets it).
+/// </summary>
+public sealed record PlatformListedServer(
+    int Id, string Name, string Address, string? Description,
+    DateTimeOffset? NextLaunchAt = null, string? LaunchNote = null);
 
 /// <summary>One of the player's own applications and where it stands.</summary>
 public sealed record PlatformServerApplication(
     int Id, string Name, string Address, string Status, string? ReviewNote,
-    DateTimeOffset CreatedAt, DateTimeOffset? ReviewedAt);
+    DateTimeOffset CreatedAt, DateTimeOffset? ReviewedAt,
+    DateTimeOffset? NextLaunchAt = null, string? LaunchNote = null);
 
 /// <summary>A server as staff see it — every status, with who asked and what the check found.</summary>
 public sealed record PlatformAdminServer(
