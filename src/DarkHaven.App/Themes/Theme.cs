@@ -10,8 +10,10 @@ namespace DarkHaven.App.Themes;
 
 /// <summary>A main window with its views (Views/, Views/Legacy/), and the control styles they are
 /// drawn with (Themes/Styles/&lt;name&gt;.axaml). Retro is a text-mode window of its own (Views/Retro/)
-/// around the monochrome pages, which its styles redraw as a CRT terminal.</summary>
-public enum ThemeLayout { Monochrome, Legacy, Retro }
+/// around the monochrome pages, which its styles redraw as a CRT terminal; Medieval (an old map in ink on
+/// parchment) and Cyberpunk (neon on a night grid) are windows of their own around the monochrome pages
+/// too (Views/Medieval/, Views/Cyberpunk/), which their styles redraw.</summary>
+public enum ThemeLayout { Monochrome, Legacy, Retro, Medieval, Cyberpunk }
 
 /// <summary>
 /// The player's own colors on top of a theme's palette (НАСТРОЙКИ → Вид, next to the theme); null
@@ -50,6 +52,8 @@ public sealed record Theme(string Id, string Title, ThemeLayout Layout, string P
         new("monochrome", "monochrome", ThemeLayout.Monochrome, "Monochrome"),
         new("retro", "retro", ThemeLayout.Retro, "Retro"),
         new("legacy", "Legacy", ThemeLayout.Legacy, "Legacy"),
+        new("medieval", "средневековье", ThemeLayout.Medieval, "Medieval"),
+        new("cyberpunk", "киберпанк", ThemeLayout.Cyberpunk, "Cyberpunk"),
     ];
 
     public static Theme Default => All[0];
@@ -154,6 +158,8 @@ public sealed record Theme(string Id, string Title, ThemeLayout Layout, string P
     {
         ThemeLayout.Legacy => new Views.Legacy.MainWindow(),
         ThemeLayout.Retro => new Views.Retro.MainWindow(),
+        ThemeLayout.Medieval => new Views.Medieval.MainWindow(),
+        ThemeLayout.Cyberpunk => new Views.Cyberpunk.MainWindow(),
         _ => new Views.MainWindow(),
     };
 

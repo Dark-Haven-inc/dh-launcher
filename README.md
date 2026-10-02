@@ -3,7 +3,7 @@
 A from-scratch launcher for [Space Station 14](https://spacestation14.com/): a first-class view of
 the **Dark Haven** region network plus a full browser of any public SS14 server.
 
-Status: **Phase 6** — Avalonia GUI (themes: monochrome, legacy), end-to-end connect (fetch → content/engine download
+Status: **Phase 6** — Avalonia GUI (themes: monochrome, retro, legacy, средневековье, киберпанк), end-to-end connect (fetch → content/engine download
 → auth → launch), the forked Dark Haven engine bundled and served in place of the public CDN, and
 self-update + one-click install via Velopack. See
 [`whimsical-petting-reddy.md`](../../.claude/plans/whimsical-petting-reddy.md) for the plan,
@@ -56,6 +56,15 @@ reverse video, dotted rules). НАСТРОЙКИ and АДМИН open over the bl
 `Controls/CrtScreen.cs` lays the tube over it all — glow, scanlines, grain, a rolling band, flicker, switched in
 НАСТРОЙКИ → ВИД (config `Retro.*`); the moving ones stand still while the window isn't active. Monochrome and retro
 are set in JetBrains Mono (the launcher's default font); legacy keeps its Inter.
+`средневековье` draws the launcher in ink on parchment, like an old map: its own window (`Views/Medieval/`: the
+aged sheet from `Controls/Parchment.cs`, a map's neatline from `Controls/MapFrame.cs`, the title in a cartouche,
+the pages as a book's contents with rubric numerals, a compass rose) around the monochrome pages, which
+`Themes/Styles/Medieval.axaml` sets in Alegreya (small caps for headings, labels and buttons) with quill-stroke
+rules, ink-outlined buttons and a seal-red main one. `киберпанк` is neon on a night grid: its own window
+(`Views/Cyberpunk/`: pink and cyan glow, a frame with cut corners from `Controls/Chamfer.cs`, a title whose pink
+and cyan ghosts glitch apart every few seconds while the window is active, numbered navigation) around the
+monochrome pages, which `Themes/Styles/Cyberpunk.axaml` sets in Tektur and Exo 2 with cut-corner buttons, a hot
+pink main one and pink-into-cyan rules. Both keep JetBrains Mono behind their fonts for the icon glyphs.
 The button next to the monochrome theme recolors it live with two HSV picks, saved per theme
 (`Theme.<id>.Base`, `Theme.<id>.Active`), worked out much like Material You (`Themes/ColorMath.cs`): a
 pick sets the hue, and each color's lightness follows from what it must stand out against. The

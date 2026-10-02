@@ -1,0 +1,237 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:DarkHaven.App.ViewModels"
+        xmlns:views="using:DarkHaven.App.Views"
+        xmlns:c="using:DarkHaven.App.Controls"
+        x:Class="DarkHaven.App.Views.Cyberpunk.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Frontier 15 Launcher" Width="960" Height="600"
+        MinWidth="880" MinHeight="560"
+        Icon="/Assets/icon.ico"
+        SystemDecorations="None"
+        Background="{StaticResource DhBgBrush}">
+    <!-- The cyberpunk theme's window: a night terminal in neon. A faint cyan grid with a pink glow from one
+         corner and a cyan one from the other, a frame with two corners cut (Controls/Chamfer.cs) and
+         short pink and yellow marks on it, the title in pink and cyan copies that now and then jump
+         apart (a glitch, see the code-behind), numbered navigation down the left. The pages are the
+         monochrome ones, which Themes/Styles/Cyberpunk.axaml redraws. -->
+
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenPaletteCommand}" />
+    </Window.KeyBindings>
+
+    <Window.DataTemplates>
+        <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
+        <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><views:LocalView /></DataTemplate>
+        <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
+        <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:ProfileViewModel"><views:ProfileView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
+        <DataTemplate DataType="vm:PaletteViewModel"><views:PaletteView /></DataTemplate>
+    </Window.DataTemplates>
+
+    <Panel>
+        <!-- The night: a grid, and the glow of two neon signs off-screen. -->
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <DrawingBrush TileMode="Tile" DestinationRect="0,0,32,32">
+                    <DrawingBrush.Drawing>
+                        <DrawingGroup>
+                            <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z" />
+                            <GeometryDrawing Brush="#0F05D9E8" Geometry="M0,0 H32 V1 H0 Z M0,1 H1 V32 H0 Z" />
+                        </DrawingGroup>
+                    </DrawingBrush.Drawing>
+                </DrawingBrush>
+            </Border.Background>
+        </Border>
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="0%,0%" GradientOrigin="0%,0%" RadiusX="65%" RadiusY="90%">
+                    <GradientStop Color="#2EFF2A6D" Offset="0" />
+                    <GradientStop Color="#00FF2A6D" Offset="1" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <RadialGradientBrush Center="100%,100%" GradientOrigin="100%,100%" RadiusX="60%" RadiusY="85%">
+                    <GradientStop Color="#2405D9E8" Offset="0" />
+                    <GradientStop Color="#0005D9E8" Offset="1" />
+                </RadialGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <!-- The frame: two corners cut, a pink mark along the top, a yellow one along the bottom. -->
+        <c:Chamfer Margin="4" Cut="16" Corners="TopLeft, BottomRight" BorderBrush="#8C05D9E8" IsHitTestVisible="False" />
+        <Border Margin="28,3,0,0" Width="96" Height="3" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Background="{StaticResource DhActiveBrush}" IsHitTestVisible="False" />
+        <Border Margin="0,0,28,3" Width="56" Height="3" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Background="{StaticResource DhWarnBrush}" IsHitTestVisible="False" />
+
+        <DockPanel Margin="10,8,10,10">
+            <!-- The title bar. With no OS frame it is what moves the window (double-click maximizes). -->
+            <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="40" Background="Transparent">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="18,0,0,0">
+                        <Path Data="M6,0 H22 L16,12 H0 Z" Fill="{StaticResource DhWarnBrush}" VerticalAlignment="Center" />
+                        <!-- The title, and its pink and cyan ghosts the glitch pulls apart. -->
+                        <Panel VerticalAlignment="Center">
+                            <TextBlock x:Name="GhostPink" Classes="ctitle" Text="FRONTIER//15" Foreground="{StaticResource DhActiveBrush}" Opacity="0.8">
+                                <TextBlock.RenderTransform><TranslateTransform X="-1.5" /></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock x:Name="GhostCyan" Classes="ctitle" Text="FRONTIER//15" Foreground="{StaticResource DhCyanBrush}" Opacity="0.8">
+                                <TextBlock.RenderTransform><TranslateTransform X="1.5" /></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock Classes="ctitle" Text="FRONTIER//15" Foreground="{StaticResource DhTextBrush}" />
+                        </Panel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="2" Margin="0,0,6,0">
+                        <Button Classes="ctop" ToolTip.Tip="уведомления" IsVisible="{Binding Notifications.IsAvailable}">
+                            <Panel>
+                                <Path Data="{StaticResource DhBellGeometry}" Fill="{Binding $parent[Button].Foreground}" Stretch="Uniform" Width="14" Height="14" />
+                                <Border Width="6" Height="6" Background="{StaticResource DhActiveBrush}"
+                                        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-3,0"
+                                        IsVisible="{Binding Notifications.HasUnread}" />
+                            </Panel>
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="dh">
+                                    <views:NotificationsPanel DataContext="{Binding Notifications}" />
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Button Classes="ctop" Command="{Binding OpenAccountCommand}" Classes.active="{Binding IsAccountPage}">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <TextBlock Classes="icon" Text="&#xEB99;" FontSize="13" />
+                                <TextBlock Text="{Binding AccountName, TargetNullValue='гость', FallbackValue='гость'}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="ctop" ToolTip.Tip="свернуть" Click="OnMinimize">
+                            <Path Data="M0,0.5 H10" Width="10" Height="1" />
+                        </Button>
+                        <Button Classes="ctop close" ToolTip.Tip="закрыть" Click="OnClose">
+                            <Path Data="M0.5,0.5 L9.5,9.5 M9.5,0.5 L0.5,9.5" Width="10" Height="10" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border DockPanel.Dock="Top" Height="1">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Color="#FF2A6D" Offset="0" />
+                        <GradientStop Color="#05D9E8" Offset="0.35" />
+                        <GradientStop Color="#2605D9E8" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+
+            <!-- Navigation, and the versions under it. -->
+            <Border DockPanel.Dock="Left" Width="170" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Margin="16,0,14,12" Spacing="3">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="lbl" Text="лаунчер" />
+                            <TextBlock Grid.Column="1" Classes="mono" FontSize="10" Text="{Binding LauncherVersion}" Foreground="{StaticResource DhCyanBrush}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Classes="lbl" Text="движок" />
+                            <TextBlock Grid.Column="1" Classes="mono" FontSize="10" Text="{Binding EngineVersion}" Foreground="{StaticResource DhCyanBrush}" />
+                        </Grid>
+                        <Button Classes="small primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"
+                                Content="{Binding UpdateButtonText}" Command="{Binding UpdateActionCommand}"
+                                IsVisible="{Binding ShowUpdateButton}" />
+                        <TextBlock Classes="mono dim" FontSize="10" Margin="0,4,0,0" HorizontalAlignment="Center"
+                                   Text="{Binding UpdateStatusText}" IsVisible="{Binding ShowUpdateStatus}" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,12,0,0">
+                        <TextBlock Classes="caps" Text="навигация" Margin="16,0,0,8" />
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="01" /><TextBlock Text="главная" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
+                                Classes.active="{Binding IsRegionsPage}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="02" /><TextBlock Text="регионы" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="03" /><TextBlock Text="серверы" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="04" /><TextBlock Text="мониторинг" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="05" /><TextBlock Text="локалка" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="06" /><TextBlock Text="новости" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="07" /><TextBlock Text="настройки" /></StackPanel>
+                        </Button>
+                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
+                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}">
+                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="08" /><TextBlock Text="админ" /></StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- A watched region came back, or a slot opened: one line on top of the page. -->
+            <Border DockPanel.Dock="Top" MinHeight="34" Padding="18,4" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1"
+                    Background="{StaticResource DhBgHoverBrush}" IsVisible="{Binding ShowRegionBanner}">
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <c:StatusGlyph Kind="on" Margin="0,0,8,0" Foreground="{StaticResource DhOnlineBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding RegionBannerText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                        <Button Classes="primary small" Content="ИГРАТЬ" Command="{Binding ConnectOnlineRegionCommand}" />
+                        <Button Classes="small" Content="позже" Command="{Binding DismissRegionBannerCommand}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border DockPanel.Dock="Top" MinHeight="34" Padding="18,4" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1"
+                    Background="{StaticResource DhBgHoverBrush}" IsVisible="{Binding ShowSlotWaitBanner}">
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <c:StatusGlyph Kind="full" Margin="0,0,8,0" Foreground="{StaticResource DhWarnBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding SlotWaitBannerText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="2" Classes="small" Content="не ждать" Command="{Binding CancelSlotWaitCommand}" />
+                </Grid>
+            </Border>
+
+            <ContentControl Content="{Binding Current}" />
+        </DockPanel>
+
+        <!-- Connecting: a dialog over the dimmed page, under the title bar (8 + 40 + 1). -->
+        <Border Margin="10,49,10,10" Background="{StaticResource DhScrimBrush}"
+                IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ContentControl Content="{Binding Connecting}" />
+        </Border>
+
+        <!-- Quick switcher (Ctrl+K). -->
+        <Border Margin="10,49,10,10" Background="{StaticResource DhScrimBrush}" PointerPressed="OnPaletteBackdropPressed"
+                IsVisible="{Binding Palette, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ContentControl Content="{Binding Palette}" />
+        </Border>
+
+        <!-- Resize grips along the edges (there is no OS frame to grab). -->
+        <Border Classes="grip" Tag="N" Height="4" VerticalAlignment="Top" Cursor="TopSide" />
+        <Border Classes="grip" Tag="S" Height="4" VerticalAlignment="Bottom" Cursor="BottomSide" />
+        <Border Classes="grip" Tag="W" Width="4" HorizontalAlignment="Left" Cursor="LeftSide" />
+        <Border Classes="grip" Tag="E" Width="4" HorizontalAlignment="Right" Cursor="RightSide" />
+        <Border Classes="grip" Tag="NW" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="TopLeftCorner" />
+        <Border Classes="grip" Tag="NE" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="TopRightCorner" />
+        <Border Classes="grip" Tag="SW" Width="8" Height="8" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="BottomLeftCorner" />
+        <Border Classes="grip" Tag="SE" Width="8" Height="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="BottomRightCorner" />
+    </Panel>
+</Window>
