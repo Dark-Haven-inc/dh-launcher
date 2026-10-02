@@ -87,6 +87,20 @@
                                         </TextBlock>
                                         <TextBlock Text="{Binding Note}" Classes="key" TextWrapping="Wrap"
                                                    IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <!-- A listed server that runs at set times: its next launch (the countdown, favourites' alerts). -->
+                                        <StackPanel Spacing="2" Margin="0,2,0,4" IsVisible="{Binding CanSchedule}">
+                                            <TextBlock Classes="key" Text="{Binding LaunchNow, Converter={x:Static vm:Lowercase.Instance}}" TextWrapping="Wrap" />
+                                            <WrapPanel Orientation="Horizontal">
+                                                <TextBlock Classes="key" Text="запуск:" VerticalAlignment="Center" Margin="0,0,6,4" />
+                                                <CalendarDatePicker SelectedDate="{Binding LaunchDate}" Watermark="дата" Width="130" Margin="0,0,6,4" />
+                                                <TimePicker SelectedTime="{Binding LaunchTime}" ClockIdentifier="24HourClock" MinuteIncrement="5" Margin="0,0,6,4" />
+                                                <TextBox Text="{Binding LaunchNote}" Watermark="подпись" MaxLength="100" Width="160" Margin="0,0,6,4" />
+                                                <Button Content="таймер" Margin="0,0,6,4"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).SaveLaunchCommand}" CommandParameter="{Binding}" />
+                                                <Button Content="убрать" Margin="0,0,0,4"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).ClearLaunchCommand}" CommandParameter="{Binding}" />
+                                            </WrapPanel>
+                                        </StackPanel>
                                     </StackPanel>
                                     <Button Grid.Column="1" Classes="link" Content="отозвать" VerticalAlignment="Center" IsVisible="{Binding CanWithdraw}"
                                             Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).WithdrawApplicationCommand}"
@@ -178,7 +192,11 @@
                                                         <Button Classes="link" Content="{Binding IsFavorite, Converter={x:Static vm:FavGlyph.Ascii}}"
                                                                 ToolTip.Tip="избранное" Command="{Binding ToggleFavoriteCommand}" />
                                                         <c:StatusGlyph Grid.Column="1" IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}" IsFull="{Binding IsFull}" />
-                                                        <TextBlock Grid.Column="2" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                        <Grid Grid.Column="2" ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Classes="key" VerticalAlignment="Center" IsVisible="{Binding HasLaunch}"
+                                                                       Text="{Binding LaunchText, Converter={x:Static vm:Lowercase.Instance}}" />
+                                                        </Grid>
                                                         <ItemsControl Grid.Column="3" ItemsSource="{Binding VisibleTags}" VerticalAlignment="Center">
                                                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                                             <ItemsControl.ItemTemplate>
