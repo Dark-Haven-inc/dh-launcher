@@ -41,7 +41,10 @@ public sealed class ServerListManager(PlatformApi platform, HttpClient http, str
             WriteCache(listed);
         }
 
-        var entries = listed.Select(s => new ServerEntry(s.Address) { Name = s.Name, Description = s.Description }).ToList();
+        var entries = listed.Select(s => new ServerEntry(s.Address)
+        {
+            Name = s.Name, Description = s.Description, NextLaunchAt = s.NextLaunchAt, LaunchNote = s.LaunchNote,
+        }).ToList();
         await Task.WhenAll(entries.Select(e => PollAsync(e, cancel)));
 
         _servers.Clear();

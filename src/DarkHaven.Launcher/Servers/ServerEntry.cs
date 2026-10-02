@@ -17,6 +17,10 @@ public sealed class ServerEntry(string address)
     public string? Name { get; set; }
     /// <summary>What staff wrote about it when they approved it (СЕРВЕРЫ list only).</summary>
     public string? Description { get; set; }
+
+    /// <summary>A server that runs at set times: when it starts next, and a line about it (СЕРВЕРЫ list only).</summary>
+    public DateTimeOffset? NextLaunchAt { get; set; }
+    public string? LaunchNote { get; set; }
     /// <summary>The name the server reports in <c>/status</c> (kept even for regions, which display a codename).</summary>
     public string? ServerName { get; set; }
     public int Players { get; set; }

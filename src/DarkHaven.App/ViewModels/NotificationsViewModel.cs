@@ -19,6 +19,7 @@ public sealed class NotificationItemViewModel(PlatformNotification n) : ViewMode
         "ban" => "БАН",
         "warning" => "ПРЕДУПРЕЖДЕНИЕ",
         "news" => "ОБЪЯВЛЕНИЕ",
+        "launch" => "ЗАПУСК",
         _ => "УВЕДОМЛЕНИЕ",
     };
 
@@ -49,6 +50,10 @@ public partial class NotificationsViewModel : ViewModelBase
     // Every id ever shown this session, so a poll that briefly comes back empty (platform blip)
     // doesn't make old notifications look new and flash the taskbar again.
     private readonly HashSet<int> _everSeen = [];
+    // The launcher's own notices (a favourite server about to start), not the platform's: negative ids, kept until the
+    // player closes them, shown signed in or not.
+    private readonly List<PlatformNotification> _local = [];
+    private int _nextLocalId = -1;
     private bool _loadedOnce;
     private bool _refreshing;
 
@@ -88,10 +93,12 @@ public partial class NotificationsViewModel : ViewModelBase
         _refreshing = true;
         try
         {
-            IsAvailable = _services.Platform.IsSignedIn;
-            if (!IsAvailable)
+            var signedIn = _services.Platform.IsSignedIn;
+            IsAvailable = signedIn || _local.Count > 0;
+            if (!signedIn)
             {
                 Items.Clear();
+                AddLocalItems();
                 _everSeen.Clear();
                 _loadedOnce = false;
                 return;
@@ -101,6 +108,7 @@ public partial class NotificationsViewModel : ViewModelBase
             var anyNew = fresh.Any(n => !_everSeen.Contains(n.Id));
 
             Items.Clear();
+            AddLocalItems();
             foreach (var n in fresh)
             {
                 Items.Add(new NotificationItemViewModel(n));
@@ -119,10 +127,32 @@ public partial class NotificationsViewModel : ViewModelBase
         }
     }
 
+    /// <summary>A notice from the launcher itself, on top of the bell until the player closes it.</summary>
+    public void AddLocal(string kind, string text)
+    {
+        var n = new PlatformNotification(_nextLocalId--, Guid.Empty, kind, text, DateTimeOffset.UtcNow, false);
+        _local.Add(n);
+        Items.Insert(0, new NotificationItemViewModel(n));
+        IsAvailable = true;
+        App.AlertUser();
+    }
+
+    private void AddLocalItems()
+    {
+        foreach (var n in Enumerable.Reverse(_local))
+            Items.Add(new NotificationItemViewModel(n));
+    }
+
     [RelayCommand]
     private async Task MarkRead(NotificationItemViewModel item)
     {
         Items.Remove(item);
+        if (item.Id < 0)
+        {
+            _local.RemoveAll(n => n.Id == item.Id);
+            IsAvailable = _services.Platform.IsSignedIn || _local.Count > 0;
+            return;
+        }
         await _services.Platform.MarkNotificationReadAsync(item.Id);
     }
 
@@ -131,7 +161,9 @@ public partial class NotificationsViewModel : ViewModelBase
     {
         var all = Items.ToList();
         Items.Clear();
-        foreach (var item in all)
+        _local.Clear();
+        IsAvailable = _services.Platform.IsSignedIn;
+        foreach (var item in all.Where(i => i.Id > 0))
             await _services.Platform.MarkNotificationReadAsync(item.Id);
     }
 }

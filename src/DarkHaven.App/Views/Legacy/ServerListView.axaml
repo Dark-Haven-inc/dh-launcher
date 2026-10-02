@@ -55,6 +55,19 @@
                                     </TextBlock>
                                     <TextBlock Text="{Binding Note}" Classes="dim" FontSize="11" TextWrapping="Wrap"
                                                IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <!-- A listed server that runs at set times: its next launch (the countdown, favourites' alerts). -->
+                                    <StackPanel Spacing="4" Margin="0,4,0,0" IsVisible="{Binding CanSchedule}">
+                                        <TextBlock Text="{Binding LaunchNow}" Classes="dim" FontSize="11" TextWrapping="Wrap" />
+                                        <WrapPanel Orientation="Horizontal">
+                                            <CalendarDatePicker SelectedDate="{Binding LaunchDate}" Watermark="Дата" Width="140" Margin="0,0,6,4" />
+                                            <TimePicker SelectedTime="{Binding LaunchTime}" ClockIdentifier="24HourClock" MinuteIncrement="5" Margin="0,0,6,4" />
+                                            <TextBox Text="{Binding LaunchNote}" Watermark="Подпись: ивент, карта" MaxLength="100" Width="200" Margin="0,0,6,4" />
+                                            <Button Classes="nav" Content="Поставить таймер" Margin="0,0,6,4"
+                                                    Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).SaveLaunchCommand}" CommandParameter="{Binding}" />
+                                            <Button Classes="ghost" Content="Убрать" Margin="0,0,0,4"
+                                                    Command="{Binding $parent[ItemsControl].((vm:ServerListViewModel)DataContext).ClearLaunchCommand}" CommandParameter="{Binding}" />
+                                        </WrapPanel>
+                                    </StackPanel>
                                 </StackPanel>
                                 <Button Grid.Column="1" Classes="ghost" Content="Отозвать" VerticalAlignment="Center"
                                         IsVisible="{Binding CanWithdraw}"
@@ -203,6 +216,8 @@
                                                         Foreground="{Binding IsFavorite, Converter={x:Static vm:BoolBrush.AccentText}}" />
                                                 <StackPanel Grid.Column="1" Spacing="2">
                                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding LaunchText}" IsVisible="{Binding HasLaunch}" FontSize="11.5"
+                                                               Foreground="{StaticResource DhAccentBrush}" TextTrimming="CharacterEllipsis" />
                                                     <ItemsControl ItemsSource="{Binding VisibleTags}">
                                                         <ItemsControl.ItemsPanel>
                                                             <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate>
