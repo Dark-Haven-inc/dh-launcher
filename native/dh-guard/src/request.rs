@@ -174,9 +174,15 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    /// An absolute loader path on the system the tests run on (`/opt/…` isn't absolute on Windows).
+    #[cfg(windows)]
+    const LOADER: &str = r"C:\dh\loader\DarkHaven.Loader.exe";
+    #[cfg(not(windows))]
+    const LOADER: &str = "/opt/dh/loader/DarkHaven.Loader";
+
     pub(crate) fn sample() -> serde_json::Value {
         json!({
-            "loaderPath": "/opt/dh/loader/DarkHaven.Loader",
+            "loaderPath": LOADER,
             "enginePath": "/data/engines/1.0.0.zip",
             "engineSignature": "sha256:00",
             "enginePublicKeyPath": "/opt/dh/signing_key",
