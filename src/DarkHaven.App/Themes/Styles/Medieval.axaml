@@ -1,0 +1,264 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:DarkHaven.App.Controls">
+    <!-- The medieval layout: the launcher drawn in ink on a sheet of parchment, like an old map. Its window
+         is its own (Views/Medieval/MainWindow.axaml: the aged sheet, the map's neatline around it, a title
+         cartouche, a contents list for navigation and a compass rose); the pages are the monochrome ones,
+         and this redraws them as a scribe would — set in a book face (Alegreya, small caps for headings and
+         labels), ruled with quill strokes that taper off, buttons outlined in ink, the main one in seal red,
+         fields written on a line. Everything else is monochrome's, included first. -->
+    <StyleInclude Source="avares://Frontier15Launcher/Themes/Styles/Monochrome.axaml" />
+
+    <Styles.Resources>
+        <!-- The book face, and its small caps. Monochrome's icons are glyphs of its own font, so that font
+             stays behind each as the fallback: text comes from Alegreya, an icon from JetBrains Mono. -->
+        <FontFamily x:Key="DhSerif">avares://Frontier15Launcher/Assets/Fonts#Alegreya, avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+        <FontFamily x:Key="DhSerifCaps">avares://Frontier15Launcher/Assets/Fonts#Alegreya SC, avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+        <!-- Pages that ask for the mono font by name get the book face too (icons still fall back to theirs). -->
+        <FontFamily x:Key="DhMono">avares://Frontier15Launcher/Assets/Fonts#Alegreya, avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+
+        <!-- Quill strokes: full ink at the start, fading out — a section's rule, a row's hairline. -->
+        <LinearGradientBrush x:Key="MedievalRuleBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="{StaticResource DhTextDim}" Offset="0" />
+            <GradientStop Color="#995A4129" Offset="0.55" />
+            <GradientStop Color="#005A4129" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="MedievalHairBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="#00C4AA7C" Offset="0" />
+            <GradientStop Color="{StaticResource DhBorder}" Offset="0.08" />
+            <GradientStop Color="{StaticResource DhBorder}" Offset="0.85" />
+            <GradientStop Color="#00C4AA7C" Offset="1" />
+        </LinearGradientBrush>
+
+        <!-- Fluent's scrollbar, as a thin ink stroke on no track. -->
+        <SolidColorBrush x:Key="ScrollBarTrackFill" Color="Transparent" />
+        <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="Transparent" />
+        <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="DhBorderStrong" />
+        <x:Double x:Key="ScrollBarSize">8</x:Double>
+
+        <!-- A drop-down list opens on the sheet, not on Fluent's own light gray. -->
+        <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="DhBgBrush" />
+        <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="DhBorderStrongBrush" />
+    </Styles.Resources>
+
+    <!-- ============================================================ type: a book face, small caps for labels -->
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="TextBlock.h1, TextBlock.name">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="22" />
+    </Style>
+    <Style Selector="TextBlock.caps, TextBlock.statlabel">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="LetterSpacing" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrush}" />
+    </Style>
+    <Style Selector="TextBlock.lbl">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="LetterSpacing" Value="0.6" />
+    </Style>
+    <Style Selector="TextBlock.mono, SelectableTextBlock.mono, TextBlock.statvalue">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="c|OnlineChart">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+    </Style>
+
+    <!-- ============================================================ rules and surfaces -->
+    <!-- A section's heading: rubric small caps over a quill stroke. -->
+    <Style Selector="Border.cap">
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalRuleBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1.5" />
+    </Style>
+    <Style Selector="Border.hair">
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalHairBrush}" />
+    </Style>
+    <!-- Boxes are ruled in ink on a slightly darker wash of the sheet. -->
+    <Style Selector="Border.card, Border.panel">
+        <Setter Property="Background" Value="#0C5A3A1A" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+    </Style>
+    <Style Selector="FlyoutPresenter.dh">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DhBgBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- ============================================================ buttons: inked outlines, the main one sealed in red -->
+    <Style Selector="Button, ToggleButton">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="CornerRadius" Value="1" />
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.small">
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.primary">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhActiveHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveHoverBrush}" />
+    </Style>
+    <!-- Text actions read as writing, not as a stamp: the book face, underlined in ink under the pointer. -->
+    <Style Selector="Button.link">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrush}" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrightBrush}" />
+    </Style>
+    <Style Selector="Button.icon, ToggleButton.chip.glyph">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+    </Style>
+    <Style Selector="Button.row">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalHairBrush}" />
+    </Style>
+    <Style Selector="Button.row:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.row:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalHairBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chip, Button.chip">
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter, Button.chip.on /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+    </Style>
+
+    <!-- ============================================================ fields: written on a line -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="#0C5A3A1A" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="SelectionBrush" Value="#558C2A1C" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#145A3A1A" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#145A3A1A" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1.5" />
+    </Style>
+    <Style Selector="TextBox.mono">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="#0C5A3A1A" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="MinHeight" Value="2" />
+        <Setter Property="Height" Value="2" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb">
+        <Setter Property="Background" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector="SelectableTextBlock">
+        <Setter Property="SelectionBrush" Value="#558C2A1C" />
+    </Style>
+
+    <!-- ============================================================ the window (Views/Medieval/MainWindow.axaml) -->
+    <!-- The title in the cartouche: spaced small caps. -->
+    <Style Selector="TextBlock.mtitle">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="LetterSpacing" Value="3" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+
+    <!-- The contents: "I · главная" — a rubric numeral, the page's name in small caps; the open page in red
+         with a diamond before it. -->
+    <Style Selector="Button.mnav">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+    <Style Selector="Button.mnav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <Style Selector="Button.mnav TextBlock.label">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.mnav TextBlock.num">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.mnav Path.mark">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.mnav.active">
+        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+    <Style Selector="Button.mnav.active TextBlock.num">
+        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+    <Style Selector="Button.mnav.active Path.mark">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- Bell, account and the window's own two marks, drawn in ink. -->
+    <Style Selector="Button.mtop">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinWidth" Value="28" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.mtop:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.mtop.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+    </Style>
+    <Style Selector="Button.mtop TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.mtop Path">
+        <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+        <Setter Property="StrokeThickness" Value="1.4" />
+    </Style>
+    <Style Selector="Button.mtop.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+</Styles>

@@ -1,0 +1,281 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:DarkHaven.App.Controls">
+    <!-- The cyberpunk layout: a night city's terminal in neon. Its window is its own
+         (Views/Cyberpunk/MainWindow.axaml: a faint grid with pink and cyan glow, a frame with cut corners,
+         a glitching title, numbered navigation); the pages are the monochrome ones, and this redraws them —
+         set in Tektur (headings, labels, buttons) and Exo 2 (text), numbers left in the mono font, buttons
+         with cut corners (Controls/Chamfer.cs) outlined in cyan, the main one hot pink, section rules
+         running pink into cyan. Everything else is monochrome's, included first. -->
+    <StyleInclude Source="avares://Frontier15Launcher/Themes/Styles/Monochrome.axaml" />
+
+    <Styles.Resources>
+        <!-- Monochrome's icons are glyphs of its mono font, so that font stays behind each as the fallback. -->
+        <FontFamily x:Key="DhTech">avares://Frontier15Launcher/Assets/Fonts#Tektur, avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+        <FontFamily x:Key="DhSans">avares://Frontier15Launcher/Assets/Fonts#Exo 2, avares://Frontier15Launcher/Assets/Fonts#JetBrainsMono Nerd Font Propo</FontFamily>
+
+        <!-- A section's rule: a pink start running into cyan, fading out. -->
+        <LinearGradientBrush x:Key="CyberRuleBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Color="{StaticResource DhActive}" Offset="0" />
+            <GradientStop Color="{StaticResource DhActive}" Offset="0.06" />
+            <GradientStop Color="{StaticResource DhCyan}" Offset="0.06" />
+            <GradientStop Color="#6605D9E8" Offset="0.5" />
+            <GradientStop Color="#0005D9E8" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="CyberLineBrush" Color="#7305D9E8" />
+
+        <!-- Fluent's scrollbar: a thin bar on no track. -->
+        <SolidColorBrush x:Key="ScrollBarTrackFill" Color="Transparent" />
+        <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="Transparent" />
+        <x:Double x:Key="ScrollBarSize">8</x:Double>
+
+        <!-- A drop-down list opens on the night panel, cyan-edged. -->
+        <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="DhBgPanelBrush" />
+        <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="CyberLineBrush" />
+    </Styles.Resources>
+
+    <!-- ============================================================ type -->
+    <Style Selector="Window">
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="TextBlock.h1, TextBlock.name">
+        <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="22" />
+    </Style>
+    <Style Selector="TextBlock.caps, TextBlock.statlabel">
+        <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="LetterSpacing" Value="2" />
+        <Setter Property="Foreground" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="TextBlock.lbl">
+        <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="LetterSpacing" Value="1.5" />
+    </Style>
+
+    <!-- ============================================================ rules and surfaces -->
+    <Style Selector="Border.cap">
+        <Setter Property="BorderBrush" Value="{StaticResource CyberRuleBrush}" />
+    </Style>
+    <!-- Boxes: the night panel, cyan-edged, a little see-through so the grid shows. -->
+    <Style Selector="Border.card, Border.panel">
+        <Setter Property="Background" Value="#B30F0F1B" />
+        <Setter Property="BorderBrush" Value="#4D05D9E8" />
+    </Style>
+    <Style Selector="FlyoutPresenter.dh">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource CyberLineBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="ToolTip">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource CyberLineBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <!-- ============================================================ buttons: cut corners, cyan edge, the main one pink
+         Monochrome's buttons (plain, .ghost, .small, .primary, .danger, .icon) get a Chamfer for their box;
+         the ones with a look of their own (the classes below, and ones views style locally) keep it. -->
+    <Style Selector="Button, ToggleButton">
+        <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="BorderBrush" Value="{StaticResource CyberLineBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop)">
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <c:Chamfer Name="PART_Box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                           Cut="7" Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </c:Chamfer>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <!-- States. Monochrome's paint the content presenter; here it stays clear and the box is painted. -->
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):pressed /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):disabled /template/ ContentPresenter#PART_ContentPresenter, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):pointerover /template/ c|Chamfer#PART_Box, Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):focus-visible /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):pressed /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="Button:not(.chip):not(.navitem):not(.row):not(.top):not(.wc):not(.who):not(.swatch):not(.reg):not(.hit):not(.fav):not(.day):not(.link):not(.cnav):not(.ctop):disabled /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+    </Style>
+    <Style Selector="Button.small /template/ c|Chamfer#PART_Box, Button.icon /template/ c|Chamfer#PART_Box">
+        <Setter Property="Cut" Value="5" />
+    </Style>
+
+    <!-- The main action: hot pink, its text the night's color, glowing under the pointer. -->
+    <Style Selector="Button.primary">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ c|Chamfer#PART_Box, Button.primary:focus-visible /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhActiveHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActiveHoverBrush}" />
+        <Setter Property="Effect">
+            <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="14" Color="#FF2A6D" Opacity="0.7" />
+        </Setter>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhActivePressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhActivePressBrush}" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ c|Chamfer#PART_Box">
+        <Setter Property="Background" Value="{StaticResource DhBgPressBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBgPressBrush}" />
+    </Style>
+
+    <!-- Text actions in cyan. -->
+    <Style Selector="Button.link">
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrightBrush}" />
+    </Style>
+    <Style Selector="Button.row">
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+    </Style>
+    <Style Selector="ToggleButton.chip, Button.chip">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.chip:checked /template/ ContentPresenter#PART_ContentPresenter, Button.chip.on /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="#1FFF2A6D" />
+    </Style>
+
+    <!-- ============================================================ fields -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="#B30F0F1B" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhBorderStrongBrush}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="CaretBrush" Value="{StaticResource DhCyanBrush}" />
+        <Setter Property="SelectionBrush" Value="#6605D9E8" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#B30F0F1B" />
+        <Setter Property="BorderBrush" Value="{StaticResource CyberLineBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="#B30F0F1B" />
+        <Setter Property="BorderBrush" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="#B30F0F1B" />
+        <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{StaticResource DhCyanBrush}" />
+        <Setter Property="MinHeight" Value="2" />
+        <Setter Property="Height" Value="2" />
+    </Style>
+    <Style Selector="ScrollBar /template/ Thumb#thumb:pointerover">
+        <Setter Property="Background" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="SelectableTextBlock">
+        <Setter Property="SelectionBrush" Value="#6605D9E8" />
+    </Style>
+
+    <!-- ============================================================ the window (Views/Cyberpunk/MainWindow.axaml) -->
+    <Style Selector="TextBlock.ctitle">
+        <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="LetterSpacing" Value="3" />
+    </Style>
+
+    <!-- Navigation: "01  главная"; the open page lit pink with a bar before it and a glow fading right. -->
+    <Style Selector="Button.cnav">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <!-- The glow switches at once: a transition can't blend a gradient into nothing, so it would linger. -->
+        <Setter Property="Transitions" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.cnav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="Button.cnav TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.cnav TextBlock.num">
+        <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+        <Setter Property="FontSize" Value="10.5" />
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button.cnav Border.bar">
+        <Setter Property="Width" Value="3" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Margin" Value="0,0,13,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.cnav.active">
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="Background">
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Color="#40FF2A6D" Offset="0" />
+                <GradientStop Color="#00FF2A6D" Offset="1" />
+            </LinearGradientBrush>
+        </Setter>
+    </Style>
+    <Style Selector="Button.cnav.active Border.bar">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+    </Style>
+    <Style Selector="Button.cnav.active TextBlock.num">
+        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+
+    <!-- Bell, account and the window's two marks. -->
+    <Style Selector="Button.ctop">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="MinWidth" Value="28" />
+        <Setter Property="Padding" Value="8,0" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSans}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ctop:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.ctop.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhCyanBrush}" />
+    </Style>
+    <Style Selector="Button.ctop TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.ctop Path">
+        <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+        <Setter Property="StrokeThickness" Value="1.2" />
+    </Style>
+    <Style Selector="Button.ctop.close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+</Styles>

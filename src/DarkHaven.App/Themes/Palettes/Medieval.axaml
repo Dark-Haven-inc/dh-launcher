@@ -1,0 +1,79 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Medieval palette: iron-gall ink on parchment, with the scribe's red for what matters (rubrics, the
+         seal-red primary button) and a little verdigris and ochre for state. Contrast on DhBg: text about
+         12:1, dim 6.9:1, faint 4.9:1. Hover and press are see-through washes of ink, so the sheet shows
+         through. Every palette defines the same keys (see Themes/Theme.cs). -->
+    <Color x:Key="DhBg">#E9DBB8</Color>
+    <Color x:Key="DhBgPanel">#E1D0A6</Color>
+    <Color x:Key="DhBgHover">#165A3A1A</Color>
+    <Color x:Key="DhBgPress">#285A3A1A</Color>
+    <Color x:Key="DhBorder">#C4AA7C</Color>
+    <Color x:Key="DhBorderStrong">#94784F</Color>
+    <Color x:Key="DhText">#2A1B0E</Color>
+    <Color x:Key="DhBody">#3B2A19</Color>
+    <Color x:Key="DhTextDim">#5A4129</Color>
+    <Color x:Key="DhTextFaint">#715639</Color>
+
+    <!-- The legacy design's names: inks. -->
+    <Color x:Key="DhBgElevated">#E1D0A6</Color>
+    <Color x:Key="DhBorderBright">#94784F</Color>
+    <Color x:Key="DhAccent">#8C2A1C</Color>
+    <Color x:Key="DhAccentBright">#A8341F</Color>
+    <Color x:Key="DhCyan">#2D5B57</Color>
+    <Color x:Key="DhOnline">#3E6324</Color>
+    <Color x:Key="DhWarn">#7E520E</Color>
+    <Color x:Key="DhDanger">#8C2A1C</Color>
+    <Color x:Key="DhOffline">#7A6A55</Color>
+    <Color x:Key="DhFrontierSilver">#5A4129</Color>
+    <Color x:Key="DhFrontierRed">#8C2A1C</Color>
+
+    <!-- Active: sealing-wax red with parchment on it; the same red as a line or text. -->
+    <Color x:Key="DhActive">#8C2A1C</Color>
+    <Color x:Key="DhActiveHover">#9E3322</Color>
+    <Color x:Key="DhActivePress">#741F14</Color>
+    <Color x:Key="DhOnActive">#F4E8CA</Color>
+    <Color x:Key="DhActiveLine">#8C2A1C</Color>
+
+    <!-- Behind dialogs (connecting, Ctrl+K); the region map's grid and links. -->
+    <Color x:Key="DhScrim">#9A2A1B0E</Color>
+    <Color x:Key="DhMapGrid">#D9C69C</Color>
+    <Color x:Key="DhMapLink">#94784F</Color>
+
+    <SolidColorBrush x:Key="DhBgBrush" Color="{StaticResource DhBg}" />
+    <SolidColorBrush x:Key="DhBgPanelBrush" Color="{StaticResource DhBgPanel}" />
+    <SolidColorBrush x:Key="DhBgHoverBrush" Color="{StaticResource DhBgHover}" />
+    <SolidColorBrush x:Key="DhBgPressBrush" Color="{StaticResource DhBgPress}" />
+    <SolidColorBrush x:Key="DhBorderBrush" Color="{StaticResource DhBorder}" />
+    <SolidColorBrush x:Key="DhBorderStrongBrush" Color="{StaticResource DhBorderStrong}" />
+    <SolidColorBrush x:Key="DhTextBrush" Color="{StaticResource DhText}" />
+    <SolidColorBrush x:Key="DhBodyBrush" Color="{StaticResource DhBody}" />
+    <SolidColorBrush x:Key="DhTextDimBrush" Color="{StaticResource DhTextDim}" />
+    <SolidColorBrush x:Key="DhTextFaintBrush" Color="{StaticResource DhTextFaint}" />
+    <SolidColorBrush x:Key="DhBgElevatedBrush" Color="{StaticResource DhBgElevated}" />
+    <SolidColorBrush x:Key="DhBorderBrightBrush" Color="{StaticResource DhBorderBright}" />
+    <SolidColorBrush x:Key="DhAccentBrush" Color="{StaticResource DhAccent}" />
+    <SolidColorBrush x:Key="DhAccentBrightBrush" Color="{StaticResource DhAccentBright}" />
+    <SolidColorBrush x:Key="DhCyanBrush" Color="{StaticResource DhCyan}" />
+    <SolidColorBrush x:Key="DhOnlineBrush" Color="{StaticResource DhOnline}" />
+    <SolidColorBrush x:Key="DhWarnBrush" Color="{StaticResource DhWarn}" />
+    <SolidColorBrush x:Key="DhDangerBrush" Color="{StaticResource DhDanger}" />
+    <SolidColorBrush x:Key="DhOfflineBrush" Color="{StaticResource DhOffline}" />
+    <SolidColorBrush x:Key="DhFrontierSilverBrush" Color="{StaticResource DhFrontierSilver}" />
+    <SolidColorBrush x:Key="DhFrontierRedBrush" Color="{StaticResource DhFrontierRed}" />
+    <SolidColorBrush x:Key="DhActiveBrush" Color="{StaticResource DhActive}" />
+    <SolidColorBrush x:Key="DhActiveHoverBrush" Color="{StaticResource DhActiveHover}" />
+    <SolidColorBrush x:Key="DhActivePressBrush" Color="{StaticResource DhActivePress}" />
+    <SolidColorBrush x:Key="DhOnActiveBrush" Color="{StaticResource DhOnActive}" />
+    <SolidColorBrush x:Key="DhActiveLineBrush" Color="{StaticResource DhActiveLine}" />
+    <SolidColorBrush x:Key="DhScrimBrush" Color="{StaticResource DhScrim}" />
+
+    <!-- Fluent's own accent (focus rings, selection in lists), in the red. -->
+    <Color x:Key="SystemAccentColor">#8C2A1C</Color>
+    <Color x:Key="SystemAccentColorDark1">#741F14</Color>
+    <Color x:Key="SystemAccentColorDark2">#5E180F</Color>
+    <Color x:Key="SystemAccentColorDark3">#46110A</Color>
+    <Color x:Key="SystemAccentColorLight1">#9E3322</Color>
+    <Color x:Key="SystemAccentColorLight2">#B04A35</Color>
+    <Color x:Key="SystemAccentColorLight3">#C2654F</Color>
+</ResourceDictionary>
