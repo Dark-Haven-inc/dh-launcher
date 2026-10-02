@@ -17,6 +17,26 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
+  <!--
+    The stand-in loader GameLauncherTests start on Windows: built with the tests, copied into fake-loader/ next to them.
+    Not referenced as an assembly - only its files are wanted.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\DarkHaven.Launcher.FakeLoader\DarkHaven.Launcher.FakeLoader.csproj"
+                      ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CopyFakeLoader" AfterTargets="Build">
+    <MSBuild Projects="..\DarkHaven.Launcher.FakeLoader\DarkHaven.Launcher.FakeLoader.csproj" Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" PropertyName="FakeLoaderDll" />
+    </MSBuild>
+    <ItemGroup>
+      <FakeLoaderFile Include="$([System.IO.Path]::GetDirectoryName($(FakeLoaderDll)))\DarkHaven.Launcher.FakeLoader*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FakeLoaderFile)" DestinationFolder="$(OutDir)fake-loader" SkipUnchangedFiles="true" />
+  </Target>
+
   <ItemGroup>
     <!-- fixtures/rust-launch-proof.json: a proof from dh_guard's signer (native/dh-guard/tests/fixture.rs). -->
     <None Include="fixtures\**" CopyToOutputDirectory="PreserveNewest" />

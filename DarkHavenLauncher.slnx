@@ -10,6 +10,7 @@
     <Project Path="src/DarkHaven.Loader/DarkHaven.Loader.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/DarkHaven.Launcher.FakeLoader/DarkHaven.Launcher.FakeLoader.csproj" />
     <Project Path="tests/DarkHaven.Launcher.Tests/DarkHaven.Launcher.Tests.csproj" />
   </Folder>
 </Solution>

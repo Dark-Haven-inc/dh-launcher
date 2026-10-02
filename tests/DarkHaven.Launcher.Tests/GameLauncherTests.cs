@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using DarkHaven.Launcher.Api;
 using DarkHaven.Launcher.Content;
 using DarkHaven.Launcher.Engine;
@@ -63,8 +64,9 @@ public sealed partial class LauncherEnvironment : IDisposable
 }
 
 /// <summary>
-/// The launch end to end through the development guard, with a shell script standing in for the loader: it prints its
-/// arguments and the environment variables the launch is about, one per line, and exits with a code of its choosing.
+/// The launch end to end through the development guard, with a stand-in for the loader: it prints its arguments and the
+/// environment variables the launch is about, one per line, and exits with a code of its choosing. A shell script on
+/// Linux; on Windows tests/DarkHaven.Launcher.FakeLoader, running the same script translated.
 /// </summary>
 public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvironment>
 {
@@ -100,6 +102,9 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
 
     private string Loader(string body)
     {
+        if (OperatingSystem.IsWindows())
+            return FakeLoader(body);
+
         var path = Path.Combine(_dir, $"loader-{Guid.NewGuid():N}.sh");
         var env = string.Join(' ', Watched);
         File.WriteAllText(path, $$"""
@@ -111,6 +116,31 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         return path;
+    }
+
+    /// <summary>
+    /// The Windows stand-in: a copy of the fake loader in its own folder, with the names to print (watch.txt) and the
+    /// script (script.txt) beside it. Translates the few shell lines the tests use.
+    /// </summary>
+    private string FakeLoader(string body)
+    {
+        var source = Path.Combine(AppContext.BaseDirectory, "fake-loader");
+        var dir = Path.Combine(_dir, $"loader-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        foreach (var file in Directory.GetFiles(source))
+            File.Copy(file, Path.Combine(dir, Path.GetFileName(file)));
+
+        File.WriteAllLines(Path.Combine(dir, "watch.txt"), Watched);
+        File.WriteAllLines(Path.Combine(dir, "script.txt"), body.Split('\n').Select(line => line switch
+        {
+            _ when Regex.Match(line, @"^echo '(.*)' >&2$") is { Success: true } m => $"stderr {m.Groups[1].Value}",
+            _ when Regex.Match(line, @"^echo (.*)$") is { Success: true } m => $"echo {m.Groups[1].Value}",
+            _ when Regex.Match(line, @"^(?:exec )?sleep (\d+)$") is { Success: true } m => $"sleep {m.Groups[1].Value}",
+            _ when Regex.Match(line, @"^touch '(.*)'$") is { Success: true } m => $"touch {m.Groups[1].Value}",
+            _ when Regex.Match(line, @"^exit (\d+)$") is { Success: true } m => $"exit {m.Groups[1].Value}",
+            _ => throw new NotSupportedException($"the fake loader can't do: {line}"),
+        }));
+        return Path.Combine(dir, "DarkHaven.Launcher.FakeLoader.exe");
     }
 
     private GameLauncher Launcher(string loader) =>
@@ -151,7 +181,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
     private static Dictionary<string, string> Env(List<string> lines) =>
         lines.Where(l => l.StartsWith("env ")).Select(l => l[4..].Split('=', 2)).ToDictionary(p => p[0], p => p[1]);
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task TheLoaderGetsTheReferenceCommandLineAndEnvironment()
     {
         var launcher = Launcher(Loader("echo 'to stderr' >&2\nexit 7"));
@@ -211,7 +241,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Equal("(unset)", env["DH_LAUNCH_PROOF"]);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task AGuestGetsTheDefaultNameAndNoAuth()
     {
         using var game = Launcher(Loader("exit 0")).Start(Server(AuthMode.Optional), Manifest, account: null,
@@ -227,7 +257,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Equal("(unset)", env["ROBUST_AUTH_USERID"]);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task WithAuthDisabledTheAccountNameGoesButNotItsToken()
     {
         using var game = Launcher(Loader("exit 0")).Start(Server(AuthMode.Disabled), Manifest, Account,
@@ -240,7 +270,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Equal(GuardBrokerState.NotRequested, game.BrokerState);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task KillEndsTheGame()
     {
         using var game = Launcher(Loader("echo started\nexec sleep 30")).Start(Server(), Manifest, Account,
@@ -261,11 +291,12 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         game.Kill();
         await game.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
         await exited.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.Equal(128 + 9, game.ExitCode); // SIGKILL, as Process.ExitCode reports it
+        // SIGKILL as Process.ExitCode reports it; on Windows the guard's TerminateProcess(handle, 1).
+        Assert.Equal(OperatingSystem.IsWindows() ? 1 : 128 + 9, game.ExitCode);
         game.Kill(); // gone already: nothing to do
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task WithoutRedirectTheGameSharesOurOutput()
     {
         using var game = Launcher(Loader("exit 3")).Start(Server(), Manifest, Account);
@@ -276,7 +307,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Equal(3, game.ExitCode);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public void TheGuardRefusesWhatItDoesNotAllow()
     {
         var launcher = Launcher(Loader("exit 0"));
@@ -291,7 +322,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Equal(GuardStatus.Request, module.Status);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public void AMissingLoaderIsAnOsError()
     {
         var e = Assert.Throws<GuardException>(() =>
@@ -300,7 +331,7 @@ public sealed class GameLauncherTests : IDisposable, IClassFixture<LauncherEnvir
         Assert.Contains("no-such-loader", e.Message);
     }
 
-    [DevGuardLinuxFact]
+    [DevGuardLaunchFact]
     public async Task DisposingReleasesTheHandleButNotTheGame()
     {
         var marker = Path.Combine(_dir, "finished");

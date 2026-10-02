@@ -17,13 +17,16 @@ public sealed class DevGuardFactAttribute : FactAttribute
     }
 }
 
-/// <summary>A development guard starting a shell script as its loader: Linux only.</summary>
-public sealed class DevGuardLinuxFactAttribute : FactAttribute
+/// <summary>
+/// A development guard starting a stand-in loader (a shell script on Linux, tests/DarkHaven.Launcher.FakeLoader on
+/// Windows) in the loader's place.
+/// </summary>
+public sealed class DevGuardLaunchFactAttribute : FactAttribute
 {
-    public DevGuardLinuxFactAttribute()
+    public DevGuardLaunchFactAttribute()
     {
-        if (!OperatingSystem.IsLinux())
-            Skip = "the stand-in loader is a /bin/sh script";
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsWindows())
+            Skip = "no stand-in loader for this system";
         else if (GuardTests.IsKeyed())
             Skip = "a release (keyed) dh_guard: it starts only the pinned loader";
     }
