@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using DarkHaven.Launcher.Security;
 
 namespace DarkHaven.Launcher.Update;
 
@@ -25,6 +26,10 @@ public static class LaunchErrors
             "Не удалось связаться с сервером — он выключен или недоступен из вашей сети.",
         TimeoutException or TaskCanceledException =>
             "Сервер не ответил вовремя. Попробуйте ещё раз.",
+        GuardException { Status: GuardStatus.Refused } =>
+            $"Лаунчер не стал запускать игру: его файлы изменены или повреждены ({e.Message}). Переустановите лаунчер.",
+        GuardException =>
+            $"Не удалось запустить игру: {e.Message}",
         _ => e.Message,
     };
 }

@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <RootNamespace>DarkHaven.Launcher</RootNamespace>
+    <!-- Security/Guard.cs: [LibraryImport] stubs for dh_guard. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,18 +23,6 @@
     <PackageReference Include="DiscordRichPresence" />
   </ItemGroup>
 
-  <!--
-    The launch-proof signing key (Security/LaunchProof.cs). Release builds get it from the DH_LAUNCH_SIGNING_KEY CI
-    secret through -p:DhLaunchKey=...; every other build gets an empty one and signs nothing. Never commit the key.
-    The KeyGen source generator splits it into shares at compile time (LaunchSigningKey.LoadShares); DhLaunchKey is
-    made visible to it below.
-  -->
-  <ItemGroup>
-    <ProjectReference Include="..\DarkHaven.Launcher.KeyGen\DarkHaven.Launcher.KeyGen.csproj"
-                     OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <CompilerVisibleProperty Include="DhLaunchKey" />
-  </ItemGroup>
-
   <ItemGroup>
     <InternalsVisibleTo Include="DarkHaven.Launcher.Tests" />
   </ItemGroup>
@@ -46,5 +36,8 @@
     <None Include="Assets\dh-regions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="Assets\news.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- The native trust core (native/dh-guard) is built with cargo and shipped next to the assemblies by DhGuard.targets,
+       which Directory.Build.targets imports. -->
 
 </Project>

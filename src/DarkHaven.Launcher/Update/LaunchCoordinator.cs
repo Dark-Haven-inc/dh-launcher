@@ -32,7 +32,7 @@ public sealed class LaunchCoordinator(
     Engine.EngineManager engines,
     GameLauncher game)
 {
-    public async Task<Process> ConnectAsync(
+    public async Task<GameProcess> ConnectAsync(
         string address,
         bool allowGuest,
         bool compatMode,

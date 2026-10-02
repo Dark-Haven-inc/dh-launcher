@@ -53,15 +53,6 @@ public sealed class LaunchProofTests
         Assert.Equal(scalar, LaunchSigningKey.UnsealScalar(sealedScalar));
     }
 
-    [Fact]
-    public void DevelopmentBuildsHaveNoKey()
-    {
-        // Tests are built without -p:DhLaunchKey, like every non-release build.
-        Assert.Null(LaunchSigningKey.Shares);
-        Assert.Null(LaunchProof.TryCreate(Guid.NewGuid(), VectorChallenge));
-        Assert.Null(LaunchProof.TryCreateV1(Guid.NewGuid()));
-    }
-
     /// <summary>
     /// Prints a proof for the game server's known-vector test (LaunchProofTest.KnownVectorFromTheLauncher).
     /// </summary>

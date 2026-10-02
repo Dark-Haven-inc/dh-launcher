@@ -258,10 +258,11 @@ public sealed class AppServices : IDisposable
     private static string LocateLoader()
     {
         var here = AppContext.BaseDirectory;
-        // Installed layout: loader sits under ./loader/. Dev layout: sibling build output.
+        // Installed layout: loader sits under ./loader/ (in an AppImage, GameLauncher starts it from a copy:
+        // LoaderCopy). Dev layout: sibling build output.
         var installed = Path.Combine(here, "loader", LauncherPaths.LoaderFileName);
         if (File.Exists(installed))
-            return LoaderCopy.Prepare(installed);
+            return installed;
 
         foreach (var cfg in new[] { "Debug", "Release" })
         {

@@ -27,3 +27,6 @@ Thumbs.db
 ## (see src/DarkHaven.App/bundled-engines/README.md). manifest.json pins each one's SHA-256.
 src/DarkHaven.App/bundled-engines/*.zip
 src/DarkHaven.App/bundled-engines/*.zip.sig
+
+## Rust (native/dh-guard): build output; a keyed build's target dir holds derivatives of the signing key
+native/**/target/

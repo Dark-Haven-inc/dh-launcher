@@ -19,8 +19,8 @@
          would only be a stale fallback. dotnet publish keeps the number. -->
     <InformationalVersion Condition="'$(LauncherVersion)' == '' and '$(_IsPublishing)' != 'true'">dev</InformationalVersion>
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
-    <!-- The launcher holds the launch signing key and starts the game it vouches for: no startup hook
-         from the environment runs in it. Debug keeps them for hot reload. -->
+    <!-- The launcher hosts dh_guard, which holds the launch signing key and starts the game it vouches
+         for: no startup hook from the environment runs in it. Debug keeps them for hot reload. -->
     <StartupHookSupport Condition="'$(Configuration)' == 'Release'">false</StartupHookSupport>
   </PropertyGroup>
 

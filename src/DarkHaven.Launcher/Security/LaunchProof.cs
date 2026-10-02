@@ -5,22 +5,23 @@ using System.Text;
 namespace DarkHaven.Launcher.Security;
 
 /// <summary>
-/// The token this launcher signs so a Frontier 15 server can tell its players came through the genuine launcher and
-/// not the official one, a Marsey build or a hand-rolled client. The game server's <c>LaunchProof</c>
-/// (dh-sector-frontier, Content.Server/_DH/AntiCheat/Launcher) verifies it; both must agree:
+/// The token the launcher's native guard (<c>dh_guard</c>, native/dh-guard; see <see cref="Guard"/>) signs so a
+/// Frontier 15 server can tell its players came through the genuine launcher and not the official one, a Marsey build
+/// or a hand-rolled client. The game server's <c>LaunchProof</c> (dh-sector-frontier,
+/// Content.Server/_DH/AntiCheat/Launcher) verifies it; both must agree:
 /// <code>
 /// token     = base64url(payload) "." base64url(signature)
 /// payload   = "dh-launch/2\n" userId(guid, "D") "\n" base64url(challenge) "\n" launcherVersion      (UTF-8)
 /// signature = ECDSA P-256 over SHA-256 of the payload bytes, IEEE P1363 (r || s, 64 bytes)
 /// </code>
-/// The challenge is the server's nonce for one login followed by that session's auth hash; the game asks for the
-/// proof mid-handshake through <see cref="LaunchBroker"/>, so each proof is good for exactly one connection.
+/// The challenge is the server's nonce for one login followed by that session's auth hash; the game asks the guard's
+/// broker for the proof mid-handshake, so each proof is good for exactly one connection.
 /// </summary>
 /// <remarks>
 /// Version 1 (<c>"dh-launch/1\n" userId "\n" unixSeconds "\n" launcherVersion</c>) is signed once at start and put
 /// in <see cref="EnvVar"/> for servers that predate version 2; it goes once they all verify version 2.
-/// The signing key is built into release builds from a CI secret (see <see cref="LaunchSigningKey"/>), kept as split
-/// shares and never held whole (see <see cref="SplitEcdsa"/>).
+/// Nothing in C# signs with the release key any more: it is built into the guard only (docs/GUARD.md). What is left
+/// here is the format itself, signed with a whole key, as the reference the tests hold the guard's proofs to.
 /// </remarks>
 public static class LaunchProof
 {
@@ -33,7 +34,7 @@ public static class LaunchProof
     /// <summary>Bytes in a challenge: the server's 32-byte nonce and the 32-byte auth hash.</summary>
     public const int ChallengeLength = 64;
 
-    /// <summary>Signs a proof for a login with a whole key. Used by tests; production uses the split shares.</summary>
+    /// <summary>Signs a proof for a login with a whole key: the reference format. Releases sign in dh_guard.</summary>
     public static string Create(ECDsa key, Guid userId, ReadOnlySpan<byte> challenge, string launcherVersion)
     {
         var payload = Payload(userId, challenge, launcherVersion);
@@ -41,35 +42,12 @@ public static class LaunchProof
         return $"{ToBase64Url(payload)}.{ToBase64Url(signature)}";
     }
 
-    /// <summary>Signs a version 1 proof with a whole key. Used by tests and the CLI.</summary>
+    /// <summary>Signs a version 1 proof with a whole key: the reference format.</summary>
     public static string CreateV1(ECDsa key, Guid userId, DateTimeOffset issued, string launcherVersion)
     {
         var payload = PayloadV1(userId, issued, launcherVersion);
         var signature = key.SignData(payload, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         return $"{ToBase64Url(payload)}.{ToBase64Url(signature)}";
-    }
-
-    /// <summary>
-    /// A proof for this account's login with <paramref name="challenge"/>, from this build's split signing key, or
-    /// null if the build has none (dev builds).
-    /// </summary>
-    public static string? TryCreate(Guid userId, ReadOnlySpan<byte> challenge)
-    {
-        if (LaunchSigningKey.Shares is not { Count: > 0 } shares)
-            return null;
-
-        var payload = Payload(userId, challenge, LauncherInfo.Version);
-        return $"{ToBase64Url(payload)}.{ToBase64Url(SplitEcdsa.SignData(shares, payload))}";
-    }
-
-    /// <summary>A version 1 proof for this account, or null in a build without a key.</summary>
-    public static string? TryCreateV1(Guid userId)
-    {
-        if (LaunchSigningKey.Shares is not { Count: > 0 } shares)
-            return null;
-
-        var payload = PayloadV1(userId, DateTimeOffset.UtcNow, LauncherInfo.Version);
-        return $"{ToBase64Url(payload)}.{ToBase64Url(SplitEcdsa.SignData(shares, payload))}";
     }
 
     private static byte[] Payload(Guid userId, ReadOnlySpan<byte> challenge, string launcherVersion)
@@ -105,21 +83,13 @@ public static class LaunchProof
 }
 
 /// <summary>
-/// The release signing key, as additive shares the source generator lays out at build time from the <c>DhLaunchKey</c>
-/// MSBuild property (CI passes the <c>DH_LAUNCH_SIGNING_KEY</c> secret). <see cref="Shares"/> is null in builds without
-/// it. The key is never stored or reconstructed whole; signing sums the shares (<see cref="SplitEcdsa"/>).
+/// How the release signing key is sealed for the <c>DH_LAUNCH_SIGNING_KEY</c> secret: the 32-byte P-256 private scalar
+/// XOR <c>SHA256("dh-launch-mask/1")</c>, base64. <c>dhlauncher launch-key</c> prints it this way; the guard's build
+/// script (native/dh-guard/build.rs) unseals it and splits it into shares. The launcher itself never holds the key.
 /// </summary>
-public static partial class LaunchSigningKey
+public static class LaunchSigningKey
 {
     private static readonly byte[] Mask = SHA256.HashData(Encoding.ASCII.GetBytes("dh-launch-mask/1"));
-
-    private static readonly Lazy<IReadOnlyList<byte[]>?> LazyShares = new(LoadShares);
-
-    /// <summary>The key's shares (each 32 bytes, summing to the private scalar mod n), or null in a keyless build.</summary>
-    public static IReadOnlyList<byte[]>? Shares => LazyShares.Value;
-
-    // Filled in by DarkHaven.Launcher.KeyGen at compile time; returns null when no key was supplied.
-    private static partial IReadOnlyList<byte[]>? LoadShares();
 
     /// <summary>Masks a 32-byte private scalar for the CI secret, as <c>dhlauncher launch-key</c> prints it.</summary>
     public static string SealScalar(byte[] scalar) => Convert.ToBase64String(ApplyMask(scalar));

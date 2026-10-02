@@ -1,0 +1,62 @@
+name: dh_guard check
+
+# dh_guard (native/dh-guard, docs/GUARD.md) on both systems the launcher ships for: its own tests (the named-pipe
+# broker's run only on Windows, the end-to-end launch only on Linux), then the launcher's side of it through the
+# development guard. Runs when the guard or the code around it changes, and by hand.
+on:
+  push:
+    paths:
+      - 'native/**'
+      - 'src/DarkHaven.Launcher/DhGuard.targets'
+      - 'src/DarkHaven.Launcher/Security/**'
+      - 'src/DarkHaven.Launcher/Update/Game*.cs'
+      - 'src/DarkHaven.Launcher/Update/LoaderCopy.cs'
+      - 'tests/DarkHaven.Launcher.Tests/**'
+      - 'Directory.Build.targets'
+      - '.github/workflows/guard.yml'
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'src/DarkHaven.Launcher/DhGuard.targets'
+      - 'src/DarkHaven.Launcher/Security/**'
+      - 'src/DarkHaven.Launcher/Update/Game*.cs'
+      - 'src/DarkHaven.Launcher/Update/LoaderCopy.cs'
+      - 'tests/DarkHaven.Launcher.Tests/**'
+      - 'Directory.Build.targets'
+      - '.github/workflows/guard.yml'
+  workflow_dispatch:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          cargo --version
+
+      - name: cargo test (dh_guard)
+        working-directory: native/dh-guard
+        run: cargo test --locked
+
+      # Builds DarkHaven.Launcher, and with it dh_guard through cargo again (DhGuard.targets).
+      - name: dotnet test (the launcher's side)
+        run: dotnet test tests/DarkHaven.Launcher.Tests -c Release --filter "FullyQualifiedName~Guard|FullyQualifiedName~GameLauncher|FullyQualifiedName~LaunchProof|FullyQualifiedName~LoaderCopy|FullyQualifiedName~LaunchErrors" --logger "console;verbosity=normal"

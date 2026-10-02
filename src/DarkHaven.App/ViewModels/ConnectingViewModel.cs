@@ -208,21 +208,22 @@ public partial class ConnectingViewModel : ViewModelBase
             : speed;
     }
 
-    private async Task WatchProcessAsync(Process proc)
+    private async Task WatchProcessAsync(GameProcess game)
     {
         var sinceLaunch = Stopwatch.StartNew();
-        var exited = proc.WaitForExitAsync();
+        var exited = game.WaitForExitAsync();
 
         // Give the client a moment; once it's clearly up, get out of the way. Watching continues —
         // the 0.2.2 loader failure took a few seconds to surface, well after this card had closed.
         await Task.WhenAny(exited, Task.Delay(1500));
-        if (!proc.HasExited)
+        if (!game.HasExited)
             Dispatcher.UIThread.Post(Close);
 
         // WaitForExitAsync also waits for the redirected output to drain, so the tail is complete.
         await exited;
-        var code = proc.ExitCode;
+        var code = game.ExitCode;
         var elapsed = sinceLaunch.Elapsed;
+        game.Dispose();
 
         Dispatcher.UIThread.Post(() =>
         {

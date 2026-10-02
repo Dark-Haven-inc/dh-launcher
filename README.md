@@ -19,10 +19,16 @@ self-update + one-click install via Velopack. See
 | `src/DarkHaven.Cli` (`dhlauncher`) | dev/debug console |
 | `src/DarkHaven.Loader` | in-process engine loader (+ vendored engine native libs in `natives/`) |
 | `src/DarkHaven.App` | Avalonia UI (`DarkHavenLauncher.exe`) |
+| `native/dh-guard` | Rust cdylib `dh_guard`, the trust core loaded in-process: starts the game, checks the loader and engine in release builds, signs launch proofs ([`docs/GUARD.md`](docs/GUARD.md)) |
 | `Robust.LoaderApi` | submodule, MIT — the engine⇄loader interface contract |
 | `tests/DarkHaven.Launcher.Tests` | xUnit |
 
 ## Build & try
+
+Needs the .NET 10 SDK and a stable Rust toolchain ([rustup](https://rustup.rs)): building
+`DarkHaven.Launcher` runs cargo for `native/dh-guard` and copies `dh_guard.dll` / `libdh_guard.so` next to
+the launcher (`src/DarkHaven.Launcher/DhGuard.targets`). A development build of the guard signs nothing;
+`-p:DhGuardSkipCargo=true` builds without cargo, but then the launcher cannot start the game.
 
 ```
 git submodule update --init
@@ -76,6 +82,7 @@ build one (`.github/workflows/release.yml`), or run `scripts/pack-release.ps1 -V
 
 C# / .NET 10, Avalonia 11 (UI), Velopack (install + self-update). Pure-managed deps where possible:
 `Microsoft.Data.Sqlite`, `ZstdSharp.Port`, `SauceControl.Blake2Fast`, `NSec.Cryptography` (Ed25519).
+The anti-cheat trust core (`dh_guard`) is Rust, so it is not shipped as decompilable IL.
 
 ## Licence
 

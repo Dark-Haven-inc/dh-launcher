@@ -44,7 +44,8 @@ if ($existing -contains "DH_LAUNCH_SIGNING_KEY") {
 }
 
 Write-Host "Building the CLI..."
-dotnet build src/DarkHaven.Cli -c Release -v q -nologo | Out-Null
+# launch-key needs nothing from dh_guard, so no Rust toolchain either.
+dotnet build src/DarkHaven.Cli -c Release -v q -nologo -p:DhGuardSkipCargo=true | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "the CLI did not build" }
 
 $output = @(dotnet run --no-build --project src/DarkHaven.Cli -c Release -- launch-key)

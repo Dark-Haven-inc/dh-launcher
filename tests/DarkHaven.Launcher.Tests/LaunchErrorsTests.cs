@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using DarkHaven.Launcher.Security;
 using DarkHaven.Launcher.Update;
 using Xunit;
 
@@ -35,5 +36,16 @@ public class LaunchErrorsTests
     {
         const string ours = "Сервер не сообщил информацию о сборке";
         Assert.Equal(ours, LaunchErrors.Describe(new InvalidOperationException(ours)));
+    }
+
+    [Fact]
+    public void A_guard_refusal_says_the_launcher_is_damaged()
+    {
+        var refused = new GuardException(GuardStatus.Refused, "refused to launch: loader file x.dll has been modified");
+        var failed = new GuardException(GuardStatus.Os, "could not start the game: no such file");
+
+        Assert.Contains("Переустановите", LaunchErrors.Describe(refused));
+        Assert.Contains("x.dll", LaunchErrors.Describe(refused));
+        Assert.StartsWith("Не удалось запустить игру", LaunchErrors.Describe(failed));
     }
 }

@@ -7,7 +7,6 @@
     <Project Path="src/DarkHaven.Cli/DarkHaven.Cli.csproj" />
     <Project Path="src/DarkHaven.ContentDb/DarkHaven.ContentDb.csproj" />
     <Project Path="src/DarkHaven.Launcher/DarkHaven.Launcher.csproj" />
-    <Project Path="src/DarkHaven.Launcher.KeyGen/DarkHaven.Launcher.KeyGen.csproj" />
     <Project Path="src/DarkHaven.Loader/DarkHaven.Loader.csproj" />
   </Folder>
   <Folder Name="/tests/">

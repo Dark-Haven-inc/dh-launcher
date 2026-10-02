@@ -112,17 +112,31 @@ then commit `PKGBUILD`, `.SRCINFO`, `frontier15-launcher.desktop` and `LICENSE` 
 Maintainer line in the PKGBUILD before the first push).
 ### Launch-proof signing key
 
-Frontier 15 servers can require that players come through this launcher. While the game runs, the launcher keeps
-a local endpoint open (`src/DarkHaven.Launcher/Security/LaunchBroker.cs`: a named pipe on Windows, a Unix socket on
-Linux) that answers only the game process it started; at every login the game asks it to sign a launch proof over
-the server's nonce and the session's auth hash (`Security/LaunchProof.cs`), and the server checks the signature and
+Frontier 15 servers can require that players come through this launcher. The launcher's native guard
+(`dh_guard`, Rust, `native/dh-guard`; [`GUARD.md`](GUARD.md)) starts the game and, while it runs, keeps a local
+endpoint open (a named pipe on Windows, a Unix socket on Linux) that answers only the game process it started; at
+every login the game asks it to sign a launch proof over the server's nonce and the session's auth hash
+(`src/DarkHaven.Launcher/Security/LaunchProof.cs` describes the format), and the server checks the signature and
 that the proof was made for this very login (`anticheat.launch.*` cvars on the game server). A proof is good for
 one connection, so one lifted from the game is worthless. Closing the launcher while the game runs means the next
-reconnect has no proof. The signing key is built into release builds from the
-`DH_LAUNCH_SIGNING_KEY` repository secret; local and CI builds without it sign nothing. In the build the key is
-split into shares (the `DarkHaven.Launcher.KeyGen` source generator) and never stored or reconstructed whole, and
-the layout changes whenever the key is rotated - so the key cannot be lifted out of a build as one value, and a
-tool written to scrape one release does not carry to the next.
+reconnect has no proof.
+
+The signing key goes into the guard, and only there: release builds get it from the `DH_LAUNCH_SIGNING_KEY`
+repository secret through the environment of the guard's cargo build (`scripts/pack-release.ps1`); local and CI
+builds without it sign nothing. No C# code can sign with it. The guard's build script splits it into masked
+shares that are never stored or reconstructed whole, with a layout that changes whenever the key is rotated, so
+the key cannot be lifted out of a build as one value, and a tool written to scrape one release does not carry to
+the next.
+
+A keyed guard also refuses to start anything but the loader it shipped with: `pack-release.ps1` publishes the
+loader first (without symbols and `createdump`, which vpk leaves out of the packages), writes the SHA-256 of every
+file in it to `artifacts/loader-pins.txt`, builds the guard with those pins (`DH_GUARD_LOADER_PINS`), checks
+afterwards that publishing the app left `loader/` untouched, and after `vpk pack` that the loader in the full
+package is exactly the pinned one (on Linux it reads it out of the AppImage with `unsquashfs`, from the
+squashfs-tools the job installs for vpk anyway). The guard
+starts `DarkHaven.Loader[.exe]` only from a directory holding exactly those files (the AppImage's copy of it
+included), and only with a bundled engine from `manifest.json` or one signed with the SS14 engine key. Nothing
+has to be done by hand for this; it only means the loader must not be changed after it is pinned.
 
 Set up or rotate the key:
 
@@ -132,18 +146,31 @@ Set up or rotate the key:
 2. The private value only ever goes into that secret. Never commit it.
 3. The second value is appended to `anticheat.launch.public_keys` on every game server (comma-separated). Keep the
    previous key there until players have updated past the release that used it, then remove it.
-4. Cut a release. `dotnet build src/DarkHaven.Cli -p:DhLaunchKey=<secret>` then
-   `dotnet run --no-build --project src/DarkHaven.Cli -- launch-proof` checks locally that a build carries the key
-   (it prints how many shares the key was split into and a sample proof for a random login challenge).
+4. Cut a release. To check a keyed build locally, build the CLI with the key and pins in the environment and ask
+   it. The cargo target directory must be a fresh private one (`mktemp -d` makes it 0700): a keyed one holds
+   derivatives of the key, cargo even records the variable's value in it, so delete it afterwards.
+
+   ```
+   check=$(mktemp -d)
+   DH_LAUNCH_SIGNING_KEY=<secret> DH_GUARD_LOADER_PINS=artifacts/loader-pins.txt \
+       dotnet build src/DarkHaven.Cli -p:LauncherVersion=0.0.0-check "-p:DhGuardCargoTargetDir=$check"
+   rm -rf "$check"
+   dotnet run --no-build --project src/DarkHaven.Cli -- launch-proof
+   ```
+
+   It prints whether the guard signs, how many loader files it pins, the version it puts in
+   proofs and its public key, which must be one of the servers' `anticheat.launch.public_keys`. A relative
+   `DH_GUARD_LOADER_PINS` is taken from the directory the build was started in. A plain `dotnet build` afterwards
+   puts the development guard back.
 
 The key ships inside every copy of the launcher, so a determined person can dig it out; rotating it with releases
 limits how long a leaked key is any use. Servers start in `anticheat.launch.mode log` - watch the admin log for
 players still arriving without a proof before switching to `enforce`.
 
-The launcher still also puts an old-style proof (signed once at start, valid for hours) in `DH_LAUNCH_PROOF`, for
+The guard still also puts an old-style proof (signed once at start, valid for hours) in `DH_LAUNCH_PROOF`, for
 servers that predate login-bound proofs. Servers only take it with `anticheat.launch.accept_v1 true` (off by
-default). Order of rollout: release the launcher first, then update the servers; once no server needs it, drop
-`TryCreateV1` from `GameLauncher`.
+default). Order of rollout: release the launcher first, then update the servers; once no server needs it, drop the
+v1 proof from `native/dh-guard/src/launch.rs`.
 
 ## Local test of the update flow
 
