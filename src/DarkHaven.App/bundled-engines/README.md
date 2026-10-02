@@ -21,6 +21,9 @@ gh release download engine-bundles --repo Dark-Haven-inc/dh-launcher -D . -p '*.
 
 | engine | RID | RT commit | server |
 |--------|-----|-----------|--------|
+| `275.1.0-1e7195f2.zip` | win-x64 | `1e7195f29763bd5c2738b2b9872635ac068d9872` | dh-sector-frontier master `ecc5945c2f` (chvl's multi-world host). Content on it needs `WorldSwitchEventArgs`, so 0.4.0 and older crash in the type check on ХЕЙВЕН (2026-10-02). |
+| `275.1.0-1e7195f2_linux-x64.zip` | linux-x64 | `1e7195f29763bd5c2738b2b9872635ac068d9872` | same. |
+| `275.1.0-50c33c36.zip`, `_linux-x64.zip` | both | `50c33c36a4c0b1ac46aca58449e46c24113994db` | launcher 0.3.10–0.4.0 (broadphase fix). |
 | `275.1.0-d9acf620.zip` | win-x64 | `d9acf620a94d1229bfd265a8a33701f372a4a918` | dh-sector-frontier master `52af13a7` (launch proof in the handshake). Verified 2026-09-27: joins a local server on that build AND one on the older `875c455c` (engine `c333ccb58`), both in game. |
 | `275.1.0-d9acf620_linux-x64.zip` | linux-x64 | `d9acf620a94d1229bfd265a8a33701f372a4a918` | same. |
 
