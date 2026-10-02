@@ -1,0 +1,65 @@
+[package]
+name = "dh-guard"
+version = "0.1.0"
+edition = "2024"
+description = "The Dark Haven launcher's trust core: starts the genuine loader and signs launch proofs for it."
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[lib]
+name = "dh_guard"
+# cdylib is what the launcher loads; rlib lets the integration tests reach the internals.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+base64 = "0.23.1"
+ed25519-dalek = "3.0.0"
+getrandom = "0.4.3"
+os_pipe = "1.2.3"
+p256 = { version = "0.14.0", default-features = false, features = ["arithmetic"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
+# No "timeout" feature: it installs a SIGCHLD handler, which has no business inside the .NET host.
+shared_child = { version = "1.1.2", default-features = false }
+uuid = { version = "1.26.1", features = ["serde"] }
+zeroize = "1.9.0"
+
+[target."cfg(unix)".dependencies]
+libc = "0.2.189"
+
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Pipes",
+    "Win32_System_IO",
+    "Win32_System_Threading",
+    "Win32_Storage_FileSystem",
+] }
+
+[build-dependencies]
+base64 = "0.23.1"
+p256 = { version = "0.14.0", default-features = false, features = ["arithmetic"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
+
+[dev-dependencies]
+ed25519-dalek = "3.0.0"
+p256 = { version = "0.14.0", default-features = false, features = ["arithmetic", "ecdsa", "pkcs8"] }
+tempfile = "3.27.0"
+
+[[test]]
+name = "launch"
+path = "tests/launch.rs"
+# The test binary doubles as the fake loader it launches, so it needs its own main.
+harness = false
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+panic = "unwind"
+debug = false

@@ -76,6 +76,15 @@ jobs:
           fi
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
+      # dh_guard (native/dh-guard), the launcher's native trust core, is built by cargo during the app's publish.
+      # The runners ship rustup; make sure the stable toolchain is current.
+      - name: Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          cargo --version
+
       - name: Restore tools
         run: dotnet tool restore
 
@@ -118,7 +127,8 @@ jobs:
               --token "${{ github.token }}" || echo "no prior release yet — first cut"
           fi
 
-      # DH_LAUNCH_SIGNING_KEY: the launch-proof signing key (`dhlauncher launch-key`). Without it the release still
+      # DH_LAUNCH_SIGNING_KEY: the launch-proof signing key (`dhlauncher launch-key`), built into dh_guard only. The
+      # script pins the published loader for it first (DH_GUARD_LOADER_PINS). Without the key the release still
       # builds, but signs nothing, and Frontier 15 servers enforcing the launcher check turn its players away.
       - name: Pack release
         env:
@@ -200,6 +210,15 @@ jobs:
       # vpk builds the AppImage with mksquashfs.
       - name: Install squashfs-tools
         run: sudo apt-get update -qq && sudo apt-get install -y -qq squashfs-tools
+
+      # dh_guard (native/dh-guard), the launcher's native trust core, is built by cargo during the app's publish.
+      # The runners ship rustup; make sure the stable toolchain is current.
+      - name: Rust toolchain
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          cargo --version
 
       # The version ends up inside later commands (pwsh, vpk): only a plain version number gets that far.
       - name: Resolve version

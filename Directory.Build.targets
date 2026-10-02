@@ -1,0 +1,9 @@
+<Project>
+
+  <!--
+    dh_guard (docs/GUARD.md): DarkHaven.Launcher builds the native library and every project that references it ships
+    it, so both halves live in one file, imported into every project here.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)src/DarkHaven.Launcher/DhGuard.targets" />
+
+</Project>

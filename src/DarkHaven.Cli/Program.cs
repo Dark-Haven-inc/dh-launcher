@@ -65,7 +65,7 @@ try
             NewLaunchKey();
             break;
         case "launch-proof":
-            ShowLaunchProof(positional.ElementAtOrDefault(1), positional.ElementAtOrDefault(2));
+            ShowLaunchProof();
             break;
         default:
             Log.Information("Frontier 15 Launcher — dev CLI (data dir: {Dir})", LauncherPaths.DataDir);
@@ -79,7 +79,7 @@ try
             Log.Information("  regions                                   Frontier 15 sector, live");
             Log.Information("  platform <api-base-url>                   sign in to DarkHaven.Platform.Api with the active account, dump the profile");
             Log.Information("  launch-key                                new launch-proof key pair: CI secret + server public key");
-            Log.Information("  launch-proof [user-guid] [challenge]      whether this build can sign launch proofs, and a sample one");
+            Log.Information("  launch-proof                              what this build's dh_guard signs with: key, pinned loader, public key");
             Log.Information("  -v for debug logging");
             break;
     }
@@ -97,12 +97,13 @@ finally
 return 0;
 
 // A fresh key pair for launch proofs (see Security/LaunchProof.cs). The private half goes into the
-// DH_LAUNCH_SIGNING_KEY secret of the release workflow, the public half into the game servers'
-// anticheat.launch.public_keys (next to the previous release's key, until players have updated).
+// DH_LAUNCH_SIGNING_KEY secret of the release workflow, which builds it into dh_guard (native/dh-guard), the public
+// half into the game servers' anticheat.launch.public_keys (next to the previous release's key, until players have
+// updated).
 void NewLaunchKey()
 {
     using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
-    var scalar = key.ExportParameters(true).D!; // the 32-byte private scalar; the build splits it into shares
+    var scalar = key.ExportParameters(true).D!; // the 32-byte private scalar; the guard's build splits it into shares
     var secret = DarkHaven.Launcher.Security.LaunchSigningKey.SealScalar(scalar);
     var publicKey = Convert.ToBase64String(key.ExportSubjectPublicKeyInfo());
 
@@ -113,33 +114,24 @@ void NewLaunchKey()
     Console.WriteLine(publicKey);
 }
 
-// Checks a build: does it carry a signing key, and what proof would it hand the game for this account's login with
-// the given challenge (base64url, 64 bytes; random if omitted).
-void ShowLaunchProof(string? user, string? challengeText)
+// Checks a build: what its dh_guard signs launch proofs with. Proofs themselves are only ever signed by the guard for
+// the game it started, so there is no sample to print; compare the public key with the servers' instead.
+void ShowLaunchProof()
 {
-    var userId = Guid.TryParse(user, out var parsed) ? parsed : Guid.Empty;
-    byte[] challenge;
-    if (challengeText is null)
+    var info = DarkHaven.Launcher.Security.Guard.Info();
+    Console.WriteLine($"dh_guard ABI {info.AbiVersion}");
+    if (!info.HasKey)
     {
-        challenge = System.Security.Cryptography.RandomNumberGenerator.GetBytes(DarkHaven.Launcher.Security.LaunchProof.ChallengeLength);
-    }
-    else if (!DarkHaven.Launcher.Security.LaunchProof.TryFromBase64Url(challengeText, out challenge) ||
-             challenge.Length != DarkHaven.Launcher.Security.LaunchProof.ChallengeLength)
-    {
-        Console.WriteLine($"A challenge is {DarkHaven.Launcher.Security.LaunchProof.ChallengeLength} bytes, base64url.");
+        Console.WriteLine("Signs launch proofs:     no (a development guard, built without DH_LAUNCH_SIGNING_KEY)");
+        Console.WriteLine($"Launcher version:        {info.LauncherVersion}");
         return;
     }
 
-    var proof = DarkHaven.Launcher.Security.LaunchProof.TryCreate(userId, challenge);
-    if (proof == null)
-    {
-        Console.WriteLine("This build has no launch-proof signing key (built without -p:DhLaunchKey).");
-        return;
-    }
-
-    var shareCount = DarkHaven.Launcher.Security.LaunchSigningKey.Shares!.Count;
-    Console.WriteLine($"This build carries the signing key as {shareCount} shares.");
-    Console.WriteLine($"Proof for {userId}: {proof}");
+    Console.WriteLine("Signs launch proofs:     yes");
+    Console.WriteLine($"Pinned loader files:     {info.PinnedFiles}");
+    Console.WriteLine($"Version in proofs:       {info.LauncherVersion}");
+    Console.WriteLine("Public key (must be in the servers' anticheat.launch.public_keys):");
+    Console.WriteLine(Convert.ToBase64String(info.PublicKey));
 }
 
 async Task Probe(string? target)
@@ -238,10 +230,10 @@ async Task Update(string? target, bool launch)
     Log.Information("Launching client via {Loader}", loader);
     var game = new GameLauncher(loader, LocateSigningKey(), engines, LauncherPaths.ContentDbPath);
     var extraCvars = flags.Contains("--net-debug") ? new[] { "net.logging=true" } : null;
-    var proc = game.Start(resolved, manifest, gameAccount, compatMode: flags.Contains("--compat"), redirectOutput: false, extraCvars: extraCvars);
+    using var proc = game.Start(resolved, manifest, gameAccount, compatMode: flags.Contains("--compat"), redirectOutput: false, extraCvars: extraCvars);
     Log.Information("Client PID {Pid} — waiting for exit", proc.Id);
     await proc.WaitForExitAsync();
-    Log.Information("Client exited with code {Code}", proc.ExitCode);
+    Log.Information("Client exited with code {Code} ({Signed} launch proofs signed)", proc.ExitCode, proc.Signed);
 }
 
 AccountManager AccountManagerFromDisk()

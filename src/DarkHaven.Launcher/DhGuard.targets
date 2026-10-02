@@ -1,0 +1,125 @@
+<Project>
+
+  <!--
+    dh_guard (native/dh-guard, docs/GUARD.md): the launcher's trust core, a Rust cdylib loaded in-process through
+    Security/Guard.cs. Every build of DarkHaven.Launcher runs cargo for it and ships the library (dh_guard.dll /
+    libdh_guard.so) as a content file, so it lands next to the assemblies of every project that references this one
+    (App, Cli, Tests), in both build and publish output.
+
+    Directory.Build.targets imports this file into every project. DarkHaven.Launcher builds the library; every other
+    project that references it, directly or not, only checks that a build or publish for a RuntimeIdentifier ships the
+    library for that RID (DhGuardCheckRid, below).
+
+    Cargo runs on every build: it is a no-op when nothing changed, and it alone notices a change of the build inputs
+    it reads from the environment (below), which MSBuild's own up-to-date checks cannot see.
+
+    Inputs:
+      DH_LAUNCH_SIGNING_KEY  (environment only, never a property: it would end up in logs and process lists) - the
+                             sealed release key; unset gives a development guard that signs nothing. Nothing here
+                             expands it, but -v:diag and -bl record the whole environment: not for keyed builds.
+      DH_GUARD_LOADER_PINS   (environment) - the pinned loader files; a keyed build requires it. A relative path is
+                             taken from the directory the build was started in (cargo itself runs in native/dh-guard).
+      LauncherVersion        (property) - the version the proofs state, passed on as DH_LAUNCHER_VERSION. The same
+                             property sets the App's version (DarkHaven.App.csproj), so LauncherInfo.Version and the
+                             proofs agree. Without it the guard states 0.0.0-dev.
+      DhGuardRid             (property) - the RID to build for; default this project's RuntimeIdentifier, else the
+                             build machine's. A publish for another RID passes it (scripts/pack-release.ps1 does),
+                             since a class library is built without the app's RuntimeIdentifier.
+      DhGuardCargoTargetDir  (property, absolute) - cargo's target directory; default artifacts/cargo/. A keyed
+                             build's holds derivatives of the key: point it at a fresh owner-only (0700) directory
+                             for those, and delete it afterwards.
+      DhGuardCargo           (property) - the cargo executable; default $CARGO_HOME/bin, ~/.cargo/bin, then PATH.
+      DhGuardSkipCargo=true  - do not run cargo; a library already at the output path is still shipped.
+  -->
+
+  <PropertyGroup>
+    <_DhGuardHost Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileDirectory)DarkHaven.Launcher.csproj'">true</_DhGuardHost>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_DhGuardHost)' == 'true'">
+    <DhGuardCrateDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'native', 'dh-guard'))</DhGuardCrateDir>
+    <DhGuardCargoTargetDir Condition="'$(DhGuardCargoTargetDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'artifacts', 'cargo'))</DhGuardCargoTargetDir>
+    <!-- DhGuardCargoTargetDir may come in as a global property, which cannot be reassigned: normalise a copy. -->
+    <_DhGuardTargetDir>$([MSBuild]::NormalizeDirectory('$(DhGuardCargoTargetDir)'))</_DhGuardTargetDir>
+
+    <DhGuardRid Condition="'$(DhGuardRid)' == ''">$(RuntimeIdentifier)</DhGuardRid>
+    <DhGuardRid Condition="'$(DhGuardRid)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</DhGuardRid>
+
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'win-x64'">x86_64-pc-windows-msvc</DhGuardTriple>
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'win-arm64'">aarch64-pc-windows-msvc</DhGuardTriple>
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'linux-x64'">x86_64-unknown-linux-gnu</DhGuardTriple>
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'linux-arm64'">aarch64-unknown-linux-gnu</DhGuardTriple>
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'osx-x64'">x86_64-apple-darwin</DhGuardTriple>
+    <DhGuardTriple Condition="'$(DhGuardRid)' == 'osx-arm64'">aarch64-apple-darwin</DhGuardTriple>
+
+    <DhGuardLibraryName Condition="$(DhGuardRid.StartsWith('win-'))">dh_guard.dll</DhGuardLibraryName>
+    <DhGuardLibraryName Condition="$(DhGuardRid.StartsWith('osx-'))">libdh_guard.dylib</DhGuardLibraryName>
+    <DhGuardLibraryName Condition="'$(DhGuardLibraryName)' == ''">libdh_guard.so</DhGuardLibraryName>
+    <DhGuardLibraryPath>$(_DhGuardTargetDir)$(DhGuardTriple)/release/$(DhGuardLibraryName)</DhGuardLibraryPath>
+
+    <!-- Whether the key is set, without ever expanding it into a property or a logged condition. -->
+    <_DhGuardKeyed Condition="!$([System.String]::IsNullOrEmpty($([System.Environment]::GetEnvironmentVariable('DH_LAUNCH_SIGNING_KEY'))))">true</_DhGuardKeyed>
+
+    <!-- cargo runs build.rs in the crate's directory, and MSBuild builds each project in its own: a relative pins path
+         would resolve against either. Make it absolute against where the build was started. -->
+    <_DhGuardPins>$([System.Environment]::GetEnvironmentVariable('DH_GUARD_LOADER_PINS'))</_DhGuardPins>
+    <_DhGuardPins Condition="'$(_DhGuardPins)' != ''">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildStartupDirectory)', '$(_DhGuardPins)'))))</_DhGuardPins>
+    <_DhGuardCargoEnv>DH_LAUNCHER_VERSION=$(LauncherVersion)</_DhGuardCargoEnv>
+    <_DhGuardCargoEnv Condition="'$(_DhGuardPins)' != ''">$(_DhGuardCargoEnv);DH_GUARD_LOADER_PINS=$([MSBuild]::Escape('$(_DhGuardPins)'))</_DhGuardCargoEnv>
+
+    <_DhGuardExe Condition="$([MSBuild]::IsOSPlatform('Windows'))">.exe</_DhGuardExe>
+    <DhGuardCargo Condition="'$(DhGuardCargo)' == '' and '$(CARGO_HOME)' != '' and Exists('$(CARGO_HOME)/bin/cargo$(_DhGuardExe)')">$(CARGO_HOME)/bin/cargo$(_DhGuardExe)</DhGuardCargo>
+    <DhGuardCargo Condition="'$(DhGuardCargo)' == '' and '$(USERPROFILE)' != '' and Exists('$(USERPROFILE)/.cargo/bin/cargo$(_DhGuardExe)')">$(USERPROFILE)/.cargo/bin/cargo$(_DhGuardExe)</DhGuardCargo>
+    <DhGuardCargo Condition="'$(DhGuardCargo)' == '' and '$(HOME)' != '' and Exists('$(HOME)/.cargo/bin/cargo')">$(HOME)/.cargo/bin/cargo</DhGuardCargo>
+    <DhGuardCargo Condition="'$(DhGuardCargo)' == ''">cargo</DhGuardCargo>
+  </PropertyGroup>
+
+  <!-- Always copied: a dev and a keyed build of the same library must never be mistaken for each other by date. -->
+  <ItemGroup Condition="'$(_DhGuardHost)' == 'true' and '$(DhGuardTriple)' != '' and ('$(DhGuardSkipCargo)' != 'true' or Exists('$(DhGuardLibraryPath)'))">
+    <None Include="$(DhGuardLibraryPath)" Link="$(DhGuardLibraryName)" Visible="false"
+          CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
+  <Target Name="DhGuardBuild" BeforeTargets="AssignTargetPaths"
+          Condition="'$(_DhGuardHost)' == 'true' and '$(DhGuardSkipCargo)' != 'true' and '$(DesignTimeBuild)' != 'true'">
+    <Error Condition="'$(DhGuardTriple)' == ''"
+           Text="dh_guard: no Rust target for RID '$(DhGuardRid)' (supported: win-x64, win-arm64, linux-x64, linux-arm64, osx-x64, osx-arm64). Pass -p:DhGuardRid=..., or -p:DhGuardSkipCargo=true to build without the guard." />
+    <Error Condition="'$(_DhGuardKeyed)' == 'true' and '$(LauncherVersion)' == ''"
+           Text="dh_guard: DH_LAUNCH_SIGNING_KEY is set but LauncherVersion is not: a keyed guard must state the version the launcher reports (-p:LauncherVersion=x.y.z)." />
+
+    <Exec Command="&quot;$(DhGuardCargo)&quot; --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="low" StandardErrorImportance="low" EchoOff="true">
+      <Output TaskParameter="ExitCode" PropertyName="_DhGuardCargoExit" />
+    </Exec>
+    <Error Condition="'$(_DhGuardCargoExit)' != '0'"
+           Text="dh_guard: cargo was not found ('$(DhGuardCargo)'). Install Rust (https://rustup.rs), pass -p:DhGuardCargo=/path/to/cargo, or build with -p:DhGuardSkipCargo=true (the launcher then cannot start the game)." />
+
+    <!-- quiet: only warnings and errors, and those at high importance so a failure is readable at any verbosity. -->
+    <Exec Command="&quot;$(DhGuardCargo)&quot; build --release --locked --quiet --color never --manifest-path &quot;$(DhGuardCrateDir)Cargo.toml&quot; --target $(DhGuardTriple) --target-dir &quot;$([System.IO.Path]::TrimEndingDirectorySeparator('$(_DhGuardTargetDir)'))&quot;"
+          WorkingDirectory="$(DhGuardCrateDir)"
+          EnvironmentVariables="$(_DhGuardCargoEnv)"
+          StandardOutputImportance="high" StandardErrorImportance="high" />
+
+    <Error Condition="!Exists('$(DhGuardLibraryPath)')" Text="dh_guard: cargo succeeded but $(DhGuardLibraryPath) is missing." />
+  </Target>
+
+  <!--
+    Every other project: DarkHaven.Launcher is a class library, built without this project's RuntimeIdentifier, so it
+    builds the guard for DhGuardRid, else the build machine. A build or publish for another RID must say so
+    (scripts/pack-release.ps1 passes -p:DhGuardRid), or it would ship the wrong library. ProjectReference holds the
+    transitive references too by now.
+  -->
+  <Target Name="DhGuardCheckRid" BeforeTargets="ResolveProjectReferences"
+          Condition="'$(_DhGuardHost)' != 'true' and '$(RuntimeIdentifier)' != '' and '$(DhGuardSkipCargo)' != 'true' and '$(DesignTimeBuild)' != 'true'">
+    <ItemGroup>
+      <_DhGuardLauncherReference Include="@(ProjectReference)" Condition="'%(Filename)' == 'DarkHaven.Launcher'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_DhGuardBuiltRid>$(DhGuardRid)</_DhGuardBuiltRid>
+      <_DhGuardBuiltRid Condition="'$(_DhGuardBuiltRid)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</_DhGuardBuiltRid>
+    </PropertyGroup>
+    <Error Condition="'@(_DhGuardLauncherReference)' != '' and '$(_DhGuardBuiltRid)' != '$(RuntimeIdentifier)'"
+           Text="dh_guard would be built for $(_DhGuardBuiltRid), but this build is for $(RuntimeIdentifier): pass -p:DhGuardRid=$(RuntimeIdentifier) (with that Rust target installed)." />
+  </Target>
+
+</Project>

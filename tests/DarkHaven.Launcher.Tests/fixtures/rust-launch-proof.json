@@ -1,0 +1,9 @@
+{
+  "challenge": "AQQHCg0QExYZHB8iJSgrLjE0Nzo9QENGSUxPUlVYW15hZGdqbXBzdnl8f4KFiIuOkZSXmp2go6aprK-ytbi7vg",
+  "comment": "Written by native/dh-guard/tests/fixture.rs: a v2 launch proof from the Rust split signer.",
+  "launcherVersion": "9.9.9",
+  "payload": "dh-launch/2\n11111111-2222-3333-4444-555555555555\nAQQHCg0QExYZHB8iJSgrLjE0Nzo9QENGSUxPUlVYW15hZGdqbXBzdnl8f4KFiIuOkZSXmp2go6aprK-ytbi7vg\n9.9.9",
+  "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEXsDtBiClOV8Pq/7TI+mx4lH8HqY6DnhdTV/5mgI/XV6z8lA+ZetgpYrN0n00hy6/6tkU4nEsQx+4RBX40R/Nqg==",
+  "token": "ZGgtbGF1bmNoLzIKMTExMTExMTEtMjIyMi0zMzMzLTQ0NDQtNTU1NTU1NTU1NTU1CkFRUUhDZzBRRXhZWkhCOGlKU2dyTGpFME56bzlRRU5HU1V4UFVsVllXMTVoWkdkcWJYQnpkbmw4ZjRLRmlJdU9rWlNYbXAyZ282YXBySy15dGJpN3ZnCjkuOS45.rLiVoPwjslUhQe9YVI0mb9nKeGSVj3yuk-LYb8tWmurIvfDFQekiCDJ0qtr5rqfMTgcDatXymUBpWRbDAeAcgA",
+  "userId": "11111111-2222-3333-4444-555555555555"
+}

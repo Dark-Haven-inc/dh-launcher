@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Stands in for DarkHaven.Loader in GameLauncherTests on Windows, where the Linux tests start a /bin/sh script instead.
+    Nothing ships it; the test project copies its build into fake-loader/ next to the tests.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>DarkHaven.Launcher.FakeLoader</RootNamespace>
+  </PropertyGroup>
+
+</Project>

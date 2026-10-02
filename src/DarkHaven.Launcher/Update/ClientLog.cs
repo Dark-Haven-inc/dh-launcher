@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Serilog;
 
 namespace DarkHaven.Launcher.Update;
@@ -41,16 +40,10 @@ public sealed class ClientLog : IDisposable
     }
 
     /// <summary>
-    /// Starts draining a process launched with redirected stdout/stderr. Both streams must be read
+    /// Starts draining a game launched with redirected stdout/stderr. Both streams must be read
     /// continuously for the whole session — a full pipe buffer would stall the game.
     /// </summary>
-    public void Attach(Process process)
-    {
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) Append(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) Append(e.Data); };
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-    }
+    public void Attach(GameProcess game) => game.BeginOutputReadLine(Append);
 
     public void Append(string line)
     {

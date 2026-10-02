@@ -7,6 +7,19 @@ A tiny console exe that boots the game engine in-process. Port of `space-wizards
 DarkHaven.Loader <engineZip> <signatureHex> <publicKeyFile> [engineArg...]
 ```
 
+## Who starts it
+
+Not the launcher's C# code: the launcher asks its native guard, `dh_guard` ([`GUARD.md`](GUARD.md)), which
+builds this command line and the environment below from structured facts (paths, addresses, the account),
+strips everything from the player's environment that would load code into the game (startup hooks,
+profilers, `SS14_LOADER_OVERLAY_ZIP`, `SS14_DISABLE_SIGNING`, stray `ROBUST_MODULE_*`, …), starts the loader
+and runs the launch broker for exactly that process. A release guard first checks what it is about to start:
+`DarkHaven.Loader[.exe]` in a directory holding exactly the files pinned when the release was built (the
+AppImage's copy under the data directory included; its `.complete` marker is ignored), and an engine that
+is either a bundled one (`sha256:<hex>` from `bundled-engines/manifest.json`) or signed with the SS14 key
+that `<publicKeyFile>` must also hold. Anything else is refused, and the game does not start. So a change
+to the loader's output after a release is pinned (a new file, a patched one) means the guard will not run it.
+
 ## What it does
 
 1. **Verify** the engine zip's Ed25519 signature against `<publicKeyFile>` (the SS14

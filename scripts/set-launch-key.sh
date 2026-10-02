@@ -38,7 +38,8 @@ if gh secret list --repo "$repo" | cut -f1 | grep -qx DH_LAUNCH_SIGNING_KEY; the
 fi
 
 echo "Building the CLI..."
-dotnet build src/DarkHaven.Cli -c Release -v q -nologo >/dev/null
+# launch-key needs nothing from dh_guard, so no Rust toolchain either.
+dotnet build src/DarkHaven.Cli -c Release -v q -nologo -p:DhGuardSkipCargo=true >/dev/null
 
 output="$(dotnet run --no-build --project src/DarkHaven.Cli -c Release -- launch-key)"
 secret="$(printf '%s\n' "$output" | awk '/^CI secret DH_LAUNCH_SIGNING_KEY/ { getline; print; exit }')"
