@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Cyberpunk.HomeView"
+             x:DataType="vm:HomeViewModel">
+    <!-- ГЛАВНАЯ as a netrunner's deck: the last link in a HUD panel with targeting corners — the name in
+         big Tektur with a pink ghost, the figures as readouts, a hazard strip, the big pink jack-in; the
+         sector's nodes as cut-corner cards; favourites and recent as net rows with a status bar each;
+         contacts down the right. -->
+
+    <UserControl.Styles>
+        <!-- A node card of the sector: the one to continue on is edged pink. -->
+        <Style Selector="Button.node">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="MinWidth" Value="128" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="#990F0F1B" />
+        </Style>
+        <Style Selector="Button.node.hero">
+            <Setter Property="BorderBrush" Value="{StaticResource DhActiveBrush}" />
+        </Style>
+        <Style Selector="Button.node.hero /template/ c|Chamfer#PART_Box">
+            <Setter Property="StrokeThickness" Value="1.5" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="Row" x:DataType="vm:HomeServerRow">
+            <Button Classes="netrow" Classes.off="{Binding IsOffline}"
+                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).ConnectRowCommand}" CommandParameter="{Binding}">
+                <Grid ColumnDefinitions="3,*,Auto,Auto" ColumnSpacing="10">
+                    <Border Classes="status" Classes.on="{Binding IsOnline}" Classes.full="{Binding IsFull}" Classes.down="{Binding IsOffline}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Classes="mono" FontSize="11" Foreground="{StaticResource DhCyanBrush}" Text="{Binding Population}"
+                               IsVisible="{Binding HasPopulation}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="3" Classes="icon" FontSize="10" Text="&#xEAB6;" Foreground="{StaticResource DhTextFaintBrush}" Margin="0,0,10,0" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid ColumnDefinitions="*,Auto">
+        <ScrollViewer>
+            <StackPanel Margin="24,18,22,22" Spacing="22">
+
+                <!-- The last link -->
+                <Panel IsVisible="{Binding HasHero}">
+                    <c:Chamfer Cut="16" Background="#CC0F0F1B" BorderBrush="{StaticResource CyberLineBrush}" Padding="24,18,20,18">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Border Classes="hazard" Width="28" Height="8" VerticalAlignment="Center" />
+                                    <TextBlock Classes="tag pink" Text="// ПОСЛЕДНЕЕ ПОДКЛЮЧЕНИЕ" />
+                                </StackPanel>
+                                <TextBlock Classes="big" Text="{Binding Hero.Name, Converter={x:Static t:TextBits.Upper}}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource DhTextDimBrush}" Text="{Binding Hero.Address}" TextTrimming="CharacterEllipsis" />
+                                <WrapPanel ItemSpacing="18" LineSpacing="10" Margin="0,10,0,0">
+                                    <Border Classes="cell" IsVisible="{Binding Hero.HasPopulation}">
+                                        <StackPanel Spacing="2"><TextBlock Classes="readout" Text="{Binding Hero.Population}" /><TextBlock Classes="unit" Text="ИГРОКИ" /></StackPanel>
+                                    </Border>
+                                    <Border Classes="cell" IsVisible="{Binding Hero.HasRound}">
+                                        <StackPanel Spacing="2"><TextBlock Classes="readout" Text="{Binding Hero.Round}" MaxWidth="160" /><TextBlock Classes="unit" Text="РАУНД" /></StackPanel>
+                                    </Border>
+                                    <Border Classes="cell" IsVisible="{Binding Hero.HasPing}">
+                                        <StackPanel Spacing="2"><TextBlock Classes="readout" Text="{Binding Hero.Ping}" /><TextBlock Classes="unit" Text="ПИНГ" /></StackPanel>
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="jack" VerticalAlignment="Center" Command="{Binding ConnectHeroCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Classes="icon" Text="&#xEB2C;" FontSize="14" />
+                                    <TextBlock Text="ИГРАТЬ" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </c:Chamfer>
+                    <c:Brackets Stroke="{StaticResource DhActiveBrush}" Arm="14" Margin="-5" />
+                </Panel>
+
+                <!-- The sector's nodes -->
+                <StackPanel Spacing="10" IsVisible="{Binding HasRegions}">
+                    <Border Classes="cap"><TextBlock Classes="tag" Text="// СЕКТОР" /></Border>
+                    <ItemsControl ItemsSource="{Binding RegionStrip}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" LineSpacing="10" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HomeRegionItem">
+                                <Button Classes="node" Classes.hero="{Binding IsHero}"
+                                        Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).OpenRegionCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Grid ColumnDefinitions="3,*" ColumnSpacing="10">
+                                        <Border Classes="status" Classes.on="{Binding Node.IsOnline}" Classes.full="{Binding Node.IsFull}" Classes.down="{Binding Node.IsOffline}" />
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="{Binding Node.Name}" FontFamily="{StaticResource DhTech}" FontWeight="Bold" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding Node.Population}" IsVisible="{Binding Node.IsOnline}" />
+                                            <TextBlock Classes="unit" Text="{Binding Node.StateText, Converter={x:Static t:TextBits.Upper}}" IsVisible="{Binding !Node.IsOnline}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Favourites and recent -->
+                <Grid ColumnDefinitions="*,24,*">
+                    <StackPanel IsVisible="{Binding HasFavorites}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="tag" Text="// ИЗБРАННОЕ" />
+                                <TextBlock Grid.Column="1" Classes="tag pink" Text="{Binding Favorites.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Favorites}" ItemTemplate="{StaticResource Row}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" IsVisible="{Binding HasRecent}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="tag" Text="// НЕДАВНИЕ" />
+                                <TextBlock Grid.Column="1" Classes="tag pink" Text="{Binding Recent.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Recent}" ItemTemplate="{StaticResource Row}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Contacts -->
+        <Border Grid.Column="1" Width="210" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1,0,0,0"
+                Padding="0,14,0,0" IsVisible="{Binding Friends.IsAvailable}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="tag" Text="// КОНТАКТЫ" Margin="14,0,0,8" />
+                <views:FriendsPanel DataContext="{Binding Friends}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

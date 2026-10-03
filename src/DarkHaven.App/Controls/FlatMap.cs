@@ -13,11 +13,23 @@ namespace DarkHaven.App.Controls;
 /// A flat, monochrome map of <see cref="IMapNode"/>s: a faint grid, dashed links between neighbours,
 /// and a square per node whose shape carries its state (same marks as <see cref="StatusGlyph"/>).
 /// The selected node gets a ring and a larger label. Drag to pan, wheel to zoom, click to select.
+/// A theme can draw it its own way instead (<see cref="Look"/>, FlatMap.Looks.cs): in ink like an old
+/// chart, or in neon.
 /// </summary>
-public sealed class FlatMap : Control
+public sealed partial class FlatMap : Control
 {
     public static readonly StyledProperty<IEnumerable?> ItemsSourceProperty =
         AvaloniaProperty.Register<FlatMap, IEnumerable?>(nameof(ItemsSource));
+
+    public static readonly StyledProperty<MapLook> LookProperty =
+        AvaloniaProperty.Register<FlatMap, MapLook>(nameof(Look));
+
+    /// <summary>How it is drawn; a theme's styles set it.</summary>
+    public MapLook Look
+    {
+        get => GetValue(LookProperty);
+        set => SetValue(LookProperty, value);
+    }
 
     public static readonly StyledProperty<object?> SelectedItemProperty =
         AvaloniaProperty.Register<FlatMap, object?>(nameof(SelectedItem), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
@@ -60,7 +72,7 @@ public sealed class FlatMap : Control
         base.OnPropertyChanged(change);
         if (change.Property == ItemsSourceProperty)
             Rebind();
-        else if (change.Property == SelectedItemProperty)
+        else if (change.Property == SelectedItemProperty || change.Property == LookProperty)
             InvalidateVisual();
     }
 
@@ -210,6 +222,16 @@ public sealed class FlatMap : Control
     {
         var b = Bounds;
         ctx.FillRectangle(Brushes.Transparent, new Rect(b.Size));
+
+        switch (Look)
+        {
+            case MapLook.Ink:
+                RenderInk(ctx);
+                return;
+            case MapLook.Neon:
+                RenderNeon(ctx);
+                return;
+        }
 
         var gridPen = new Pen(Brush("DhMapGrid", "#141416"), 1);
         for (var x = 16.5; x < b.Width; x += 48)

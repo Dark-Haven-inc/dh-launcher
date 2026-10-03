@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Cyberpunk.NewsView"
+             x:DataType="vm:NewsViewModel">
+    <!-- НОВОСТИ as a newsfeed: down the left the feed — a time stamp in cyan, a [TAG] in pink, the title;
+         on the right the one opened, its title big with a pink ghost, its text in Exo 2. -->
+
+    <Grid ColumnDefinitions="290,*">
+        <Border BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="16,16,0,8">
+                    <Border Classes="hazard" Width="22" Height="8" VerticalAlignment="Center" />
+                    <TextBlock Classes="tag" Text="// ЛЕНТА" />
+                </StackPanel>
+                <ProgressBar DockPanel.Dock="Top" Classes="meter" IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
+                <TextBlock DockPanel.Dock="Top" Classes="tag" Margin="16,4" Text="// ПУСТО" IsVisible="{Binding IsEmpty}" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NewsItemViewModel">
+                                <Button Classes="netrow" Classes.sel="{Binding IsSelected}"
+                                        Command="{Binding $parent[ItemsControl].((vm:NewsViewModel)DataContext).SelectCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Grid ColumnDefinitions="3,*" ColumnSpacing="12">
+                                        <Border Classes="status" Classes.on="{Binding IsSelected}" />
+                                        <StackPanel Grid.Column="1" Spacing="3" Margin="0,8,10,8">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Classes="mono" FontSize="10" Foreground="{StaticResource DhCyanBrush}" Text="{Binding DateText}" />
+                                                <TextBlock Classes="mono" FontSize="10" Foreground="{StaticResource DhActiveBrush}" Text="{Binding TagCaps, StringFormat='[{0}]'}" IsVisible="{Binding HasTag}" />
+                                                <TextBlock Classes="icon" FontSize="10" Foreground="{StaticResource DhWarnBrush}" Text="&#xEBA0;" IsVisible="{Binding Pinned}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Title}" FontFamily="{StaticResource DhTech}" FontSize="12.5" TextWrapping="Wrap" MaxHeight="36" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Margin="30,20,26,24" Spacing="14" MaxWidth="620" HorizontalAlignment="Left"
+                        IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource DhCyanBrush}" Text="{Binding Selected.DateText}" />
+                    <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource DhActiveBrush}" Text="{Binding Selected.TagCaps, StringFormat='[{0}]'}" IsVisible="{Binding Selected.HasTag}" />
+                </StackPanel>
+                <TextBlock Classes="big" FontSize="25" TextWrapping="Wrap" Text="{Binding Selected.Title, Converter={x:Static t:TextBits.Upper}}" />
+                <Border Classes="cap" MinHeight="0" BorderThickness="0,0,0,2" />
+                <ItemsControl ItemsSource="{Binding Selected.Paragraphs}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <SelectableTextBlock Classes="prose" Text="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button HorizontalAlignment="Left" Command="{Binding Selected.OpenCommand}" IsVisible="{Binding Selected.HasLink}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="подробнее" VerticalAlignment="Center" />
+                        <TextBlock Classes="icon" Text="&#xEB14;" FontSize="11" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

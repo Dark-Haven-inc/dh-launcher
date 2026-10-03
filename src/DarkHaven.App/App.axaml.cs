@@ -23,6 +23,7 @@ public partial class App : Application
         {
             Services = new AppServices();
             RetroEffects.Load(Services.Settings);
+            CyberEffects.Load(Services.Settings);
             desktop.ShutdownRequested += (_, _) => Services.Dispose();
 
             var theme = Theme.Find(Services.Settings.GetConfig("Theme"));

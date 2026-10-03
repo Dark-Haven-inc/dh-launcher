@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.ConnectingView"
+             x:DataType="vm:ConnectingViewModel">
+    <!-- Connecting as a letter on its way: a framed sheet with a wax seal on its corner, the steps listed
+         like the articles of a charter, each struck through with a red tick when done; what the game said
+         before it died, in a smaller hand. -->
+    <UserControl.Styles>
+        <Style Selector="Panel#Letter">
+            <Setter Property="Width" Value="440" />
+        </Style>
+        <Style Selector="Panel#Letter.wide">
+            <Setter Property="Width" Value="620" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel x:Name="Letter" Classes.wide="{Binding HasLogTail}" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <c:InkFrame Stroke="{StaticResource DhTextBrush}" Background="{StaticResource DhBgBrush}" Padding="24,20,24,18" Margin="0,14,14,0">
+            <StackPanel Spacing="12">
+                <StackPanel Spacing="4" Margin="0,0,40,0">
+                    <TextBlock Classes="rubric" Text="{Binding Subtitle}" />
+                    <TextBlock Classes="title" FontSize="20" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Border Classes="cap" MinHeight="0" />
+
+                <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChecklistStepViewModel">
+                            <Panel MinHeight="28">
+                                <Grid ColumnDefinitions="14,*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+                                    <c:StatusGlyph Kind="{Binding GlyphKind}" Width="8" Height="8"
+                                                   Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13.5" VerticalAlignment="Center"
+                                               Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Grid.Column="2" Classes="aside" Text="{Binding Detail}" VerticalAlignment="Center" />
+                                </Grid>
+                                <ProgressBar VerticalAlignment="Bottom" Value="{Binding Fraction}" Minimum="0" Maximum="100"
+                                             Background="Transparent" IsVisible="{Binding ShowBar}" />
+                            </Panel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <SelectableTextBlock Classes="prose" FontSize="13" Foreground="{StaticResource DhDangerBrush}" Text="{Binding ErrorText}"
+                                     IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <StackPanel IsVisible="{Binding HasLogTail}">
+                    <Border Classes="cap"><TextBlock Classes="rubric" Text="Последние слова игры" /></Border>
+                    <ScrollViewer MaxHeight="200" Margin="0,8,0,0" HorizontalScrollBarVisibility="Disabled">
+                        <SelectableTextBlock Text="{Binding LogTail}" Classes="mono" FontSize="11" TextWrapping="Wrap"
+                                             Foreground="{StaticResource DhTextDimBrush}" />
+                    </ScrollViewer>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Classes="aside" Text="{Binding SpeedEta}"
+                                   IsVisible="{Binding SpeedEta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Classes="aside" FontSize="11" Text="{Binding BuildTag}" IsVisible="{Binding !IsBusy}" />
+                    </StackPanel>
+                    <WrapPanel Grid.Column="1" ItemSpacing="8" LineSpacing="6" HorizontalAlignment="Right">
+                        <Button Content="Отменить" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" IsCancel="True" />
+                        <Button Content="{Binding CopyLabel}" Command="{Binding CopyLogCommand}" IsVisible="{Binding HasLogTail}" />
+                        <Button Content="Журналы" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
+                        <Button Content="Всё равно войти" Command="{Binding ConnectAnywayCommand}" IsVisible="{Binding CanConnectAnyway}" />
+                        <Button Classes="primary" Content="Ещё раз" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
+                        <Button Content="Закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+                    </WrapPanel>
+                </Grid>
+            </StackPanel>
+        </c:InkFrame>
+        <!-- The seal on the letter's corner. -->
+        <c:WaxSeal Width="54" Height="54" HorizontalAlignment="Right" VerticalAlignment="Top"
+                   Fill="{StaticResource DhActiveBrush}" Ring="{StaticResource DhActivePressBrush}" />
+        <TextBlock Text="XV" FontFamily="{StaticResource DhSerifCaps}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource DhOnActiveBrush}"
+                   HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,17,16,0" IsHitTestVisible="False" />
+    </Panel>
+</UserControl>

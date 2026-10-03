@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DarkHaven.App.Themes;
 using DarkHaven.App.ViewModels;
 
 namespace DarkHaven.App.Views.Cyberpunk;
@@ -12,7 +13,7 @@ public partial class MainWindow : Window
 {
     // The title's glitch: its pink and cyan ghosts jump apart for a moment and settle back, every few
     // seconds, and only while the window is the active one — a launcher left in the background, or behind
-    // the game, draws nothing for it.
+    // the game, draws nothing for it. НАСТРОЙКИ → Вид can switch it off (CyberEffects.Glitch).
     private static readonly (double PinkX, double PinkY, double CyanX, double CyanY)[] Glitch =
         [(-4, 1, 3, -1), (3, -1, -3, 0), (-2, 0, 2, 1), (-1.5, 0, 1.5, 0)];
 
@@ -29,13 +30,19 @@ public partial class MainWindow : Window
 
         _glitch = new DispatcherTimer(NextPause(), DispatcherPriority.Background, (_, _) => OnGlitch());
         _glitch.Start();
+
+        // Glow switched off in НАСТРОЙКИ → Вид: the styles drop every glow under Window.noglow.
+        ShowGlow();
+        CyberEffects.Changed += ShowGlow;
     }
+
+    private void ShowGlow() => Classes.Set("noglow", !CyberEffects.Glow);
 
     private TimeSpan NextPause() => TimeSpan.FromSeconds(6 + _random.NextDouble() * 4);
 
     private void OnGlitch()
     {
-        if (_frame < 0 && (!IsActive || WindowState == WindowState.Minimized))
+        if (_frame < 0 && (!CyberEffects.Glitch || !IsActive || WindowState == WindowState.Minimized))
         {
             _glitch.Interval = NextPause();
             return;
@@ -69,6 +76,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _glitch.Stop();
+        CyberEffects.Changed -= ShowGlow;
         base.OnClosed(e);
     }
 

@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.RegionsView"
+             x:DataType="vm:RegionsViewModel">
+    <!-- РЕГИОНЫ as a chart of the sector: the map drawn in ink (FlatMap's Ink look) under a cartouche, and
+         beside it the chosen land as a page — its name on a banner, its description opening with a red
+         initial, its figures as ledger lines, a seal to play, its neighbours. -->
+
+    <Grid ColumnDefinitions="*,300">
+        <!-- The chart -->
+        <Panel>
+            <c:FlatMap x:Name="Map" ItemsSource="{Binding Nodes}" SelectedItem="{Binding Selected}" />
+            <c:InkFrame Stroke="{StaticResource DhTextBrush}" Background="{StaticResource DhBgBrush}" Padding="16,9,16,10"
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16,14" IsHitTestVisible="False">
+                <StackPanel Spacing="1">
+                    <TextBlock Classes="rubric" Text="Карта сектора" HorizontalAlignment="Center" />
+                    <TextBlock Classes="aside" HorizontalAlignment="Center">
+                        <Run Text="ныне в землях " /><Run Text="{Binding TotalPlayers}" /><Run Text=" душ" />
+                    </TextBlock>
+                </StackPanel>
+            </c:InkFrame>
+            <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
+            <TextBlock Classes="aside" Text="{Binding Error}" TextWrapping="Wrap" Margin="18,14" VerticalAlignment="Bottom"
+                       IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </Panel>
+
+        <!-- The chosen land -->
+        <Border Grid.Column="1" BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1,0,0,0">
+            <ScrollViewer IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Margin="18,16,16,18" Spacing="14">
+                    <StackPanel Spacing="4">
+                        <c:Ribbon Fill="{StaticResource DhBgPanelBrush}" Shade="{StaticResource DhBorderBrush}" Stroke="{StaticResource DhTextDimBrush}"
+                                  Padding="32,5,32,12" HorizontalAlignment="Center">
+                            <TextBlock Classes="title" FontSize="19" Text="{Binding Selected.Name}" TextTrimming="CharacterEllipsis" MaxWidth="190" />
+                        </c:Ribbon>
+                        <TextBlock Classes="aside" Text="{Binding Selected.Address}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <!-- What the land is, opening with a red initial. -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6"
+                          IsVisible="{Binding Selected.Blurb, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Classes="dropcap" Text="{Binding Selected.Blurb, Converter={x:Static t:TextBits.FirstLetter}}" VerticalAlignment="Top" Margin="0,-2,0,0" />
+                        <TextBlock Grid.Column="1" Classes="prose" FontSize="13" LineHeight="19" Margin="0,3,0,0"
+                                   Text="{Binding Selected.Blurb, Converter={x:Static t:TextBits.AfterFirstLetter}}" />
+                    </Grid>
+
+                    <StackPanel Spacing="3">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="key" Text="Состояние" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+                                <c:StatusGlyph IsOnline="{Binding Selected.IsOnline}" IsOffline="{Binding Selected.IsOffline}"
+                                               IsQuarantine="{Binding Selected.IsQuarantine}" IsFull="{Binding Selected.IsFull}" />
+                                <TextBlock Text="{Binding Selected.StateText}" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding Selected.IsOnline}">
+                            <TextBlock Classes="key" Text="Игроков" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding Selected.Population}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding Selected.IsOnline}">
+                            <TextBlock Classes="key" Text="Раунд" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding Selected.RoundText}" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding !Selected.IsQuarantine}">
+                            <TextBlock Classes="key" Text="Отклик" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding Selected.Ping}" />
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8" IsVisible="{Binding !Selected.IsQuarantine}">
+                        <Button Classes="seal" HorizontalAlignment="Center" Content="Играть" Command="{Binding PlaySelectedCommand}"
+                                IsEnabled="{Binding Selected.CanConnect}" Margin="0,2,0,4" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.SlotLabel}" Command="{Binding Selected.WaitForSlotCommand}"
+                                IsVisible="{Binding Selected.CanWaitForSlot}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.WatchLabel}" Command="{Binding Selected.ToggleWatchCommand}"
+                                IsVisible="{Binding Selected.CanWatch}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Список изгнанных" Command="{Binding ShowBansCommand}" />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding HasNeighbours}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="rubric" Text="Соседние земли" />
+                                <TextBlock Grid.Column="1" Classes="aside" Text="{Binding SelectedNeighbours.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                    <Button Classes="ledger" Classes.off="{Binding !IsOnline}" Command="{Binding SelectCommand}">
+                                        <Grid ColumnDefinitions="10,Auto,*,Auto" ColumnSpacing="8">
+                                            <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}"
+                                                           IsQuarantine="{Binding IsQuarantine}" IsFull="{Binding IsFull}"
+                                                           Foreground="{Binding $parent[Button].Foreground}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" />
+                                            <Border Grid.Column="2" Classes="leader" IsVisible="{Binding IsOnline}" />
+                                            <TextBlock Grid.Column="3" Classes="aside" Text="{Binding Population}" IsVisible="{Binding IsOnline}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

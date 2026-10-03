@@ -1,0 +1,183 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:views="using:DarkHaven.App.Views"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.HomeView"
+             x:DataType="vm:HomeViewModel">
+    <!-- ГЛАВНАЯ as the first page of a chronicle: the road to continue in a ruled frame — its name on a
+         banner, the figures as ledger lines, a wax seal to play; the sector's lands as a row of shields;
+         favourites and recent journeys as two columns of a ledger; friends in the margin. -->
+
+    <UserControl.Styles>
+        <!-- A land of the sector: a shield with its head-count, the name under it. The one to continue on is red. -->
+        <Style Selector="Button.shield">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="MinWidth" Value="84" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Button.shield:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.shield:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.shield Path.arms">
+            <Setter Property="Fill" Value="{StaticResource DhBgPanelBrush}" />
+            <Setter Property="Stroke" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="StrokeThickness" Value="1.3" />
+        </Style>
+        <Style Selector="Button.shield:pointerover Path.arms">
+            <Setter Property="Fill" Value="{StaticResource DhBgHoverBrush}" />
+            <Setter Property="StrokeThickness" Value="2" />
+        </Style>
+        <Style Selector="Button.shield.hero Path.arms">
+            <Setter Property="Fill" Value="{StaticResource DhActiveBrush}" />
+            <Setter Property="Stroke" Value="{StaticResource DhActivePressBrush}" />
+        </Style>
+        <Style Selector="Button.shield.off Path.arms">
+            <Setter Property="StrokeDashArray" Value="2,2" />
+            <Setter Property="Stroke" Value="{StaticResource DhTextFaintBrush}" />
+        </Style>
+        <Style Selector="Button.shield TextBlock.count">
+            <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="Button.shield.hero TextBlock.count">
+            <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        </Style>
+        <Style Selector="Button.shield TextBlock.land">
+            <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        </Style>
+        <Style Selector="Button.shield.hero TextBlock.land">
+            <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+        </Style>
+        <Style Selector="Button.shield.off TextBlock.land">
+            <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- A ledger line: the mark, the name, dots, the head-count. -->
+        <DataTemplate x:Key="Row" x:DataType="vm:HomeServerRow">
+            <Button Classes="ledger" Classes.off="{Binding IsOffline}"
+                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).ConnectRowCommand}" CommandParameter="{Binding}">
+                <Grid ColumnDefinitions="10,*,Auto" ColumnSpacing="8">
+                    <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding IsOffline}" IsFull="{Binding IsFull}"
+                                   IsQuarantine="{Binding IsQuarantine}" IsVisible="{Binding HasStatus}"
+                                   Foreground="{Binding $parent[Button].Foreground}" />
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*">
+                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                        <Border Grid.Column="1" Classes="leader" IsVisible="{Binding HasPopulation}" />
+                    </Grid>
+                    <TextBlock Grid.Column="2" Classes="aside" Text="{Binding Population}" IsVisible="{Binding HasPopulation}" VerticalAlignment="Center" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid ColumnDefinitions="*,Auto">
+        <ScrollViewer>
+            <StackPanel Margin="26,18,22,22" Spacing="22">
+
+                <!-- The road to continue -->
+                <c:InkFrame Padding="22,16,18,18" Stroke="{StaticResource DhTextBrush}" Background="#0A5A3A1A" IsVisible="{Binding HasHero}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="rubric" Text="Продолжить путь" />
+                            <c:Ribbon Fill="{StaticResource DhBgPanelBrush}" Shade="{StaticResource DhBorderBrush}" Stroke="{StaticResource DhTextDimBrush}"
+                                      Padding="36,6,36,14" HorizontalAlignment="Left">
+                                <TextBlock Classes="title" Text="{Binding Hero.Name}" TextTrimming="CharacterEllipsis" MaxWidth="420" />
+                            </c:Ribbon>
+                            <TextBlock Classes="aside" Text="{Binding Hero.Address}" TextTrimming="CharacterEllipsis" Margin="4,0,0,0" />
+                            <StackPanel Spacing="2" Margin="4,6,0,0" Width="320" HorizontalAlignment="Left">
+                                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding Hero.HasPopulation}">
+                                    <TextBlock Classes="key" Text="Игроков" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Hero.Population}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding Hero.HasRound}">
+                                    <TextBlock Classes="key" Text="Раунд" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Hero.Round}" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding Hero.HasPing}">
+                                    <TextBlock Classes="key" Text="Отклик" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Hero.Ping}" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="seal" VerticalAlignment="Center" Command="{Binding ConnectHeroCommand}" Content="Играть" />
+                    </Grid>
+                </c:InkFrame>
+
+                <!-- The lands of the sector -->
+                <StackPanel Spacing="10" IsVisible="{Binding HasRegions}">
+                    <Border Classes="cap"><TextBlock Classes="rubric" Text="Земли сектора" /></Border>
+                    <ItemsControl ItemsSource="{Binding RegionStrip}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="10" LineSpacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HomeRegionItem">
+                                <Button Classes="shield" Classes.hero="{Binding IsHero}" Classes.off="{Binding Node.IsOffline}"
+                                        Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).OpenRegionCommand}"
+                                        CommandParameter="{Binding}" ToolTip.Tip="{Binding Node.StateText}">
+                                    <StackPanel Spacing="4">
+                                        <Panel Width="44" Height="52" HorizontalAlignment="Center">
+                                            <Path Classes="arms" Stretch="Fill" Data="M2,2 H42 V22 C42,37 31,46 22,50 C13,46 2,37 2,22 Z" />
+                                            <TextBlock Classes="count lining" Text="{Binding Node.Entry.Players}" IsVisible="{Binding Node.IsOnline}" />
+                                            <c:StatusGlyph IsOffline="{Binding Node.IsOffline}" IsQuarantine="{Binding Node.IsQuarantine}"
+                                                           IsVisible="{Binding !Node.IsOnline}" Width="8" Height="8" Margin="0,0,0,8"
+                                                           HorizontalAlignment="Center" Foreground="{StaticResource DhTextDimBrush}" />
+                                        </Panel>
+                                        <TextBlock Classes="land" Text="{Binding Node.Name}" TextTrimming="CharacterEllipsis" MaxWidth="110" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- Favourites and recent journeys -->
+                <Grid ColumnDefinitions="*,26,*">
+                    <StackPanel IsVisible="{Binding HasFavorites}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="rubric" Text="Избранное" />
+                                <TextBlock Grid.Column="1" Classes="aside" Text="{Binding Favorites.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Favorites}" ItemTemplate="{StaticResource Row}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" IsVisible="{Binding HasRecent}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="rubric" Text="Недавние странствия" />
+                                <TextBlock Grid.Column="1" Classes="aside" Text="{Binding Recent.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Recent}" ItemTemplate="{StaticResource Row}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Friends, in the margin -->
+        <Border Grid.Column="1" Width="210" BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1,0,0,0"
+                Padding="0,14,0,0" IsVisible="{Binding Friends.IsAvailable}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="rubric" Text="Соратники" Margin="14,0,0,6" />
+                <views:FriendsPanel DataContext="{Binding Friends}" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</UserControl>

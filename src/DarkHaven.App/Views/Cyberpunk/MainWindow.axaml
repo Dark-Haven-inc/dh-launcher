@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DarkHaven.App.ViewModels"
         xmlns:views="using:DarkHaven.App.Views"
+        xmlns:cyb="using:DarkHaven.App.Views.Cyberpunk"
         xmlns:c="using:DarkHaven.App.Controls"
         x:Class="DarkHaven.App.Views.Cyberpunk.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -13,26 +14,27 @@
     <!-- The cyberpunk theme's window: a night terminal in neon. A faint cyan grid with a pink glow from one
          corner and a cyan one from the other, a frame with two corners cut (Controls/Chamfer.cs) and
          short pink and yellow marks on it, the title in pink and cyan copies that now and then jump
-         apart (a glitch, see the code-behind), numbered navigation down the left. The pages are the
-         monochrome ones, which Themes/Styles/Cyberpunk.axaml redraws. -->
+         apart (a glitch, see the code-behind), numbered navigation down the left. The main pages are its
+         own (Views/Cyberpunk/: HUD panels, readouts, the neon net, the jack-in); the rest are the monochrome
+         ones, which Themes/Styles/Cyberpunk.axaml redraws. -->
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenPaletteCommand}" />
     </Window.KeyBindings>
 
     <Window.DataTemplates>
-        <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
-        <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
-        <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
-        <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
-        <DataTemplate DataType="vm:LocalViewModel"><views:LocalView /></DataTemplate>
+        <DataTemplate DataType="vm:HomeViewModel"><cyb:HomeView /></DataTemplate>
+        <DataTemplate DataType="vm:RegionsViewModel"><cyb:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><cyb:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><cyb:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><cyb:LocalView /></DataTemplate>
         <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
-        <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><cyb:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
-        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><cyb:AccountView /></DataTemplate>
         <DataTemplate DataType="vm:ProfileViewModel"><views:ProfileView /></DataTemplate>
-        <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
-        <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><cyb:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><cyb:ConnectingView /></DataTemplate>
         <DataTemplate DataType="vm:PaletteViewModel"><views:PaletteView /></DataTemplate>
     </Window.DataTemplates>
 

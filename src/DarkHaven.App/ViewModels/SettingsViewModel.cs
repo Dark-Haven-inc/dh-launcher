@@ -37,6 +37,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty] private bool _retroNoise = RetroEffects.Noise;
     [ObservableProperty] private bool _retroBand = RetroEffects.Band;
     [ObservableProperty] private bool _retroFlicker = RetroEffects.Flicker;
+    public bool IsCyberpunk => Theme.Current.Layout == ThemeLayout.Cyberpunk;
+    [ObservableProperty] private bool _cyberGlitch = CyberEffects.Glitch;
+    [ObservableProperty] private bool _cyberGlow = CyberEffects.Glow;
 
     /// <summary>The theme's colors, next to the theme picker: the background every gray follows, and active buttons.</summary>
     public HsvSetting BaseColor { get; } = new("ОБЩИЙ", shown: Theme.BackgroundFor);
@@ -110,6 +113,7 @@ public partial class SettingsViewModel : ViewModelBase
             App.SwitchTheme(value);
             ShowThemeColors();
             OnPropertyChanged(nameof(IsRetro));
+            OnPropertyChanged(nameof(IsCyberpunk));
         });
     }
 
@@ -119,6 +123,9 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnRetroBandChanged(bool value) => SaveRetroEffects();
     partial void OnRetroFlickerChanged(bool value) => SaveRetroEffects();
     private void SaveRetroEffects() => RetroEffects.Set(_services.Settings, RetroScanlines, RetroGlow, RetroNoise, RetroBand, RetroFlicker);
+
+    partial void OnCyberGlitchChanged(bool value) => CyberEffects.Set(_services.Settings, CyberGlitch, CyberGlow);
+    partial void OnCyberGlowChanged(bool value) => CyberEffects.Set(_services.Settings, CyberGlitch, CyberGlow);
 
     /// <summary>The editor shows the player's colors on the current theme, or its palette's own.</summary>
     private void ShowThemeColors()
