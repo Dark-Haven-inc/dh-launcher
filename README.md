@@ -68,13 +68,14 @@ and `Views/Cyberpunk/`); the rest (АДМИН, ПРОФИЛЬ, bans, the switche
 styles redraw. **A change to one of those main pages has to be made in each of `Views/`, `Views/Legacy/`,
 `Views/Retro/`, `Views/Medieval/` and `Views/Cyberpunk/`.**
 `средневековье` draws the launcher in ink on parchment, like an old map: the aged sheet (`Controls/Parchment.cs`)
-in a map's neatline (`Controls/MapFrame.cs`), the title in a cartouche, the pages as a book's contents with rubric
-numerals, a compass rose; the region map as an old chart (`FlatMap`'s `Ink` look: rhumb lines, dotted roads,
+in a map's neatline (`Controls/MapFrame.cs`), the title in a cartouche, the pages as bookmark ribbons hanging
+under it, the versions in a colophon at the foot, a faint wind rose behind the page (no side column); the region map as an old chart (`FlatMap`'s `Ink` look: rhumb lines, dotted roads,
 towers, a castle with a pennant); names on banners (`Controls/Ribbon.cs`), panels ruled twice (`Controls/InkFrame.cs`),
 ledger lines with dotted leaders, drop caps, and the main action a seal of red wax (`Controls/WaxSeal.cs`). Set in
 Alegreya, small caps for headings, labels and buttons.
 `киберпанк` is neon on a night grid: pink and cyan glow, a frame and buttons with cut corners (`Controls/Chamfer.cs`),
-a title whose ghosts glitch apart every few seconds while the window is active, numbered navigation; HUD panels in
+a title whose ghosts glitch apart every few seconds while the window is active, the versions as readouts in the
+top bar, the pages as a hotbar of tiles along the bottom (Ctrl+1…7; no side column); HUD panels in
 targeting brackets (`Controls/Brackets.cs`), readouts, hazard stripes, rows with a status bar, ping as signal bars
 (`Controls/SignalBars.cs`), the region map as a neon net (`FlatMap`'s `Neon` look) and a big pink jack-in. Set in
 Tektur and Exo 2; the glitch and the glow can be switched off (config `Cyberpunk.Glitch`, `Cyberpunk.Glow`).

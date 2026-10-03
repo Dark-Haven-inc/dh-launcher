@@ -11,15 +11,24 @@
         Icon="/Assets/icon.ico"
         SystemDecorations="None"
         Background="{StaticResource DhBgBrush}">
-    <!-- The cyberpunk theme's window: a night terminal in neon. A faint cyan grid with a pink glow from one
-         corner and a cyan one from the other, a frame with two corners cut (Controls/Chamfer.cs) and
-         short pink and yellow marks on it, the title in pink and cyan copies that now and then jump
-         apart (a glitch, see the code-behind), numbered navigation down the left. The main pages are its
-         own (Views/Cyberpunk/: HUD panels, readouts, the neon net, the jack-in); the rest are the monochrome
-         ones, which Themes/Styles/Cyberpunk.axaml redraws. -->
+    <!-- The cyberpunk theme's window: a netrunner's HUD. A faint cyan grid with a pink glow from one corner
+         and a cyan one from the other, a frame with two corners cut (Controls/Chamfer.cs). Across the top the
+         title, whose pink and cyan ghosts now and then jump apart (a glitch, see the code-behind), and on the
+         right the launcher's and the engine's versions as readouts. Along the bottom, the pages as a hotbar:
+         cut-corner tiles with an icon and a number (Ctrl+1…7 open them), the open one lit pink. No side
+         column: the page has the whole screen. The main pages are its own (Views/Cyberpunk/: HUD panels,
+         readouts, the neon net, the jack-in); the rest are the monochrome ones, which
+         Themes/Styles/Cyberpunk.axaml redraws. -->
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenPaletteCommand}" />
+        <KeyBinding Gesture="Ctrl+D1" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}" />
+        <KeyBinding Gesture="Ctrl+D2" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}" />
+        <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}" />
+        <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}" />
+        <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}" />
+        <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}" />
+        <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}" />
     </Window.KeyBindings>
 
     <Window.DataTemplates>
@@ -78,7 +87,7 @@
 
         <DockPanel Margin="10,8,10,10">
             <!-- The title bar. With no OS frame it is what moves the window (double-click maximizes). -->
-            <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="40" Background="Transparent">
+            <Border x:Name="TitleBar" DockPanel.Dock="Top" Height="46" Background="Transparent">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" Margin="18,0,0,0">
                         <Path Data="M6,0 H22 L16,12 H0 Z" Fill="{StaticResource DhWarnBrush}" VerticalAlignment="Center" />
@@ -95,6 +104,18 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="2" Margin="0,0,6,0">
+                        <!-- The versions, as readouts. -->
+                        <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" VerticalAlignment="Center" Margin="0,0,14,0">
+                            <TextBlock Classes="unit" Text="ЛАУНЧЕР" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding LauncherVersion}" />
+                            <TextBlock Grid.Row="1" Classes="unit" Text="ДВИЖОК" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding EngineVersion}" />
+                        </Grid>
+                        <TextBlock Classes="mono" FontSize="10" Foreground="{StaticResource DhTextDimBrush}" Text="{Binding UpdateStatusText}"
+                                   IsVisible="{Binding ShowUpdateStatus}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <Button Classes="small primary" Content="{Binding UpdateButtonText}" Command="{Binding UpdateActionCommand}"
+                                IsVisible="{Binding ShowUpdateButton}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <Border Width="1" Height="22" Background="{StaticResource DhBorderStrongBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
                         <Button Classes="ctop" ToolTip.Tip="уведомления" IsVisible="{Binding Notifications.IsAvailable}">
                             <Panel>
                                 <Path Data="{StaticResource DhBellGeometry}" Fill="{Binding $parent[Button].Foreground}" Stretch="Uniform" Width="14" Height="14" />
@@ -133,62 +154,54 @@
                 </Border.Background>
             </Border>
 
-            <!-- Navigation, and the versions under it. -->
-            <Border DockPanel.Dock="Left" Width="170" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,1,0">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Bottom" Margin="16,0,14,12" Spacing="3">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Classes="lbl" Text="лаунчер" />
-                            <TextBlock Grid.Column="1" Classes="mono" FontSize="10" Text="{Binding LauncherVersion}" Foreground="{StaticResource DhCyanBrush}" />
-                        </Grid>
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Classes="lbl" Text="движок" />
-                            <TextBlock Grid.Column="1" Classes="mono" FontSize="10" Text="{Binding EngineVersion}" Foreground="{StaticResource DhCyanBrush}" />
-                        </Grid>
-                        <Button Classes="small primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0"
-                                Content="{Binding UpdateButtonText}" Command="{Binding UpdateActionCommand}"
-                                IsVisible="{Binding ShowUpdateButton}" />
-                        <TextBlock Classes="mono dim" FontSize="10" Margin="0,4,0,0" HorizontalAlignment="Center"
-                                   Text="{Binding UpdateStatusText}" IsVisible="{Binding ShowUpdateStatus}" />
-                    </StackPanel>
-
-                    <StackPanel Margin="0,12,0,0">
-                        <TextBlock Classes="caps" Text="навигация" Margin="16,0,0,8" />
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="01" /><TextBlock Text="главная" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
-                                Classes.active="{Binding IsRegionsPage}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="02" /><TextBlock Text="регионы" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="03" /><TextBlock Text="серверы" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="04" /><TextBlock Text="мониторинг" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="05" /><TextBlock Text="локалка" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="06" /><TextBlock Text="новости" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="07" /><TextBlock Text="настройки" /></StackPanel>
-                        </Button>
-                        <Button Classes="cnav" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
-                                Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}">
-                            <StackPanel Orientation="Horizontal"><Border Classes="bar" /><TextBlock Classes="num" Text="08" /><TextBlock Text="админ" /></StackPanel>
-                        </Button>
-                    </StackPanel>
-                </DockPanel>
-            </Border>
+            <!-- The hotbar: the pages as cut-corner tiles, an icon, a name, the number Ctrl opens it with. -->
+            <Grid DockPanel.Dock="Bottom" Height="70">
+                <Border Height="1" VerticalAlignment="Top">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                            <GradientStop Color="#0005D9E8" Offset="0" />
+                            <GradientStop Color="#9905D9E8" Offset="0.5" />
+                            <GradientStop Color="#0005D9E8" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Border Classes="hazard" Width="44" Height="8" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="18,6,0,0" />
+                <Border Classes="hazard" Width="44" Height="8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,6,18,0" />
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,6,0,0">
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Home}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Home}}">
+                        <Panel><TextBlock Classes="hk" Text="1" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB06;" /><TextBlock Classes="label" Text="ГЛАВНАЯ" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Regions}"
+                            Classes.active="{Binding IsRegionsPage}">
+                        <Panel><TextBlock Classes="hk" Text="2" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB01;" /><TextBlock Classes="label" Text="РЕГИОНЫ" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Servers}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Servers}}">
+                        <Panel><TextBlock Classes="hk" Text="3" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB50;" /><TextBlock Classes="label" Text="СЕРВЕРЫ" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Monitoring}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Monitoring}}">
+                        <Panel><TextBlock Classes="hk" Text="4" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB31;" /><TextBlock Classes="label" Text="МОНИТОР" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Local}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Local}}">
+                        <Panel><TextBlock Classes="hk" Text="5" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEA7A;" /><TextBlock Classes="label" Text="ЛОКАЛКА" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.News}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.News}}">
+                        <Panel><TextBlock Classes="hk" Text="6" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB1E;" /><TextBlock Classes="label" Text="НОВОСТИ" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Settings}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Settings}}">
+                        <Panel><TextBlock Classes="hk" Text="7" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB51;" /><TextBlock Classes="label" Text="НАСТРОЙКИ" /></StackPanel></Panel>
+                    </Button>
+                    <Button Classes="hot" Command="{Binding NavigateCommand}" CommandParameter="{x:Static vm:NavPage.Admin}" IsVisible="{Binding Admin.CanSeeAdmin}"
+                            Classes.active="{Binding Page, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter={x:Static vm:NavPage.Admin}}">
+                        <Panel><TextBlock Classes="hk" Text="A" /><StackPanel Classes="tile"><TextBlock Classes="icon" Text="&#xEB53;" /><TextBlock Classes="label" Text="АДМИН" /></StackPanel></Panel>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
             <!-- A watched region came back, or a slot opened: one line on top of the page. -->
             <Border DockPanel.Dock="Top" MinHeight="34" Padding="18,4" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="0,0,0,1"
@@ -214,14 +227,14 @@
             <ContentControl Content="{Binding Current}" />
         </DockPanel>
 
-        <!-- Connecting: a dialog over the dimmed page, under the title bar (8 + 40 + 1). -->
-        <Border Margin="10,49,10,10" Background="{StaticResource DhScrimBrush}"
+        <!-- Connecting: a dialog over the dimmed page, between the title bar (8 + 46 + 1) and the hotbar (10 + 70). -->
+        <Border Margin="10,55,10,80" Background="{StaticResource DhScrimBrush}"
                 IsVisible="{Binding Connecting, Converter={x:Static ObjectConverters.IsNotNull}}">
             <ContentControl Content="{Binding Connecting}" />
         </Border>
 
         <!-- Quick switcher (Ctrl+K). -->
-        <Border Margin="10,49,10,10" Background="{StaticResource DhScrimBrush}" PointerPressed="OnPaletteBackdropPressed"
+        <Border Margin="10,55,10,80" Background="{StaticResource DhScrimBrush}" PointerPressed="OnPaletteBackdropPressed"
                 IsVisible="{Binding Palette, Converter={x:Static ObjectConverters.IsNotNull}}">
             <ContentControl Content="{Binding Palette}" />
         </Border>

@@ -358,43 +358,50 @@
         <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
     </Style>
 
-    <!-- The contents: "I · главная" — a rubric numeral, the page's name in small caps; the open page in red
-         with a diamond before it. -->
-    <Style Selector="Button.mnav">
+    <!-- The pages as bookmark ribbons hanging from the rule under the title: parchment ribbons cut in a
+         swallowtail, the open one sealing-wax red and hanging lower. -->
+    <Style Selector="Button.mtab">
+        <Setter Property="Background" Value="{StaticResource DhBgPanelBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Height" Value="28" />
-        <Setter Property="Padding" Value="10,0" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="HorizontalContentAlignment" Value="Left" />
-        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
-        <Setter Property="FontSize" Value="14" />
-    </Style>
-    <Style Selector="Button.mnav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="Padding" Value="13,3,13,12" />
+        <Setter Property="Height" Value="38" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Top" />
         <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Transitions" Value="{x:Null}" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Panel Background="Transparent">
+                    <Path Name="PART_Ribbon" Stretch="Fill" Data="M0,0 H100 V40 L50,32 L0,40 Z"
+                          Fill="{TemplateBinding Background}" Stroke="{StaticResource DhTextDimBrush}" StrokeThickness="1" StrokeJoin="Miter" />
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" Padding="{TemplateBinding Padding}"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
     </Style>
-    <Style Selector="Button.mnav TextBlock.label">
+    <Style Selector="Button.mtab /template/ ContentPresenter#PART_ContentPresenter, Button.mtab:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.mtab:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
     </Style>
-    <Style Selector="Button.mnav TextBlock.num">
-        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="Width" Value="26" />
-        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
-        <Setter Property="VerticalAlignment" Value="Center" />
+    <Style Selector="Button.mtab:pointerover">
+        <Setter Property="Background" Value="{StaticResource DhBorderBrush}" />
+        <Setter Property="Height" Value="42" />
     </Style>
-    <Style Selector="Button.mnav Path.mark">
-        <Setter Property="IsVisible" Value="False" />
+    <Style Selector="Button.mtab.active">
+        <Setter Property="Background" Value="{StaticResource DhActiveBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Height" Value="48" />
+        <Setter Property="Padding" Value="13,3,13,16" />
     </Style>
-    <Style Selector="Button.mnav.active">
-        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
-    </Style>
-    <Style Selector="Button.mnav.active TextBlock.num">
-        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
-    </Style>
-    <Style Selector="Button.mnav.active Path.mark">
-        <Setter Property="IsVisible" Value="True" />
+    <Style Selector="Button.mtab.active /template/ Path#PART_Ribbon">
+        <Setter Property="Stroke" Value="{StaticResource DhActivePressBrush}" />
     </Style>
 
     <!-- Bell, account and the window's own two marks, drawn in ink. -->
