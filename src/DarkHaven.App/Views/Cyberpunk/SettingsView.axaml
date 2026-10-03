@@ -1,0 +1,211 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:themes="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Cyberpunk.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <!-- НАСТРОЙКИ as a system config: numbered blocks "01 // ИНТЕРФЕЙС" over a pink-into-cyan rule, each
+         setting a row with its name in spaced Tektur; the theme's own effects (the title's glitch, the glow)
+         in the first block. -->
+
+    <UserControl.Styles>
+        <Style Selector="Grid.srow">
+            <Setter Property="MinHeight" Value="34" />
+        </Style>
+        <Style Selector="Grid.srow > TextBlock.k">
+            <Setter Property="FontFamily" Value="{StaticResource DhTech}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="LetterSpacing" Value="1.4" />
+            <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="TextBlock.n">
+            <Setter Property="FontFamily" Value="{StaticResource DhMono}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{StaticResource DhActiveBrush}" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:HsvSetting">
+            <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <TextBlock Classes="tag" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Classes="mono" FontSize="10.5" Foreground="{StaticResource DhTextDimBrush}" Text="{Binding Hex}" VerticalAlignment="Center" />
+                    <Border Grid.Column="2" Width="12" Height="12" Background="{Binding Swatch}" BorderBrush="{StaticResource DhCyanBrush}" BorderThickness="1" />
+                </Grid>
+                <Grid ColumnDefinitions="12,*,28" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                    <TextBlock Classes="unit" Text="H" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Column="1" Maximum="360" Value="{Binding Hue}" Track="{Binding HueTrack}" />
+                    <TextBlock Grid.Column="2" Classes="mono" FontSize="10.5" Text="{Binding HueText}" TextAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Row="1" Classes="unit" Text="S" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Row="1" Grid.Column="1" Value="{Binding Saturation}" Track="{Binding SaturationTrack}" />
+                    <TextBlock Grid.Row="1" Grid.Column="2" Classes="mono" FontSize="10.5" Text="{Binding SaturationText}" TextAlignment="Right" VerticalAlignment="Center" />
+                    <TextBlock Grid.Row="2" Classes="unit" Text="V" VerticalAlignment="Center" />
+                    <c:GradientSlider Grid.Row="2" Grid.Column="1" Value="{Binding Value}" Track="{Binding ValueTrack}" />
+                    <TextBlock Grid.Row="2" Grid.Column="2" Classes="mono" FontSize="10.5" Text="{Binding ValueText}" TextAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <ScrollViewer>
+        <StackPanel Margin="26,18,24,24" Spacing="22" MaxWidth="640" HorizontalAlignment="Left">
+            <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="hazard" Width="28" Height="8" VerticalAlignment="Center" />
+                    <TextBlock Classes="tag pink" Text="// КОНФИГУРАЦИЯ" />
+                </StackPanel>
+                <TextBlock Classes="big" FontSize="24" Text="НАСТРОЙКИ" />
+            </StackPanel>
+            <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource DhWarnBrush}" Text="{Binding Status}" TextWrapping="Wrap"
+                       IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+            <StackPanel>
+                <Border Classes="cap">
+                    <StackPanel Orientation="Horizontal"><TextBlock Classes="n" Text="01" /><TextBlock Classes="tag" Text="// ИНТЕРФЕЙС" /></StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ТЕМА" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <ComboBox Width="170" ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding SelectedTheme}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="themes:Theme"><TextBlock Text="{Binding Title}" /></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Classes="icon" Content="&#xEB5C;" ToolTip.Tip="цвета">
+                                <Button.Flyout>
+                                    <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="dh">
+                                        <StackPanel Width="270" Margin="14" Spacing="16">
+                                            <ContentControl Content="{Binding BaseColor}" />
+                                            <ContentControl Content="{Binding ActiveColor}" />
+                                            <Button Classes="small" Content="сбросить" HorizontalAlignment="Left" Command="{Binding ResetColorsCommand}" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <Border Classes="hair" IsVisible="{Binding IsCyberpunk}">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ЭФФЕКТЫ" />
+                        <WrapPanel Grid.Column="1" ItemSpacing="18" LineSpacing="4" VerticalAlignment="Center" Margin="0,4">
+                            <CheckBox Content="глитч заголовка" IsChecked="{Binding CyberGlitch}" />
+                            <CheckBox Content="неоновое свечение" IsChecked="{Binding CyberGlow}" />
+                        </WrapPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <StackPanel>
+                <Border Classes="cap">
+                    <StackPanel Orientation="Horizontal"><TextBlock Classes="n" Text="02" /><TextBlock Classes="tag" Text="// ХРАНИЛИЩЕ" /></StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*,Auto" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ПАПКА" />
+                        <TextBlock Grid.Column="1" Classes="mono" FontSize="11" Text="{Binding DataDir}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon" Content="&#xEA83;" ToolTip.Tip="открыть" Command="{Binding OpenDataDirCommand}" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*,Auto" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="КЭШ КОНТЕНТА" />
+                        <TextBlock Grid.Column="1" Classes="mono" FontSize="11" Foreground="{StaticResource DhCyanBrush}" Text="{Binding CacheSummary}" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Content="очистить" Command="{Binding ClearContentCacheCommand}" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair" Padding="0,8">
+                    <WrapPanel ItemSpacing="8" LineSpacing="6">
+                        <Button Content="проверить кэш" Command="{Binding VerifyContentCommand}" />
+                        <Button Content="удалить старые движки" Command="{Binding CullEnginesCommand}" />
+                        <Button Content="собрать логи" Command="{Binding CollectLogsCommand}" />
+                    </WrapPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel>
+                <Border Classes="cap">
+                    <StackPanel Orientation="Horizontal"><TextBlock Classes="n" Text="03" /><TextBlock Classes="tag" Text="// ПОВЕДЕНИЕ" /></StackPanel>
+                </Border>
+                <Border Classes="hair" Padding="0,10">
+                    <StackPanel Spacing="10">
+                        <CheckBox Content="обновлять контент автоматически" IsChecked="{Binding AutoUpdate}" />
+                        <CheckBox Content="сворачивать при запуске игры" IsChecked="{Binding MinimizeOnLaunch}" />
+                        <CheckBox Content="совместимость рендера (GLES2)" IsChecked="{Binding CompatMode}" />
+                        <CheckBox Content="подробный журнал" IsChecked="{Binding VerboseLog}" />
+                    </StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ЛИМИТ ЗАГРУЗКИ" />
+                        <Grid Grid.Column="1" Width="170" HorizontalAlignment="Left" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding DownloadLimit}" Watermark="—" Padding="8,4,44,4" />
+                            <TextBlock Classes="unit" Text="КБ/С" HorizontalAlignment="Right" Margin="0,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False" />
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ОБНОВЛЕНИЯ" />
+                        <Button Grid.Column="1" Content="проверить" HorizontalAlignment="Left" VerticalAlignment="Center" Command="{Binding CheckForUpdatesCommand}" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- Developers only (AppServices.DevOverrides). -->
+            <StackPanel IsVisible="{Binding ShowConnection}">
+                <Border Classes="cap">
+                    <StackPanel Orientation="Horizontal"><TextBlock Classes="n" Text="04" /><TextBlock Classes="tag" Text="// ПОДКЛЮЧЕНИЕ" /></StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="АВТОРИЗАЦИЯ" />
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding AuthUrl}" />
+                            <Button Grid.Column="1" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="по умолчанию" Command="{Binding ResetAuthUrlCommand}" />
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="СБОРКИ ДВИЖКА" />
+                        <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalAlignment="Center">
+                            <TextBox Classes="mono" Text="{Binding BuildsUrl}" />
+                            <Button Grid.Column="1" Classes="icon" Content="&#xEAE2;" ToolTip.Tip="по умолчанию" Command="{Binding ResetBuildsUrlCommand}" />
+                        </Grid>
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="СПИСОК РЕГИОНОВ" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding RegionsUrl}" Watermark="—" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ПЛАТФОРМА" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding PlatformUrl}" Watermark="https://api.dark-haven.xyz" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <StackPanel>
+                <Border Classes="cap">
+                    <StackPanel Orientation="Horizontal"><TextBlock Classes="n" Text="05" /><TextBlock Classes="tag" Text="// DISCORD" /></StackPanel>
+                </Border>
+                <Border Classes="hair">
+                    <Grid Classes="srow" ColumnDefinitions="170,*" ColumnSpacing="12">
+                        <TextBlock Classes="k" Text="ID ПРИЛОЖЕНИЯ" />
+                        <TextBox Grid.Column="1" Classes="mono" Text="{Binding DiscordAppId}" Watermark="—" VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

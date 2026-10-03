@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.MonitoringView"
+             x:DataType="vm:MonitoringViewModel">
+    <!-- МОНИТОРИНГ as the chronicler's tally: the lands as tabs, the chosen one's state in a framed panel
+         of ledger lines with a seal to play, the head-count over time drawn in ink, and the launcher's own
+         tally below. -->
+
+    <ScrollViewer>
+        <StackPanel Margin="26,18,24,22" Spacing="18">
+            <TextBlock Classes="aside" IsVisible="{Binding !HasRegions}" Text="Земель для счёта нет." />
+
+            <!-- The lands -->
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasRegions}">
+                <ItemsControl ItemsSource="{Binding Regions}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:MonitorRegion">
+                            <Button Classes="chip" Classes.on="{Binding IsSelected}" Content="{Binding Name}"
+                                    Command="{Binding $parent[ItemsControl].((vm:MonitoringViewModel)DataContext).SelectRegionCommand}"
+                                    CommandParameter="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Grid.Column="1" Content="Обновить" Command="{Binding RefreshCommand}" />
+            </Grid>
+
+            <!-- Right now -->
+            <c:InkFrame Stroke="{StaticResource DhTextBrush}" Background="#0A5A3A1A" Padding="22,14,18,16" IsVisible="{Binding HasRegions}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <c:StatusGlyph IsOnline="{Binding IsOnline}" IsOffline="{Binding !IsOnline}" />
+                            <TextBlock Classes="rubric" Text="{Binding StateText}" />
+                        </StackPanel>
+                        <Button Classes="link" Command="{Binding CopyAddressCommand}" HorizontalAlignment="Left" ToolTip.Tip="скопировать адрес">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Classes="aside" Text="{Binding Selected.Address}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Classes="aside" Text="{Binding CopyLabel}" />
+                            </StackPanel>
+                        </Button>
+                        <Grid ColumnDefinitions="*,24,*" Margin="0,6,0,0">
+                            <StackPanel Spacing="2">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Classes="key" Text="Онлайн" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding PlayersText}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Classes="key" Text="Карта" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MapText}" TextTrimming="CharacterEllipsis" MaxWidth="160" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Classes="key" Text="Режим" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding PresetText}" TextTrimming="CharacterEllipsis" MaxWidth="160" />
+                                </Grid>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="2">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Classes="key" Text="Раунд" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding RoundText}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Classes="key" Text="Отклик" />
+                                    <Border Grid.Column="1" Classes="leader" />
+                                    <TextBlock Grid.Column="2" Text="{Binding PingText}" />
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="seal" Content="Играть" VerticalAlignment="Center"
+                            Command="{Binding PlayCommand}" IsEnabled="{Binding IsOnline}" />
+                </Grid>
+            </c:InkFrame>
+
+            <!-- Over time -->
+            <StackPanel Spacing="8" IsVisible="{Binding HasRegions}">
+                <Border Classes="cap">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="rubric big" Text="Летопись онлайна" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                            <Button Classes="chip" Content="сутки" Command="{Binding SetRangeCommand}" CommandParameter="24h"
+                                    Classes.on="{Binding Range, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=24h}" />
+                            <Button Classes="chip" Content="седмица" Command="{Binding SetRangeCommand}" CommandParameter="7d"
+                                    Classes.on="{Binding Range, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=7d}" />
+                            <Button Classes="chip" Content="месяц" Command="{Binding SetRangeCommand}" CommandParameter="30d"
+                                    Classes.on="{Binding Range, Converter={x:Static vm:EnumMatch.Instance}, ConverterParameter=30d}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <c:OnlineChart Height="160" Points="{Binding Points}" Capacity="{Binding Capacity}"
+                               Range="{Binding Range}" EmptyText="{Binding EmptyText}" Classes.loading="{Binding IsLoading}" />
+                <Grid ColumnDefinitions="*,Auto">
+                    <WrapPanel ItemSpacing="22" VerticalAlignment="Center">
+                        <TextBlock><Run Text="Пик: " FontFamily="{StaticResource DhSerifCaps}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding PeakText}" /></TextBlock>
+                        <TextBlock><Run Text="В среднем: " FontFamily="{StaticResource DhSerifCaps}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding AverageText}" /></TextBlock>
+                        <TextBlock><Run Text="Доступен: " FontFamily="{StaticResource DhSerifCaps}" Foreground="{StaticResource DhTextDimBrush}" /><Run Text="{Binding UptimeText}" /></TextBlock>
+                    </WrapPanel>
+                    <Button Grid.Column="1" Content="{Binding TableLabel}" Command="{Binding ToggleTableCommand}" />
+                </Grid>
+                <StackPanel IsVisible="{Binding ShowTable}">
+                    <Border Classes="cap">
+                        <Grid ColumnDefinitions="190,100,100,*">
+                            <TextBlock Classes="key" Text="Когда" />
+                            <TextBlock Grid.Column="1" Classes="key" Text="В среднем" />
+                            <TextBlock Grid.Column="2" Classes="key" Text="Пик" />
+                            <TextBlock Grid.Column="3" Classes="key" Text="Доступен" />
+                        </Grid>
+                    </Border>
+                    <ScrollViewer MaxHeight="240">
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:HistoryRow">
+                                    <Border Classes="hair" Height="26">
+                                        <Grid ColumnDefinitions="190,100,100,*" VerticalAlignment="Center">
+                                            <TextBlock Classes="aside" Text="{Binding When}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Average}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Peak}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Uptime}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- The launcher's own tally -->
+            <StackPanel Spacing="8" IsVisible="{Binding HasLauncherStats}">
+                <Border Classes="cap"><TextBlock Classes="rubric big" Text="Сколько нас" /></Border>
+                <Grid ColumnDefinitions="250,*" ColumnSpacing="22">
+                    <StackPanel Spacing="2" VerticalAlignment="Top">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="key" Text="Сейчас в лаунчере" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding LauncherNowText}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="key" Text="Из них в игре" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding LauncherInGameText}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="key" Text="Пик за сутки" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding LauncherPeakDayText}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="key" Text="Рекорд" />
+                            <Border Grid.Column="1" Classes="leader" />
+                            <TextBlock Grid.Column="2" Text="{Binding LauncherPeakEverText}" />
+                        </Grid>
+                    </StackPanel>
+                    <c:OnlineChart Grid.Column="1" Height="100" Points="{Binding LauncherPoints}" Range="{Binding Range}"
+                                   EmptyText="Нет записей" Classes.loading="{Binding IsLoading}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding LauncherRegions}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="18" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LauncherRegionRow">
+                            <TextBlock Classes="aside" Text="{Binding Text}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Cyberpunk.ConnectingView"
+             x:DataType="vm:ConnectingViewModel">
+    <!-- Connecting as a jack-in sequence: a cut-corner panel in targeting brackets, a hazard strip and the
+         target's name with a pink ghost, the steps as terminal lines with a cyan meter under the one under
+         way, what the game said before it died in a mono box. -->
+    <UserControl.Styles>
+        <Style Selector="Panel#Seq">
+            <Setter Property="Width" Value="460" />
+        </Style>
+        <Style Selector="Panel#Seq.wide">
+            <Setter Property="Width" Value="640" />
+        </Style>
+    </UserControl.Styles>
+
+    <Panel x:Name="Seq" Classes.wide="{Binding HasLogTail}" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <c:Chamfer Cut="16" Background="{StaticResource DhBgPanelBrush}" BorderBrush="{StaticResource DhCyanBrush}" Padding="24,18,24,18">
+            <StackPanel Spacing="12">
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Border Classes="hazard" Width="28" Height="8" VerticalAlignment="Center" />
+                        <TextBlock Classes="tag pink" Text="{Binding Subtitle, Converter={x:Static t:TextBits.Upper}, StringFormat='// {0}'}" />
+                    </StackPanel>
+                    <TextBlock Classes="big" FontSize="22" Text="{Binding Title, Converter={x:Static t:TextBits.Upper}}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Steps}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChecklistStepViewModel">
+                            <StackPanel Spacing="3" Margin="0,3">
+                                <Grid ColumnDefinitions="12,*,Auto" ColumnSpacing="10">
+                                    <c:StatusGlyph Kind="{Binding GlyphKind}" Foreground="{StaticResource DhCyanBrush}" IsVisible="{Binding !IsPending}" />
+                                    <c:StatusGlyph Kind="{Binding GlyphKind}" Foreground="{StaticResource DhTextFaintBrush}" IsVisible="{Binding IsPending}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontFamily="{StaticResource DhTech}" FontSize="12.5" VerticalAlignment="Center"
+                                               Foreground="{Binding IsPending, Converter={x:Static vm:BoolBrush.DimText}}" />
+                                    <TextBlock Grid.Column="2" Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding Detail}" VerticalAlignment="Center" />
+                                </Grid>
+                                <ProgressBar Classes="meter" Value="{Binding Fraction}" Minimum="0" Maximum="100" IsVisible="{Binding ShowBar}" Margin="22,0,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <SelectableTextBlock Classes="mono" FontSize="11.5" TextWrapping="Wrap" Foreground="{StaticResource DhDangerBrush}"
+                                     Text="{Binding ErrorText}" IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <StackPanel IsVisible="{Binding HasLogTail}">
+                    <Border Classes="cap"><TextBlock Classes="tag" Text="// ВЫВОД ИГРЫ" /></Border>
+                    <Border Background="#E605050A" BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="1" Margin="0,8,0,0">
+                        <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+                            <SelectableTextBlock Text="{Binding LogTail}" Classes="mono" FontSize="10.5" TextWrapping="Wrap" Margin="8,6"
+                                                 Foreground="{StaticResource DhTextDimBrush}" />
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding SpeedEta}"
+                                   IsVisible="{Binding SpeedEta, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Classes="mono" FontSize="10" Foreground="{StaticResource DhTextFaintBrush}" Text="{Binding BuildTag}" IsVisible="{Binding !IsBusy}" />
+                    </StackPanel>
+                    <WrapPanel Grid.Column="1" ItemSpacing="8" LineSpacing="6" HorizontalAlignment="Right">
+                        <Button Content="отмена" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" IsCancel="True" />
+                        <Button Content="{Binding CopyLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding CopyLogCommand}" IsVisible="{Binding HasLogTail}" />
+                        <Button Content="логи" Command="{Binding OpenLogsCommand}" IsVisible="{Binding HasError}" />
+                        <Button Content="всё равно подключиться" Command="{Binding ConnectAnywayCommand}" IsVisible="{Binding CanConnectAnyway}" />
+                        <Button Classes="primary" Content="ЕЩЁ РАЗ" Command="{Binding RetryCommand}" IsVisible="{Binding HasError}" />
+                        <Button Content="закрыть" Command="{Binding CloseCommand}" IsVisible="{Binding !IsBusy}" />
+                    </WrapPanel>
+                </Grid>
+            </StackPanel>
+        </c:Chamfer>
+        <c:Brackets Stroke="{StaticResource DhActiveBrush}" Arm="16" Margin="-6" />
+    </Panel>
+</UserControl>

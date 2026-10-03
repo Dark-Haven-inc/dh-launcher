@@ -187,6 +187,167 @@
         <Setter Property="SelectionBrush" Value="#558C2A1C" />
     </Style>
 
+    <!-- ============================================================ the medieval pages' own pieces (Views/Medieval/) -->
+    <!-- The region map, drawn as an old chart (Controls/FlatMap.Looks.cs). -->
+    <Style Selector="c|FlatMap">
+        <Setter Property="Look" Value="Ink" />
+    </Style>
+
+    <!-- A rubric: a heading in red small caps, as scribes wrote them. .big for a chapter. -->
+    <Style Selector="TextBlock.rubric">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="LetterSpacing" Value="1.2" />
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrush}" />
+    </Style>
+    <Style Selector="TextBlock.rubric.big">
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <!-- A title lettered on a banner or at the head of a page. -->
+    <Style Selector="TextBlock.title">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="LetterSpacing" Value="1.5" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextBrush}" />
+    </Style>
+    <!-- The great red first letter of a passage. -->
+    <Style Selector="TextBlock.dropcap">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="40" />
+        <Setter Property="LineHeight" Value="40" />
+        <Setter Property="Foreground" Value="{StaticResource DhAccentBrush}" />
+    </Style>
+    <!-- An aside in a slanted hand: addresses, dates, notes. -->
+    <Style Selector="TextBlock.aside">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontStyle" Value="Italic" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <!-- Book text. -->
+    <Style Selector="TextBlock.prose, SelectableTextBlock.prose">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineHeight" Value="21" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Foreground" Value="{StaticResource DhBodyBrush}" />
+    </Style>
+
+    <!-- Figures that stand on the line (Alegreya's own are old-style: a 0 reads as an o). -->
+    <Style Selector="TextBlock.lining">
+        <Setter Property="FontFeatures">
+            <FontFeatureCollection>
+                <FontFeature Tag="lnum" Value="1" />
+            </FontFeatureCollection>
+        </Setter>
+    </Style>
+
+    <!-- The dotted leader of a ledger line: a key, dots, a value. -->
+    <Style Selector="Border.leader">
+        <Setter Property="Height" Value="1.5" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="Margin" Value="6,0,6,5" />
+        <Setter Property="Background">
+            <DrawingBrush TileMode="Tile" DestinationRect="0,0,4,1.5">
+                <DrawingBrush.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H4 V1.5 H0 Z" />
+                        <GeometryDrawing Brush="{StaticResource DhTextFaintBrush}" Geometry="M0,0 H1.5 V1.5 H0 Z" />
+                    </DrawingGroup>
+                </DrawingBrush.Drawing>
+            </DrawingBrush>
+        </Setter>
+    </Style>
+    <Style Selector="TextBlock.key">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontSize" Value="12.5" />
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+
+    <!-- The main action: a seal of red wax with the word pressed into it (Controls/WaxSeal.cs). -->
+    <Style Selector="Button.seal">
+        <Setter Property="Width" Value="96" />
+        <Setter Property="Height" Value="96" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource DhSerifCaps}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Template">
+            <ControlTemplate TargetType="Button">
+                <Panel Background="Transparent">
+                    <c:WaxSeal Name="PART_Wax" Fill="{StaticResource DhActiveBrush}" Ring="{StaticResource DhActivePressBrush}" />
+                    <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" Foreground="{TemplateBinding Foreground}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="Button.seal.small">
+        <Setter Property="Width" Value="66" />
+        <Setter Property="Height" Value="66" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Button.seal /template/ ContentPresenter#PART_ContentPresenter, Button.seal:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.seal:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.seal:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource DhOnActiveBrush}" />
+    </Style>
+    <Style Selector="Button.seal TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.seal:pointerover /template/ c|WaxSeal#PART_Wax">
+        <Setter Property="Fill" Value="{StaticResource DhActiveHoverBrush}" />
+    </Style>
+    <Style Selector="Button.seal:pressed /template/ c|WaxSeal#PART_Wax">
+        <Setter Property="Fill" Value="{StaticResource DhActivePressBrush}" />
+    </Style>
+    <Style Selector="Button.seal:disabled /template/ c|WaxSeal#PART_Wax">
+        <Setter Property="Fill" Value="{StaticResource DhBorderStrongBrush}" />
+    </Style>
+    <Style Selector="Button.seal:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
+
+    <!-- A ledger row: a whole line that is clickable, ruled with a fading quill stroke, washed under the pointer. -->
+    <Style Selector="Button.ledger">
+        <Setter Property="FontFamily" Value="{StaticResource DhSerif}" />
+        <Setter Property="FontSize" Value="13.5" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalHairBrush}" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="Button.ledger:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.ledger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource MedievalHairBrush}" />
+    </Style>
+    <Style Selector="Button.ledger TextBlock">
+        <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+    <Style Selector="Button.ledger TextBlock.aside, Button.ledger TextBlock.key">
+        <Setter Property="Foreground" Value="{StaticResource DhTextDimBrush}" />
+    </Style>
+    <Style Selector="Button.ledger.off">
+        <Setter Property="Foreground" Value="{StaticResource DhTextFaintBrush}" />
+    </Style>
+    <Style Selector="Button.ledger.sel">
+        <Setter Property="Foreground" Value="{StaticResource DhActiveLineBrush}" />
+    </Style>
+    <Style Selector="Button.ledger.sel /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DhBgHoverBrush}" />
+    </Style>
+
     <!-- ============================================================ the window (Views/Medieval/MainWindow.axaml) -->
     <!-- The title in the cartouche: spaced small caps. -->
     <Style Selector="TextBlock.mtitle">

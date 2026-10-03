@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Cyberpunk.RegionsView"
+             x:DataType="vm:RegionsViewModel">
+    <!-- РЕГИОНЫ as the sector's net: the map in neon (FlatMap's Neon look) under a HUD label and the head
+         count, and beside it the chosen node's dossier — its name with a pink ghost, what it is, its
+         readouts in a grid, the jack-in, its links. -->
+
+    <Grid ColumnDefinitions="*,300">
+        <Panel>
+            <c:FlatMap x:Name="Map" ItemsSource="{Binding Nodes}" SelectedItem="{Binding Selected}" />
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="18,14" Spacing="4" IsHitTestVisible="False">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Classes="hazard" Width="22" Height="8" VerticalAlignment="Center" />
+                    <TextBlock Classes="tag" Text="// КАРТА СЕКТОРА" />
+                </StackPanel>
+                <TextBlock>
+                    <Run Text="{Binding TotalPlayers}" FontFamily="{StaticResource DhMono}" FontSize="22" Foreground="{StaticResource DhCyanBrush}" />
+                    <Run Text="  В СЕТИ" FontFamily="{StaticResource DhTech}" FontSize="10" Foreground="{StaticResource DhTextDimBrush}" />
+                </TextBlock>
+            </StackPanel>
+            <ProgressBar Classes="meter" IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" />
+            <TextBlock Classes="mono" FontSize="11" Foreground="{StaticResource DhDangerBrush}" Text="{Binding Error}" TextWrapping="Wrap" Margin="18,14" VerticalAlignment="Bottom"
+                       IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </Panel>
+
+        <Border Grid.Column="1" BorderBrush="{StaticResource DhBorderBrush}" BorderThickness="1,0,0,0" Background="#990A0A12">
+            <ScrollViewer IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Margin="18,16" Spacing="14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="tag pink" Text="// УЗЕЛ" />
+                        <TextBlock Classes="big" FontSize="24" Text="{Binding Selected.Name, Converter={x:Static t:TextBits.Upper}}" TextWrapping="Wrap" />
+                        <TextBlock Classes="mono" FontSize="10.5" Foreground="{StaticResource DhTextDimBrush}" Text="{Binding Selected.Address}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <TextBlock Classes="prose" FontSize="12.5" LineHeight="19" Text="{Binding Selected.Blurb}"
+                               IsVisible="{Binding Selected.Blurb, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <Grid ColumnDefinitions="*,14,*" RowDefinitions="Auto,12,Auto">
+                        <Border Classes="cell">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <c:StatusGlyph IsOnline="{Binding Selected.IsOnline}" IsOffline="{Binding Selected.IsOffline}"
+                                                   IsQuarantine="{Binding Selected.IsQuarantine}" IsFull="{Binding Selected.IsFull}"
+                                                   Foreground="{StaticResource DhCyanBrush}" />
+                                    <TextBlock Classes="readout" FontSize="13" Text="{Binding Selected.StateText}" />
+                                </StackPanel>
+                                <TextBlock Classes="unit" Text="СТАТУС" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="cell" IsVisible="{Binding Selected.IsOnline}">
+                            <StackPanel Spacing="2"><TextBlock Classes="readout" FontSize="13" Text="{Binding Selected.Population}" /><TextBlock Classes="unit" Text="ИГРОКИ" /></StackPanel>
+                        </Border>
+                        <Border Grid.Row="2" Classes="cell" IsVisible="{Binding Selected.IsOnline}">
+                            <StackPanel Spacing="2"><TextBlock Classes="readout" FontSize="13" Text="{Binding Selected.RoundText}" /><TextBlock Classes="unit" Text="РАУНД" /></StackPanel>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="2" Classes="cell" IsVisible="{Binding !Selected.IsQuarantine}">
+                            <StackPanel Spacing="2"><TextBlock Classes="readout" FontSize="13" Text="{Binding Selected.Ping}" /><TextBlock Classes="unit" Text="ПИНГ" /></StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Spacing="8" IsVisible="{Binding !Selected.IsQuarantine}">
+                        <Button Classes="jack" HorizontalAlignment="Stretch" Command="{Binding PlaySelectedCommand}" IsEnabled="{Binding Selected.CanConnect}">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Classes="icon" Text="&#xEB2C;" FontSize="14" />
+                                <TextBlock Text="ИГРАТЬ" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.SlotLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding Selected.WaitForSlotCommand}"
+                                IsVisible="{Binding Selected.CanWaitForSlot}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding Selected.WatchLabel, Converter={x:Static vm:Lowercase.Instance}}" Command="{Binding Selected.ToggleWatchCommand}"
+                                IsVisible="{Binding Selected.CanWatch}" />
+                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Content="баны игроков" Command="{Binding ShowBansCommand}" />
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding HasNeighbours}">
+                        <Border Classes="cap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="tag" Text="// СВЯЗИ" />
+                                <TextBlock Grid.Column="1" Classes="tag pink" Text="{Binding SelectedNeighbours.Count}" />
+                            </Grid>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding SelectedNeighbours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RegionNodeViewModel">
+                                    <Button Classes="netrow" Classes.off="{Binding !IsOnline}" Command="{Binding SelectCommand}">
+                                        <Grid ColumnDefinitions="3,*,Auto" ColumnSpacing="10">
+                                            <Border Classes="status" Classes.on="{Binding IsOnline}" Classes.full="{Binding IsFull}" Classes.down="{Binding IsOffline}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Classes="mono" FontSize="10.5" Foreground="{StaticResource DhCyanBrush}" Text="{Binding Population}"
+                                                       IsVisible="{Binding IsOnline}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.AccountView"
+             x:DataType="vm:AccountViewModel">
+    <!-- АККАУНТ as a letter of passage: name and password written on lines in a framed sheet, a seal to
+         enter; the accounts already known listed below it like signatures in a register. -->
+    <ScrollViewer>
+        <StackPanel Width="340" Margin="0,40" Spacing="20" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <c:InkFrame Stroke="{StaticResource DhTextBrush}" Background="#0A5A3A1A" Padding="26,20,26,22">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="rubric big" Text="Грамота на проход" HorizontalAlignment="Center" />
+                    <TextBlock Classes="aside" Text="Назовитесь, путник." HorizontalAlignment="Center" Margin="0,-6,0,4" />
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="key" Text="Имя" />
+                        <TextBox Text="{Binding Username}" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                        <TextBlock Classes="key" Text="Тайное слово" />
+                        <TextBox Text="{Binding Password}" PasswordChar="•" />
+                    </StackPanel>
+                    <StackPanel Spacing="2" IsVisible="{Binding NeedsTfa}">
+                        <TextBlock Classes="key" Text="Код подтверждения" />
+                        <TextBox Classes="mono" Text="{Binding TfaCode}" />
+                    </StackPanel>
+                    <TextBlock Classes="aside" Foreground="{StaticResource DhDangerBrush}" Text="{Binding Error}" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Button Classes="seal" HorizontalAlignment="Center" IsDefault="True" Content="Войти" Margin="0,4,0,0"
+                            Command="{Binding LoginCommand}" IsEnabled="{Binding !Busy}" />
+                    <Grid ColumnDefinitions="*,*">
+                        <Button Classes="link" HorizontalAlignment="Left" Content="завести аккаунт" Command="{Binding OpenRegisterCommand}" />
+                        <Button Grid.Column="1" Classes="link" HorizontalAlignment="Right" Content="забыли слово?" Command="{Binding OpenForgotCommand}" />
+                    </Grid>
+                </StackPanel>
+            </c:InkFrame>
+
+            <StackPanel IsVisible="{Binding HasAccounts}">
+                <Border Classes="cap">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="rubric" Text="Известные имена" />
+                        <TextBlock Grid.Column="1" Classes="aside" Text="{Binding Accounts.Count}" />
+                    </Grid>
+                </Border>
+                <ItemsControl ItemsSource="{Binding Accounts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:AccountRowViewModel">
+                            <Border Classes="hair" MinHeight="32">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Username}" FontFamily="{StaticResource DhSerifCaps}" FontSize="14" TextTrimming="CharacterEllipsis"
+                                               FontWeight="{Binding IsActive, Converter={x:Static vm:BoolWeight.Instance}}" />
+                                    <TextBlock Grid.Column="1" Classes="aside" Text="{Binding StatusHint}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="2" Classes="link" Content="выбрать" IsVisible="{Binding !IsActive}"
+                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).SetActiveCommand}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Grid.Column="3" Classes="link" Content="выйти"
+                                            Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).LogoutCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:DarkHaven.App.ViewModels"
         xmlns:views="using:DarkHaven.App.Views"
+        xmlns:med="using:DarkHaven.App.Views.Medieval"
         xmlns:c="using:DarkHaven.App.Controls"
         x:Class="DarkHaven.App.Views.Medieval.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -12,26 +13,27 @@
         Background="{StaticResource DhBgBrush}">
     <!-- The medieval theme's window: the launcher drawn on an old sheet like a map. The aged parchment
          (Controls/Parchment.cs) with a map's neatline round it (Controls/MapFrame.cs), the title in a
-         cartouche, the pages listed down the left as a book's contents, a compass rose under them. The
-         pages are the monochrome ones, which Themes/Styles/Medieval.axaml redraws in ink. -->
+         cartouche, the pages listed down the left as a book's contents, a compass rose under them. The main
+         pages are its own (Views/Medieval/: banners, ledgers, wax seals, the inked chart); the rest are the
+         monochrome ones, which Themes/Styles/Medieval.axaml redraws in ink. -->
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenPaletteCommand}" />
     </Window.KeyBindings>
 
     <Window.DataTemplates>
-        <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
-        <DataTemplate DataType="vm:RegionsViewModel"><views:RegionsView /></DataTemplate>
-        <DataTemplate DataType="vm:ServerListViewModel"><views:ServerListView /></DataTemplate>
-        <DataTemplate DataType="vm:MonitoringViewModel"><views:MonitoringView /></DataTemplate>
-        <DataTemplate DataType="vm:LocalViewModel"><views:LocalView /></DataTemplate>
+        <DataTemplate DataType="vm:HomeViewModel"><med:HomeView /></DataTemplate>
+        <DataTemplate DataType="vm:RegionsViewModel"><med:RegionsView /></DataTemplate>
+        <DataTemplate DataType="vm:ServerListViewModel"><med:ServerListView /></DataTemplate>
+        <DataTemplate DataType="vm:MonitoringViewModel"><med:MonitoringView /></DataTemplate>
+        <DataTemplate DataType="vm:LocalViewModel"><med:LocalView /></DataTemplate>
         <DataTemplate DataType="vm:BanListViewModel"><views:BanListView /></DataTemplate>
-        <DataTemplate DataType="vm:NewsViewModel"><views:NewsView /></DataTemplate>
+        <DataTemplate DataType="vm:NewsViewModel"><med:NewsView /></DataTemplate>
         <DataTemplate DataType="vm:AdminViewModel"><views:AdminView /></DataTemplate>
-        <DataTemplate DataType="vm:AccountViewModel"><views:AccountView /></DataTemplate>
+        <DataTemplate DataType="vm:AccountViewModel"><med:AccountView /></DataTemplate>
         <DataTemplate DataType="vm:ProfileViewModel"><views:ProfileView /></DataTemplate>
-        <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
-        <DataTemplate DataType="vm:ConnectingViewModel"><views:ConnectingView /></DataTemplate>
+        <DataTemplate DataType="vm:SettingsViewModel"><med:SettingsView /></DataTemplate>
+        <DataTemplate DataType="vm:ConnectingViewModel"><med:ConnectingView /></DataTemplate>
         <DataTemplate DataType="vm:PaletteViewModel"><views:PaletteView /></DataTemplate>
     </Window.DataTemplates>
 

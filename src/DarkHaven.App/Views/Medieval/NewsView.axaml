@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:DarkHaven.App.ViewModels"
+             xmlns:t="using:DarkHaven.App.Themes"
+             xmlns:c="using:DarkHaven.App.Controls"
+             x:Class="DarkHaven.App.Views.Medieval.NewsView"
+             x:DataType="vm:NewsViewModel">
+    <!-- НОВОСТИ as tidings: down the left, the proclamations by date; on the right the one chosen, set
+         like a page of a book — its title opening with an illuminated initial in a ruled box, the text in
+         the book face. -->
+
+    <Grid ColumnDefinitions="290,*">
+        <Border BorderBrush="{StaticResource DhBorderStrongBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Classes="rubric big" Text="Вести" Margin="18,16,0,6" />
+                <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
+                <TextBlock DockPanel.Dock="Top" Classes="aside" Margin="18,4" Text="Вестей пока нет." IsVisible="{Binding IsEmpty}" />
+                <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Items}" Margin="10,0,8,10">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NewsItemViewModel">
+                                <Button Classes="ledger" Classes.sel="{Binding IsSelected}" Padding="8,7"
+                                        Command="{Binding $parent[ItemsControl].((vm:NewsViewModel)DataContext).SelectCommand}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Classes="aside" FontSize="11.5" Text="{Binding DateText}" />
+                                            <TextBlock Classes="rubric" FontSize="11" Text="{Binding Tag}" IsVisible="{Binding HasTag}" />
+                                            <TextBlock Classes="rubric" FontSize="11" Text="на виду" IsVisible="{Binding Pinned}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource DhSerifCaps}" FontSize="13.5" TextWrapping="Wrap" MaxHeight="40" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer Grid.Column="1">
+            <StackPanel Margin="32,22,28,24" Spacing="14" MaxWidth="620" HorizontalAlignment="Left"
+                        IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <TextBlock Classes="aside" Text="{Binding Selected.DateText}" />
+                    <TextBlock Classes="rubric" Text="{Binding Selected.Tag}" IsVisible="{Binding Selected.HasTag}" />
+                </StackPanel>
+                <!-- The title with an illuminated initial. -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <c:InkFrame Stroke="{StaticResource DhAccentBrush}" Background="#14A8341F" Width="58" Height="58" VerticalAlignment="Top">
+                        <TextBlock Classes="dropcap" FontSize="38" Text="{Binding Selected.Title, Converter={x:Static t:TextBits.FirstLetter}}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,2" />
+                    </c:InkFrame>
+                    <TextBlock Grid.Column="1" Classes="title" FontSize="23" TextWrapping="Wrap" VerticalAlignment="Center"
+                               Text="{Binding Selected.Title, Converter={x:Static t:TextBits.AfterFirstLetter}}" />
+                </Grid>
+                <Border Classes="cap" MinHeight="0" />
+                <ItemsControl ItemsSource="{Binding Selected.Paragraphs}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <SelectableTextBlock Classes="prose" Text="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button HorizontalAlignment="Left" Content="Читать далее" Command="{Binding Selected.OpenCommand}" IsVisible="{Binding Selected.HasLink}" />
+                <!-- A closing flourish. -->
+                <Path Data="M0,5 H70 M74,5 L79,1 L84,5 L79,9 Z M88,5 H158" Stroke="{StaticResource DhTextDimBrush}" Fill="{StaticResource DhTextDimBrush}"
+                      StrokeThickness="1" HorizontalAlignment="Center" Margin="0,8,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

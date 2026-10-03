@@ -29,6 +29,9 @@ public static class ProfileLook
     public static IBrush BannerBrush(string? hex)
     {
         var c = Accent(hex);
+        // The medieval sheet wants the colour as a wash of ink on parchment, not a dark slab.
+        if (Theme.Current.Layout == ThemeLayout.Medieval)
+            return new SolidColorBrush(Mix(c, Color.Parse("#B89A6A"), 0.4));
         if (!Legacy)
             return new SolidColorBrush(Color.FromRgb((byte)(c.R * 0.45), (byte)(c.G * 0.45), (byte)(c.B * 0.45)));
 
@@ -41,11 +44,20 @@ public static class ProfileLook
         };
     }
 
+    private static Color Mix(Color a, Color b, double t) => Color.FromRgb(
+        (byte)(a.R * t + b.R * (1 - t)), (byte)(a.G * t + b.G * (1 - t)), (byte)(a.B * t + b.B * (1 - t)));
+
     public static FrameBrushes Frame(string? frame) => frame switch
     {
         "gold" => new(Color.Parse("#F0B454"), Color.Parse("#3A2E12")),
         "cyan" => new(Color.Parse("#7FD4FF"), Color.Parse("#14313A")),
-        "none" => new(Color.Parse(Legacy ? "#24365A" : "#323236"), Colors.Transparent),
+        "none" => new(Color.Parse(Theme.Current.Layout switch
+        {
+            ThemeLayout.Legacy => "#24365A",
+            ThemeLayout.Medieval => "#94784F",
+            ThemeLayout.Cyberpunk => "#3B3B66",
+            _ => "#323236",
+        }), Colors.Transparent),
         "blue" => new(Color.Parse("#5AA0FF"), Color.Parse("#111A2E")),
         _ => new(Color.Parse("#8A8A8F"), Color.Parse("#111113")),
     };
